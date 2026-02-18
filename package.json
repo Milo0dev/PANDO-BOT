@@ -1,0 +1,24 @@
+{
+  "name": "discord-ticket-bot",
+  "version": "3.0.0",
+  "description": "Bot de tickets profesional y completo para Discord",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1",
+    "node-cron": "^3.0.3",
+    "chalk": "^4.1.2",
+    "moment": "^2.30.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

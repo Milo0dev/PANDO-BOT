@@ -1,0 +1,210 @@
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
+const { blacklist, staffStats, tags, tickets, settings, autoResponses } = require("../utils/database");
+const { updateDashboard } = require("../handlers/dashboardHandler");
+const E = require("../utils/embeds");
+
+// ────── /stats ──────────────────────────────────────────────────────
+module.exports.stats = {
+  data: new SlashCommandBuilder().setName("stats").setDescription("📊 Estadísticas del sistema de tickets")
+    .addSubcommand(s => s.setName("server").setDescription("Estadísticas globales del servidor"))
+    .addSubcommand(s => s.setName("staff").setDescription("Stats de un miembro del staff").addUserOption(o => o.setName("usuario").setDescription("Staff a consultar").setRequired(false)))
+    .addSubcommand(s => s.setName("leaderboard").setDescription("Ranking del staff")),
+  async execute(interaction) {
+    const sub = interaction.options.getSubcommand();
+    if (sub === "server") {
+      const stats = tickets.getStats(interaction.guild.id);
+      return interaction.reply({ embeds: [E.statsEmbed(stats, interaction.guild.name)] });
+    }
+    if (sub === "staff") {
+      const user = interaction.options.getUser("usuario") || interaction.user;
+      const s    = staffStats.get(interaction.guild.id, user.id);
+      if (!s) return interaction.reply({ embeds: [E.infoEmbed("📊 Sin datos", `<@${user.id}> no tiene estadísticas.`)], ephemeral: true });
+      return interaction.reply({
+        embeds: [new EmbedBuilder().setTitle(`📊 Stats — ${user.username}`).setColor(E.Colors.PRIMARY)
+          .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+          .addFields(
+            { name: "🔒 Tickets cerrados",   value: `\`${s.tickets_closed}\``,   inline: true },
+            { name: "👋 Tickets reclamados", value: `\`${s.tickets_claimed}\``,  inline: true },
+            { name: "📌 Tickets asignados",  value: `\`${s.tickets_assigned}\``, inline: true },
+          ).setTimestamp()],
+      });
+    }
+    if (sub === "leaderboard") {
+      return interaction.reply({ embeds: [E.leaderboardEmbed(staffStats.getLeaderboard(interaction.guild.id), interaction.guild)] });
+    }
+  },
+};
+
+// ────── /blacklist ──────────────────────────────────────────────────
+module.exports.blacklist = {
+  data: new SlashCommandBuilder().setName("blacklist").setDescription("🚫 Gestionar lista negra")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .addSubcommand(s => s.setName("add").setDescription("Bloquear usuario").addUserOption(o => o.setName("usuario").setDescription("Usuario").setRequired(true)).addStringOption(o => o.setName("razon").setDescription("Razón").setRequired(false)))
+    .addSubcommand(s => s.setName("remove").setDescription("Desbloquear usuario").addUserOption(o => o.setName("usuario").setDescription("Usuario").setRequired(true)))
+    .addSubcommand(s => s.setName("list").setDescription("Ver lista negra"))
+    .addSubcommand(s => s.setName("check").setDescription("Verificar usuario").addUserOption(o => o.setName("usuario").setDescription("Usuario").setRequired(true))),
+  async execute(interaction) {
+    const sub = interaction.options.getSubcommand();
+    if (sub === "add") {
+      const user  = interaction.options.getUser("usuario");
+      const razon = interaction.options.getString("razon") || "Sin razón";
+      if (user.id === interaction.user.id) return interaction.reply({ embeds: [E.errorEmbed("No puedes bloquearte a ti mismo.")], ephemeral: true });
+      blacklist.add(user.id, interaction.guild.id, razon, interaction.user.id);
+      return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.ERROR).setTitle("🚫 Usuario bloqueado").addFields({ name: "👤 Usuario", value: `${user.tag}`, inline: true }, { name: "📋 Razón", value: razon, inline: true }, { name: "🛡️ Por", value: `<@${interaction.user.id}>`, inline: true }).setTimestamp()] });
+    }
+    if (sub === "remove") {
+      const user   = interaction.options.getUser("usuario");
+      const result = blacklist.remove(user.id, interaction.guild.id);
+      return interaction.reply({ embeds: [result.changes ? E.successEmbed(`<@${user.id}> removido de la lista negra.`) : E.errorEmbed("Este usuario no está en la lista negra.")] });
+    }
+    if (sub === "list") {
+      const bl = blacklist.getAll(interaction.guild.id);
+      if (!bl.length) return interaction.reply({ embeds: [E.infoEmbed("🚫 Lista Negra", "No hay usuarios bloqueados.")], ephemeral: true });
+      const list = bl.slice(0, 20).map((b, i) => `**${i+1}.** <@${b.user_id}> — ${b.reason || "Sin razón"}`).join("\n");
+      return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🚫 Lista Negra (${bl.length})`).setColor(E.Colors.ERROR).setDescription(list).setTimestamp()], ephemeral: true });
+    }
+    if (sub === "check") {
+      const user  = interaction.options.getUser("usuario");
+      const entry = blacklist.check(user.id, interaction.guild.id);
+      if (!entry) return interaction.reply({ embeds: [E.successEmbed(`<@${user.id}> **no** está en la lista negra.`)], ephemeral: true });
+      return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.ERROR).setTitle("🚫 En lista negra").addFields({ name: "📋 Razón", value: entry.reason || "Sin razón", inline: true }, { name: "🛡️ Por", value: `<@${entry.added_by}>`, inline: true }).setTimestamp()], ephemeral: true });
+    }
+  },
+};
+
+// ────── /tag ────────────────────────────────────────────────────────
+module.exports.tag = {
+  data: new SlashCommandBuilder().setName("tag").setDescription("🏷️ Respuestas rápidas (tags)")
+    .addSubcommand(s => s.setName("use").setDescription("Usar un tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setAutocomplete(true)).addUserOption(o => o.setName("usuario").setDescription("Mencionar usuario").setRequired(false)))
+    .addSubcommand(s => s.setName("create").setDescription("Crear tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setMaxLength(32)).addStringOption(o => o.setName("contenido").setDescription("Contenido").setRequired(true).setMaxLength(1900)))
+    .addSubcommand(s => s.setName("edit").setDescription("Editar tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setAutocomplete(true)).addStringOption(o => o.setName("contenido").setDescription("Nuevo contenido").setRequired(true).setMaxLength(1900)))
+    .addSubcommand(s => s.setName("delete").setDescription("Eliminar tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setAutocomplete(true)))
+    .addSubcommand(s => s.setName("list").setDescription("Ver todos los tags")),
+  async execute(interaction) {
+    const sub = interaction.options.getSubcommand();
+    if (sub === "use") {
+      const name = interaction.options.getString("nombre");
+      const user = interaction.options.getUser("usuario");
+      const t    = tags.get(interaction.guild.id, name);
+      if (!t) return interaction.reply({ embeds: [E.errorEmbed(`Tag **${name}** no existe.`)], ephemeral: true });
+      tags.use(interaction.guild.id, name);
+      return interaction.reply({ content: user ? `<@${user.id}>\n${t.content}` : t.content });
+    }
+    if (sub === "create") {
+      try {
+        tags.create(interaction.guild.id, interaction.options.getString("nombre").toLowerCase(), interaction.options.getString("contenido"), interaction.user.id);
+        return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** creado.`)], ephemeral: true });
+      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe un tag con ese nombre.`)], ephemeral: true }); }
+    }
+    if (sub === "edit") {
+      const r = tags.update(interaction.guild.id, interaction.options.getString("nombre"), interaction.options.getString("contenido"));
+      return interaction.reply({ embeds: [r ? E.successEmbed(`Tag **${r.name}** actualizado.`) : E.errorEmbed("Tag no encontrado.")], ephemeral: true });
+    }
+    if (sub === "delete") {
+      tags.delete(interaction.guild.id, interaction.options.getString("nombre"));
+      return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** eliminado.`)], ephemeral: true });
+    }
+    if (sub === "list") {
+      const all = tags.getAll(interaction.guild.id);
+      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🏷️ Tags", "No hay tags. Usa `/tag create` para crear uno.")], ephemeral: true });
+      const list = all.slice(0, 25).map((t, i) => `**${i+1}.** \`${t.name}\` — ${t.uses} usos`).join("\n");
+      return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🏷️ Tags (${all.length})`).setColor(E.Colors.PRIMARY).setDescription(list).setFooter({ text: "Usa /tag use [nombre] para enviar" }).setTimestamp()] });
+    }
+  },
+  async autocomplete(interaction) {
+    const focused = interaction.options.getFocused().toLowerCase();
+    const all = tags.getAll(interaction.guild.id).filter(t => t.name.includes(focused)).slice(0, 25);
+    return interaction.respond(all.map(t => ({ name: t.name, value: t.name })));
+  },
+};
+
+// ────── /autoresponse ───────────────────────────────────────────────
+module.exports.autoresponse = {
+  data: new SlashCommandBuilder().setName("autoresponse").setDescription("🤖 Gestionar auto-respuestas en tickets")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+    .addSubcommand(s => s.setName("add").setDescription("Crear auto-respuesta").addStringOption(o => o.setName("trigger").setDescription("Palabra/frase que activa la respuesta").setRequired(true).setMaxLength(50)).addStringOption(o => o.setName("respuesta").setDescription("Respuesta automática").setRequired(true).setMaxLength(1000)))
+    .addSubcommand(s => s.setName("delete").setDescription("Eliminar auto-respuesta").addStringOption(o => o.setName("trigger").setDescription("Trigger a eliminar").setRequired(true).setAutocomplete(true)))
+    .addSubcommand(s => s.setName("toggle").setDescription("Activar/desactivar auto-respuesta").addStringOption(o => o.setName("trigger").setDescription("Trigger").setRequired(true).setAutocomplete(true)))
+    .addSubcommand(s => s.setName("list").setDescription("Ver todas las auto-respuestas")),
+  async execute(interaction) {
+    const sub = interaction.options.getSubcommand();
+    if (sub === "add") {
+      const trigger   = interaction.options.getString("trigger");
+      const respuesta = interaction.options.getString("respuesta");
+      try {
+        autoResponses.create(interaction.guild.id, trigger, respuesta, interaction.user.id);
+        return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta para **"${trigger}"** creada.\nSe activará cuando un usuario mencione esa palabra en un ticket.`)], ephemeral: true });
+      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe una auto-respuesta para **"${trigger}"**.`)], ephemeral: true }); }
+    }
+    if (sub === "delete") {
+      const trigger = interaction.options.getString("trigger");
+      autoResponses.delete(interaction.guild.id, trigger);
+      return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta **"${trigger}"** eliminada.`)], ephemeral: true });
+    }
+    if (sub === "toggle") {
+      const trigger = interaction.options.getString("trigger");
+      const r = autoResponses.toggle(interaction.guild.id, trigger);
+      if (!r) return interaction.reply({ embeds: [E.errorEmbed("Auto-respuesta no encontrada.")], ephemeral: true });
+      return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta **"${trigger}"**: ${r.enabled ? "✅ Activada" : "❌ Desactivada"}`)], ephemeral: true });
+    }
+    if (sub === "list") {
+      const all = autoResponses.getAll(interaction.guild.id);
+      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🤖 Auto-respuestas", "No hay auto-respuestas. Usa `/autoresponse add` para crear una.")], ephemeral: true });
+      const list = all.slice(0, 20).map((a, i) => `**${i+1}.** ${a.enabled ? "✅" : "❌"} \`${a.trigger}\` — ${a.uses} activaciones`).join("\n");
+      return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🤖 Auto-respuestas (${all.length})`).setColor(E.Colors.PRIMARY).setDescription(list).setTimestamp()] });
+    }
+  },
+  async autocomplete(interaction) {
+    const focused = interaction.options.getFocused().toLowerCase();
+    const all = autoResponses.getAll(interaction.guild.id).filter(a => a.trigger.toLowerCase().includes(focused)).slice(0, 25);
+    return interaction.respond(all.map(a => ({ name: a.trigger, value: a.trigger })));
+  },
+};
+
+// ────── /maintenance ────────────────────────────────────────────────
+module.exports.maintenance = {
+  data: new SlashCommandBuilder().setName("maintenance").setDescription("🔧 Modo mantenimiento del sistema de tickets")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addSubcommand(s => s.setName("on").setDescription("Activar mantenimiento").addStringOption(o => o.setName("razon").setDescription("Razón del mantenimiento").setRequired(false)))
+    .addSubcommand(s => s.setName("off").setDescription("Desactivar mantenimiento")),
+  async execute(interaction) {
+    const sub = interaction.options.getSubcommand();
+    if (sub === "on") {
+      const razon = interaction.options.getString("razon") || "Mantenimiento programado";
+      settings.update(interaction.guild.id, { maintenance_mode: true, maintenance_reason: razon });
+      return interaction.reply({
+        embeds: [new EmbedBuilder().setColor(E.Colors.WARNING).setTitle("🔧 Mantenimiento Activado").setDescription(`El sistema de tickets está en **mantenimiento**.\n**Razón:** ${razon}\n\nLos usuarios no podrán abrir nuevos tickets hasta que lo desactives.`).setTimestamp()],
+      });
+    }
+    if (sub === "off") {
+      settings.update(interaction.guild.id, { maintenance_mode: false, maintenance_reason: null });
+      return interaction.reply({ embeds: [E.successEmbed("Sistema de tickets **reactivado**. Los usuarios pueden abrir tickets nuevamente.")] });
+    }
+  },
+};
+
+// ────── /closeall ───────────────────────────────────────────────────
+module.exports.closeAll = {
+  data: new SlashCommandBuilder().setName("closeall").setDescription("🔒 Cerrar todos los tickets abiertos")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addStringOption(o => o.setName("razon").setDescription("Razón del cierre masivo").setRequired(false)),
+  async execute(interaction) {
+    const razon = interaction.options.getString("razon") || "Cierre masivo por administrador";
+    await interaction.deferReply({ ephemeral: true });
+    const open = tickets.getAllOpen(interaction.guild.id);
+    let closed = 0;
+    for (const t of open) {
+      try {
+        const ch = interaction.guild.channels.cache.get(t.channel_id);
+        if (ch) {
+          tickets.close(t.channel_id, interaction.user.id, razon);
+          await ch.send({ embeds: [new EmbedBuilder().setColor(E.Colors.ERROR).setDescription(`🔒 Cerrado masivamente por <@${interaction.user.id}>\n**Razón:** ${razon}`).setTimestamp()] }).catch(() => {});
+          setTimeout(() => ch.delete().catch(() => {}), 5000);
+          closed++;
+        }
+      } catch {}
+    }
+    await updateDashboard(interaction.guild);
+    return interaction.editReply({ embeds: [E.successEmbed(`Se cerraron **${closed}** tickets correctamente.`)] });
+  },
+};
