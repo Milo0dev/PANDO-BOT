@@ -298,7 +298,38 @@ async function claimTicket(interaction) {
   staffStats.incrementClaimed(interaction.guild.id, interaction.user.id);
   await interaction.channel.setTopic(`${interaction.channel.topic || ""} | Staff: ${interaction.user.tag}`).catch(() => {});
 
-  return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.PRIMARY).setDescription(`👋 <@${interaction.user.id}> ha reclamado este ticket.`).setTimestamp()] });
+  // ── DM al usuario avisando que el staff ya está atendiendo
+  let dmEnviado = false;
+  try {
+    const user = await interaction.client.users.fetch(ticket.user_id);
+    const dmEmbed = new EmbedBuilder()
+      .setColor(E.Colors.SUCCESS)
+      .setTitle("👋 ¡El staff ya está atendiendo tu ticket!")
+      .setDescription(
+        `Tu ticket **#${ticket.ticket_id}** en **${interaction.guild.name}** ya tiene a alguien atendiéndolo.\n\n` +
+        `**👤 Staff asignado:** ${interaction.user.tag}\n` +
+        `**📁 Categoría:** ${ticket.category}\n\n` +
+        `Ve al servidor y responde en el canal de tu ticket para continuar.`
+      )
+      .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+      .setFooter({ text: `${interaction.guild.name} • Sistema de Tickets` })
+      .setTimestamp();
+
+    await user.send({ embeds: [dmEmbed] });
+    dmEnviado = true;
+  } catch {
+    // Usuario con DMs desactivados — se ignora silenciosamente
+  }
+
+  return interaction.reply({
+    embeds: [new EmbedBuilder()
+      .setColor(E.Colors.PRIMARY)
+      .setDescription(
+        `👋 <@${interaction.user.id}> ha reclamado este ticket.\n` +
+        (dmEnviado ? "📩 Se notificó al usuario por DM." : "📩 No se pudo notificar al usuario (DMs desactivados).")
+      )
+      .setTimestamp()],
+  });
 }
 
 async function unclaimTicket(interaction) {
