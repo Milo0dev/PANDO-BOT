@@ -237,15 +237,93 @@ function maintenanceEmbed(reason) {
 // ─────────────────────────────────────────────────────
 //   RATING
 // ─────────────────────────────────────────────────────
-function ratingEmbed(user, ticketId) {
+function ratingEmbed(user, ticket, staffId) {
+  const ticketId = typeof ticket === "object" ? ticket.ticket_id : ticket;
+  const category = typeof ticket === "object" ? ticket.category : null;
   return new EmbedBuilder()
     .setTitle("⭐ ¿Cómo fue tu atención?")
     .setColor(Colors.GOLD)
     .setDescription(
       `Hola <@${user.id}>, tu ticket **#${ticketId}** ha sido cerrado.\n\n` +
-      `**¿Puedes calificarnos del 1 al 5?**\nTu opinión nos ayuda a mejorar.\n\n*Tienes 5 minutos para responder.*`
+      `**¿Cómo calificarías la atención que recibiste?**\n` +
+      (staffId ? `👤 Staff que te atendió: <@${staffId}>\n` : "") +
+      (category ? `📁 Categoría: ${category}\n` : "") +
+      `\n⭐ Selecciona una calificación del 1 al 5:`
     )
-    .setThumbnail(user.displayAvatarURL({ dynamic: true }));
+    .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+    .setFooter({ text: "Tu opinión ayuda a mejorar la calidad del soporte • Expira en 10 minutos" });
+}
+
+// ─────────────────────────────────────────────────────
+//   STAFF RATING LEADERBOARD
+// ─────────────────────────────────────────────────────
+function staffRatingLeaderboard(lb, guild, period) {
+  const medals  = ["🥇","🥈","🥉"];
+  const starBar = (avg) => {
+    const full  = Math.floor(avg);
+    const half  = avg - full >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+    return "⭐".repeat(full) + (half ? "✨" : "") + "☆".repeat(empty);
+  };
+
+  const desc = lb.length
+    ? lb.map((s, i) => {
+        const bar   = starBar(s.avg);
+        const medal = medals[i] || ("**`" + String(i+1).padStart(2) + "`**");
+        const trend = s.avg >= 4.5 ? "🔥" : s.avg >= 4 ? "✅" : s.avg >= 3 ? "⚠️" : "❌";
+        return medal + " <@" + s.staff_id + ">\n" +
+               bar + " **" + s.avg + "/5** " + trend + " · `" + s.total + "` calificación" + (s.total !== 1 ? "es" : "");
+      }).join("\n\n")
+    : "Aún no hay calificaciones registradas.\n\nLas calificaciones aparecen cuando los usuarios califican tickets cerrados.";
+
+  return new EmbedBuilder()
+    .setTitle("🏆 Leaderboard de Staff — Calificaciones")
+    .setColor(Colors.GOLD)
+    .setDescription(desc)
+    .setThumbnail(guild.iconURL({ dynamic: true }))
+    .setFooter({ text: guild.name + " · " + period + " · ⭐ estrella completa  ✨ media  ☆ vacía", iconURL: guild.iconURL({ dynamic: true }) })
+    .setTimestamp();
+}
+
+// ─────────────────────────────────────────────────────
+//   STAFF RATING PROFILE (stats individuales)
+// ─────────────────────────────────────────────────────
+function staffRatingProfile(staffUser, stats, guildName) {
+  const avg = stats.avg;
+  if (!avg) {
+    return new EmbedBuilder()
+      .setColor(Colors.INFO)
+      .setTitle("📊 Calificaciones de " + staffUser.username)
+      .setDescription("Este miembro del staff aún no tiene calificaciones registradas.")
+      .setThumbnail(staffUser.displayAvatarURL({ dynamic: true }));
+  }
+
+  const starsFull  = "⭐".repeat(Math.floor(avg));
+  const starsHalf  = avg - Math.floor(avg) >= 0.5 ? "✨" : "";
+  const starsEmpty = "☆".repeat(5 - Math.floor(avg) - (starsHalf ? 1 : 0));
+  const starBar    = starsFull + starsHalf + starsEmpty;
+  const trend      = avg >= 4.5 ? "🔥 Excelente" : avg >= 4 ? "✅ Bueno" : avg >= 3 ? "⚠️ Regular" : "❌ Necesita mejorar";
+
+  const maxDist = Math.max(...Object.values(stats.dist));
+  const distBar = [5,4,3,2,1].map(n => {
+    const count = stats.dist[n] || 0;
+    const pct   = maxDist > 0 ? Math.round((count / maxDist) * 10) : 0;
+    const bar   = "█".repeat(pct) + "░".repeat(10 - pct);
+    return n + "⭐ `" + bar + "` " + count;
+  }).join("\n");
+
+  return new EmbedBuilder()
+    .setColor(avg >= 4 ? Colors.SUCCESS : avg >= 3 ? Colors.WARNING : Colors.ERROR)
+    .setTitle("📊 Calificaciones de " + staffUser.username)
+    .setThumbnail(staffUser.displayAvatarURL({ dynamic: true, size: 256 }))
+    .addFields(
+      { name: "⭐ Promedio",              value: starBar + "\n**" + avg + "/5** — " + trend, inline: false },
+      { name: "📊 Total calificaciones", value: "`" + stats.total + "`",                   inline: true },
+      { name: "🎯 Máximo posible",        value: "`5.00`",                                  inline: true },
+      { name: "📈 Distribución",          value: distBar,                                   inline: false },
+    )
+    .setFooter({ text: guildName })
+    .setTimestamp();
 }
 
 // ─────────────────────────────────────────────────────
@@ -262,28 +340,26 @@ function infoEmbed(title, desc) {
 //   HELPERS
 // ─────────────────────────────────────────────────────
 function priorityLabel(p) {
-  return { low: "🟢 Baja", normal: "🔵 Normal", high: "🟡 Alta", urgent: "🔴 Urgente" }[p] || "🔵 Normal";
+  const map = { low: "🟢 Baja", normal: "🔵 Normal", high: "🟡 Alta", urgent: "🔴 Urgente" };
+  return map[p] || p;
 }
-
 function duration(createdAt) {
-  const ms   = Date.now() - new Date(createdAt).getTime();
-  const mins = Math.floor(ms / 60000);
-  if (mins < 60) return `${mins}m`;
+  const mins = Math.floor((Date.now() - new Date(createdAt)) / 60000);
+  if (mins < 60)   return `${mins}m`;
   if (mins < 1440) return `${Math.floor(mins/60)}h ${mins%60}m`;
   return `${Math.floor(mins/1440)}d ${Math.floor((mins%1440)/60)}h`;
 }
-
-function formatMinutes(m) {
-  const mins = Math.round(m);
-  if (mins < 60)   return `${mins}m`;
-  if (mins < 1440) return `${Math.floor(mins/60)}h ${mins%60}m`;
+function formatMinutes(mins) {
+  if (!mins) return "—";
+  if (mins < 60)   return `${Math.round(mins)}m`;
+  if (mins < 1440) return `${Math.floor(mins/60)}h ${Math.round(mins%60)}m`;
   return `${Math.floor(mins/1440)}d ${Math.floor((mins%1440)/60)}h`;
 }
 
 module.exports = {
   Colors, ticketOpen, ticketClosed, ticketReopened, ticketInfo, ticketLog,
   dashboardEmbed, statsEmbed, weeklyReportEmbed, leaderboardEmbed,
-  maintenanceEmbed, ratingEmbed,
+  maintenanceEmbed, ratingEmbed, staffRatingLeaderboard, staffRatingProfile,
   successEmbed, errorEmbed, warningEmbed, infoEmbed,
   priorityLabel, duration, formatMinutes,
 };

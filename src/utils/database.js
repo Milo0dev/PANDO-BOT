@@ -22,6 +22,14 @@ const F = {
   verifSettings:  path.join(DATA_DIR, "verif_settings.json"),
   verifCodes:     path.join(DATA_DIR, "verif_codes.json"),
   verifLogs:      path.join(DATA_DIR, "verif_logs.json"),
+  staffRatings:   path.join(DATA_DIR, "staff_ratings.json"),
+  modlogSettings: path.join(DATA_DIR, "modlog_settings.json"),
+  levelSettings:  path.join(DATA_DIR, "level_settings.json"),
+  levels:         path.join(DATA_DIR, "levels.json"),
+  reminders:      path.join(DATA_DIR, "reminders.json"),
+  suggestSettings:path.join(DATA_DIR, "suggest_settings.json"),
+  suggestions:    path.join(DATA_DIR, "suggestions.json"),
+  polls:          path.join(DATA_DIR, "polls.json"),
 };
 
 // ─────────────────────────────────────────────────────
@@ -347,6 +355,70 @@ const staffStats = {
 };
 
 // ─────────────────────────────────────────────────────
+//   STAFF RATINGS (calificaciones individuales por staff)
+// ─────────────────────────────────────────────────────
+const staffRatings = {
+  _r() { return readArr(F.staffRatings); },
+  _s(d) { save(F.staffRatings, d); },
+
+  // Añadir calificación individual vinculada a un staff
+  add(guildId, staffId, rating, ticketId, userId, comment = null) {
+    const all = this._r();
+    all.push({
+      id:         uid(),
+      guild_id:   guildId,
+      staff_id:   staffId,
+      rating,
+      ticket_id:  ticketId,
+      user_id:    userId,
+      comment,
+      created_at: now(),
+    });
+    this._s(all);
+  },
+
+  // Stats de un staff específico
+  getStaffStats(guildId, staffId) {
+    const all     = this._r().filter(r => r.guild_id === guildId && r.staff_id === staffId);
+    const total   = all.length;
+    if (!total) return { total: 0, avg: null, dist: { 1:0,2:0,3:0,4:0,5:0 }, recent: [] };
+    const avg     = all.reduce((s, r) => s + r.rating, 0) / total;
+    const dist    = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+    all.forEach(r => dist[r.rating]++);
+    const recent  = all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+    return { total, avg: Math.round(avg * 100) / 100, dist, recent };
+  },
+
+  // Leaderboard completo ordenado por rating promedio (mínimo 3 calificaciones para aparecer)
+  getLeaderboard(guildId, minRatings = 1) {
+    const all     = this._r().filter(r => r.guild_id === guildId);
+    const byStaff = {};
+    for (const r of all) {
+      if (!byStaff[r.staff_id]) byStaff[r.staff_id] = [];
+      byStaff[r.staff_id].push(r.rating);
+    }
+    return Object.entries(byStaff)
+      .filter(([, ratings]) => ratings.length >= minRatings)
+      .map(([staffId, ratings]) => ({
+        staff_id: staffId,
+        total:    ratings.length,
+        avg:      Math.round((ratings.reduce((s, r) => s + r, 0) / ratings.length) * 100) / 100,
+        dist:     ratings.reduce((d, r) => { d[r] = (d[r] || 0) + 1; return d; }, {}),
+      }))
+      .sort((a, b) => b.avg - a.avg || b.total - a.total)
+      .slice(0, 15);
+  },
+
+  // Historial completo de calificaciones de un staff con detalles
+  getHistory(guildId, staffId, limit = 10) {
+    return this._r()
+      .filter(r => r.guild_id === guildId && r.staff_id === staffId)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, limit);
+  },
+};
+
+// ─────────────────────────────────────────────────────
 //   TAGS
 // ─────────────────────────────────────────────────────
 const tags = {
@@ -638,4 +710,390 @@ const verifLogs = {
   },
 };
 
-module.exports = { tickets, notes, blacklist, settings, staffStats, tags, cooldowns, staffStatus, autoResponses, ticketLogs, welcomeSettings, verifSettings, verifCodes, verifLogs };
+
+// ─────────────────────────────────────────────────────
+//   MOD LOG SETTINGS
+// ─────────────────────────────────────────────────────
+const modlogSettings = {
+  _r() { return readObj(F.modlogSettings); },
+  _s(d) { save(F.modlogSettings, d); },
+  _default(guildId) {
+    return {
+      guild_id:         guildId,
+      enabled:          false,
+      channel:          null,
+      log_bans:         true,
+      log_unbans:       true,
+      log_kicks:        true,
+      log_msg_delete:   true,
+      log_msg_edit:     true,
+      log_role_add:     true,
+      log_role_remove:  true,
+      log_nickname:     true,
+      log_joins:        false,
+      log_leaves:       false,
+      log_voice:        false,
+    };
+  },
+  get(guildId) {
+    const all = this._r();
+    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
+    const def = this._default(guildId);
+    let changed = false;
+    for (const k of Object.keys(def)) {
+      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+    }
+    if (changed) this._s(all);
+    return all[guildId];
+  },
+  update(guildId, data) {
+    const all = this._r();
+    if (!all[guildId]) all[guildId] = this._default(guildId);
+    all[guildId] = { ...all[guildId], ...data };
+    this._s(all);
+    return all[guildId];
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   LEVEL SETTINGS
+// ─────────────────────────────────────────────────────
+const levelSettings = {
+  _r() { return readObj(F.levelSettings); },
+  _s(d) { save(F.levelSettings, d); },
+  _default(guildId) {
+    return {
+      guild_id:         guildId,
+      enabled:          false,
+      channel:          null,       // canal de anuncios de subida (null = mismo canal)
+      xp_per_message:   15,         // XP base por mensaje
+      xp_cooldown:      60,         // segundos entre XP
+      xp_min:           10,         // XP mínimo por mensaje
+      xp_max:           25,         // XP máximo por mensaje
+      levelup_message:  "🎉 ¡Felicidades {mention}! Subiste al **nivel {level}**! 🏆",
+      ignored_channels: [],         // canales donde no se gana XP
+      ignored_roles:    [],         // roles que no ganan XP
+      role_rewards:     [],         // [{ level: N, role_id: "..." }]
+      double_xp_roles:  [],         // roles con XP x2
+      stack_roles:      true,       // mantener roles anteriores al subir
+    };
+  },
+  get(guildId) {
+    const all = this._r();
+    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
+    const def = this._default(guildId);
+    let changed = false;
+    for (const k of Object.keys(def)) {
+      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+    }
+    if (changed) this._s(all);
+    return all[guildId];
+  },
+  update(guildId, data) {
+    const all = this._r();
+    if (!all[guildId]) all[guildId] = this._default(guildId);
+    all[guildId] = { ...all[guildId], ...data };
+    this._s(all);
+    return all[guildId];
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   LEVELS (user XP data)
+// ─────────────────────────────────────────────────────
+const levels = {
+  _k(guildId, userId) { return guildId + "::" + userId; },
+  _r() { return readObj(F.levels); },
+  _s(d) { save(F.levels, d); },
+  _ensure(all, guildId, userId) {
+    const k = this._k(guildId, userId);
+    if (!all[k]) all[k] = { guild_id: guildId, user_id: userId, xp: 0, level: 0, total_xp: 0, last_xp_at: null, messages: 0 };
+    return k;
+  },
+
+  // Calcular XP necesario para el siguiente nivel (fórmula estándar)
+  xpForLevel(level) { return Math.floor(100 * Math.pow(level, 1.5) + 100); },
+
+  // Calcular nivel a partir de XP total
+  levelFromXp(totalXp) {
+    let level = 0;
+    let xpNeeded = 0;
+    while (totalXp >= xpNeeded + this.xpForLevel(level + 1)) {
+      xpNeeded += this.xpForLevel(level + 1);
+      level++;
+    }
+    return level;
+  },
+
+  addXp(guildId, userId, amount) {
+    const all   = this._r();
+    const k     = this._ensure(all, guildId, userId);
+    const entry = all[k];
+    entry.total_xp += amount;
+    entry.messages++;
+    entry.last_xp_at = now();
+    const newLevel = this.levelFromXp(entry.total_xp);
+    const leveled  = newLevel > entry.level;
+    entry.level    = newLevel;
+    this._s(all);
+    return { leveled, level: newLevel, total_xp: entry.total_xp };
+  },
+
+  get(guildId, userId) {
+    const all = this._r();
+    const k   = this._k(guildId, userId);
+    return all[k] || { guild_id: guildId, user_id: userId, xp: 0, level: 0, total_xp: 0, messages: 0 };
+  },
+
+  getLeaderboard(guildId, limit = 15) {
+    return Object.values(this._r())
+      .filter(e => e.guild_id === guildId)
+      .sort((a, b) => b.total_xp - a.total_xp)
+      .slice(0, limit);
+  },
+
+  getRank(guildId, userId) {
+    const sorted = this.getLeaderboard(guildId, 9999);
+    const idx    = sorted.findIndex(e => e.user_id === userId);
+    return idx === -1 ? null : idx + 1;
+  },
+
+  setXp(guildId, userId, amount) {
+    const all = this._r();
+    const k   = this._ensure(all, guildId, userId);
+    all[k].total_xp = amount;
+    all[k].level    = this.levelFromXp(amount);
+    this._s(all);
+  },
+
+  reset(guildId, userId) {
+    const all = this._r();
+    const k   = this._k(guildId, userId);
+    delete all[k];
+    this._s(all);
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   REMINDERS
+// ─────────────────────────────────────────────────────
+const reminders = {
+  _r() { return readArr(F.reminders); },
+  _s(d) { save(F.reminders, d); },
+
+  create(userId, guildId, channelId, text, fireAt) {
+    const all = this._r();
+    const id  = uid();
+    all.push({ id, user_id: userId, guild_id: guildId, channel_id: channelId, text, fire_at: fireAt, created_at: now(), fired: false });
+    this._s(all);
+    return id;
+  },
+
+  getPending() {
+    const now_ = new Date();
+    return this._r().filter(r => !r.fired && new Date(r.fire_at) <= now_);
+  },
+
+  markFired(id) {
+    const all = this._r();
+    const idx = all.findIndex(r => r.id === id);
+    if (idx !== -1) { all[idx].fired = true; this._s(all); }
+  },
+
+  getByUser(userId, guildId) {
+    return this._r()
+      .filter(r => r.user_id === userId && r.guild_id === guildId && !r.fired)
+      .sort((a, b) => new Date(a.fire_at) - new Date(b.fire_at));
+  },
+
+  delete(id, userId) {
+    const all = this._r();
+    const idx = all.findIndex(r => r.id === id && r.user_id === userId);
+    if (idx === -1) return false;
+    all.splice(idx, 1);
+    this._s(all);
+    return true;
+  },
+
+  cleanup() {
+    const cutoff = new Date(Date.now() - 7 * 24 * 3600000); // 7 días
+    this._s(this._r().filter(r => !r.fired || new Date(r.fire_at) > cutoff));
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   SUGGESTION SETTINGS
+// ─────────────────────────────────────────────────────
+const suggestSettings = {
+  _r() { return readObj(F.suggestSettings); },
+  _s(d) { save(F.suggestSettings, d); },
+  _default(guildId) {
+    return {
+      guild_id:          guildId,
+      enabled:           false,
+      channel:           null,
+      log_channel:       null,
+      approved_channel:  null,
+      rejected_channel:  null,
+      dm_on_result:      true,
+      require_reason:    false,
+      cooldown_minutes:  5,
+      anonymous:         false,
+    };
+  },
+  get(guildId) {
+    const all = this._r();
+    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
+    const def = this._default(guildId);
+    let changed = false;
+    for (const k of Object.keys(def)) {
+      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+    }
+    if (changed) this._s(all);
+    return all[guildId];
+  },
+  update(guildId, data) {
+    const all = this._r();
+    if (!all[guildId]) all[guildId] = this._default(guildId);
+    all[guildId] = { ...all[guildId], ...data };
+    this._s(all);
+    return all[guildId];
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   SUGGESTIONS
+// ─────────────────────────────────────────────────────
+const suggestions = {
+  _r() { return readArr(F.suggestions); },
+  _s(d) { save(F.suggestions, d); },
+
+  create(guildId, userId, text, messageId, channelId) {
+    const all = this._r();
+    const num = all.filter(s => s.guild_id === guildId).length + 1;
+    const s   = { id: uid(), num, guild_id: guildId, user_id: userId, text, message_id: messageId, channel_id: channelId, status: "pending", upvotes: [], downvotes: [], staff_comment: null, reviewed_by: null, created_at: now() };
+    all.push(s);
+    this._s(all);
+    return s;
+  },
+
+  getByMessage(messageId) { return this._r().find(s => s.message_id === messageId) || null; },
+  getById(id)             { return this._r().find(s => s.id === id) || null; },
+  getByNum(guildId, num)  { return this._r().find(s => s.guild_id === guildId && s.num === num) || null; },
+
+  vote(id, userId, type) { // type: 'up' | 'down'
+    const all = this._r();
+    const idx = all.findIndex(s => s.id === id);
+    if (idx === -1) return null;
+    // Quitar voto opuesto
+    const opposite = type === "up" ? "downvotes" : "upvotes";
+    const current  = type === "up" ? "upvotes"   : "downvotes";
+    all[idx][opposite] = all[idx][opposite].filter(v => v !== userId);
+    // Toggle propio voto
+    if (all[idx][current].includes(userId)) {
+      all[idx][current] = all[idx][current].filter(v => v !== userId);
+    } else {
+      all[idx][current].push(userId);
+    }
+    this._s(all);
+    return all[idx];
+  },
+
+  setStatus(id, status, reviewedBy, comment = null) {
+    const all = this._r();
+    const idx = all.findIndex(s => s.id === id);
+    if (idx === -1) return null;
+    all[idx].status       = status;
+    all[idx].reviewed_by  = reviewedBy;
+    all[idx].staff_comment = comment;
+    all[idx].reviewed_at  = now();
+    this._s(all);
+    return all[idx];
+  },
+
+  updateMessageId(id, messageId) {
+    const all = this._r();
+    const idx = all.findIndex(s => s.id === id);
+    if (idx !== -1) { all[idx].message_id = messageId; this._s(all); }
+  },
+
+  getStats(guildId) {
+    const all      = this._r().filter(s => s.guild_id === guildId);
+    const pending  = all.filter(s => s.status === "pending").length;
+    const approved = all.filter(s => s.status === "approved").length;
+    const rejected = all.filter(s => s.status === "rejected").length;
+    return { total: all.length, pending, approved, rejected };
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   POLLS
+// ─────────────────────────────────────────────────────
+const polls = {
+  _r() { return readArr(F.polls); },
+  _s(d) { save(F.polls, d); },
+
+  create(guildId, channelId, messageId, creatorId, question, options, endsAt, allowMultiple) {
+    const all = this._r();
+    const p   = {
+      id:           uid(),
+      guild_id:     guildId,
+      channel_id:   channelId,
+      message_id:   messageId,
+      creator_id:   creatorId,
+      question,
+      options:      options.map((o, i) => ({ id: i, text: o, votes: [] })),
+      allow_multiple: allowMultiple,
+      ended:        false,
+      ends_at:      endsAt,
+      created_at:   now(),
+    };
+    all.push(p);
+    this._s(all);
+    return p;
+  },
+
+  vote(id, userId, optionIds) {
+    const all = this._r();
+    const idx = all.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    const poll = all[idx];
+    if (poll.ended) return null;
+    // Quitar votos anteriores del usuario
+    poll.options.forEach(o => { o.votes = o.votes.filter(v => v !== userId); });
+    // Añadir nuevos votos
+    const maxVotes = poll.allow_multiple ? optionIds.length : 1;
+    for (const oid of optionIds.slice(0, maxVotes)) {
+      const opt = poll.options.find(o => o.id === oid);
+      if (opt && !opt.votes.includes(userId)) opt.votes.push(userId);
+    }
+    this._s(all);
+    return poll;
+  },
+
+  end(id) {
+    const all = this._r();
+    const idx = all.findIndex(p => p.id === id);
+    if (idx === -1) return null;
+    all[idx].ended = true;
+    all[idx].ended_at = now();
+    this._s(all);
+    return all[idx];
+  },
+
+  getActive() {
+    const now_ = new Date();
+    return this._r().filter(p => !p.ended && new Date(p.ends_at) <= now_);
+  },
+
+  getByMessage(messageId) { return this._r().find(p => p.message_id === messageId) || null; },
+  getById(id)             { return this._r().find(p => p.id === id) || null; },
+
+  getByGuild(guildId, includeEnded = false) {
+    return this._r()
+      .filter(p => p.guild_id === guildId && (includeEnded || !p.ended))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  },
+};
+
+module.exports = { tickets, notes, blacklist, settings, staffStats, staffRatings, tags, cooldowns, staffStatus, autoResponses, ticketLogs, welcomeSettings, verifSettings, verifCodes, verifLogs, modlogSettings, levelSettings, levels, reminders, suggestSettings, suggestions, polls };

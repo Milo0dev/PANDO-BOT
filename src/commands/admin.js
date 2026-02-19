@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
-const { blacklist, staffStats, tags, tickets, settings, autoResponses } = require("../utils/database");
+const { blacklist, staffStats, staffRatings, tags, tickets, settings, autoResponses } = require("../utils/database");
 const { updateDashboard } = require("../handlers/dashboardHandler");
 const E = require("../utils/embeds");
 
@@ -7,30 +7,92 @@ const E = require("../utils/embeds");
 module.exports.stats = {
   data: new SlashCommandBuilder().setName("stats").setDescription("📊 Estadísticas del sistema de tickets")
     .addSubcommand(s => s.setName("server").setDescription("Estadísticas globales del servidor"))
-    .addSubcommand(s => s.setName("staff").setDescription("Stats de un miembro del staff").addUserOption(o => o.setName("usuario").setDescription("Staff a consultar").setRequired(false)))
-    .addSubcommand(s => s.setName("leaderboard").setDescription("Ranking del staff")),
+    .addSubcommand(s => s.setName("staff").setDescription("Stats de un miembro del staff")
+      .addUserOption(o => o.setName("usuario").setDescription("Staff a consultar").setRequired(false)))
+    .addSubcommand(s => s.setName("leaderboard").setDescription("🏆 Ranking del staff por tickets cerrados"))
+    .addSubcommand(s => s.setName("ratings").setDescription("⭐ Leaderboard de staff ordenado por calificaciones de usuarios")
+      .addStringOption(o => o.setName("periodo").setDescription("Período a mostrar").setRequired(false)
+        .addChoices(
+          { name: "Todo el tiempo",  value: "all"   },
+          { name: "Último mes",      value: "month" },
+          { name: "Última semana",   value: "week"  },
+        )))
+    .addSubcommand(s => s.setName("staffrating").setDescription("⭐ Ver calificaciones detalladas de un miembro del staff")
+      .addUserOption(o => o.setName("usuario").setDescription("Miembro del staff").setRequired(true))),
+
   async execute(interaction) {
-    const sub = interaction.options.getSubcommand();
+    const sub   = interaction.options.getSubcommand();
+    const guild = interaction.guild;
+
+    // ── /stats server
     if (sub === "server") {
-      const stats = tickets.getStats(interaction.guild.id);
-      return interaction.reply({ embeds: [E.statsEmbed(stats, interaction.guild.name)] });
+      const stats = tickets.getStats(guild.id);
+      return interaction.reply({ embeds: [E.statsEmbed(stats, guild.name)] });
     }
+
+    // ── /stats staff
     if (sub === "staff") {
-      const user = interaction.options.getUser("usuario") || interaction.user;
-      const s    = staffStats.get(interaction.guild.id, user.id);
-      if (!s) return interaction.reply({ embeds: [E.infoEmbed("📊 Sin datos", `<@${user.id}> no tiene estadísticas.`)], ephemeral: true });
+      const user  = interaction.options.getUser("usuario") || interaction.user;
+      const s     = staffStats.get(guild.id, user.id);
+      const rData = staffRatings.getStaffStats(guild.id, user.id);
+      if (!s && !rData.total) return interaction.reply({ embeds: [E.infoEmbed("📊 Sin datos", `<@${user.id}> no tiene estadísticas aún.`)], ephemeral: true });
+
+      const avgText = rData.avg ? `${"⭐".repeat(Math.floor(rData.avg))}${rData.avg - Math.floor(rData.avg) >= 0.5 ? "✨" : ""} **${rData.avg}/5** (${rData.total} calificaciones)` : "Sin calificaciones aún";
+
       return interaction.reply({
-        embeds: [new EmbedBuilder().setTitle(`📊 Stats — ${user.username}`).setColor(E.Colors.PRIMARY)
+        embeds: [new EmbedBuilder()
+          .setTitle(`📊 Stats — ${user.username}`)
+          .setColor(E.Colors.PRIMARY)
           .setThumbnail(user.displayAvatarURL({ dynamic: true }))
           .addFields(
-            { name: "🔒 Tickets cerrados",   value: `\`${s.tickets_closed}\``,   inline: true },
-            { name: "👋 Tickets reclamados", value: `\`${s.tickets_claimed}\``,  inline: true },
-            { name: "📌 Tickets asignados",  value: `\`${s.tickets_assigned}\``, inline: true },
+            { name: "🔒 Tickets cerrados",     value: `\`${s?.tickets_closed || 0}\``,   inline: true },
+            { name: "👋 Tickets reclamados",   value: `\`${s?.tickets_claimed || 0}\``,  inline: true },
+            { name: "📌 Tickets asignados",    value: `\`${s?.tickets_assigned || 0}\``, inline: true },
+            { name: "⭐ Calificación promedio", value: avgText,                            inline: false },
           ).setTimestamp()],
       });
     }
+
+    // ── /stats leaderboard (por tickets cerrados)
     if (sub === "leaderboard") {
-      return interaction.reply({ embeds: [E.leaderboardEmbed(staffStats.getLeaderboard(interaction.guild.id), interaction.guild)] });
+      return interaction.reply({ embeds: [E.leaderboardEmbed(staffStats.getLeaderboard(guild.id), guild)] });
+    }
+
+    // ── /stats ratings (leaderboard por calificaciones)
+    if (sub === "ratings") {
+      await interaction.deferReply();
+      const periodo = interaction.options.getString("periodo") || "all";
+      const lb      = staffRatings.getLeaderboard(guild.id, 1);
+
+      const periodoLabel = { all: "Todo el tiempo", month: "Último mes", week: "Última semana" };
+
+      if (!lb.length) {
+        return interaction.editReply({
+          embeds: [new EmbedBuilder()
+            .setColor(E.Colors.GOLD)
+            .setTitle("⭐ Leaderboard de Calificaciones")
+            .setDescription("Aún no hay calificaciones registradas.\n\nLas calificaciones aparecen cuando los usuarios califican tickets cerrados.")
+            .setThumbnail(guild.iconURL({ dynamic: true }))
+            .setTimestamp()],
+        });
+      }
+
+      // Enriquecer con datos de usuario de Discord
+      const enriched = await Promise.all(lb.map(async (entry, i) => {
+        try {
+          const member = await guild.members.fetch(entry.staff_id).catch(() => null);
+          return { ...entry, username: member?.user?.username || `Usuario ${entry.staff_id.slice(-4)}`, avatar: member?.user?.displayAvatarURL({ dynamic: true }) };
+        } catch { return { ...entry, username: `Staff ${entry.staff_id.slice(-4)}` }; }
+      }));
+
+      return interaction.editReply({ embeds: [E.staffRatingLeaderboard(enriched, guild, periodoLabel[periodo])] });
+    }
+
+    // ── /stats staffrating (perfil detallado de calificaciones)
+    if (sub === "staffrating") {
+      const user  = interaction.options.getUser("usuario");
+      const stats = staffRatings.getStaffStats(guild.id, user.id);
+      return interaction.reply({ embeds: [E.staffRatingProfile(user, stats, guild.name)] });
     }
   },
 };

@@ -2,7 +2,7 @@ const {
   EmbedBuilder, ActionRowBuilder, ButtonBuilder,
   ButtonStyle, PermissionFlagsBits,
 } = require("discord.js");
-const { welcomeSettings, verifSettings } = require("../utils/database");
+const { welcomeSettings, verifSettings, modlogSettings } = require("../utils/database");
 
 // ── Caché anti-raid: guildId → [timestamps]
 const joinCache = new Map();
@@ -71,6 +71,27 @@ module.exports = {
           await member.send({ embeds: [dmEmbed] });
         } catch { /* DMs cerrados */ }
       }
+
+    // ── 6. MOD LOG de JOIN
+    const ml = modlogSettings.get(guild.id);
+    if (ml.enabled && ml.log_joins && ml.channel) {
+      const logCh = guild.channels.cache.get(ml.channel);
+      if (logCh) {
+        await logCh.send({
+          embeds: [new EmbedBuilder()
+            .setColor(0x57F287)
+            .setTitle("📥 Miembro Entró")
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .addFields(
+              { name: "👤 Usuario",     value: `${member.user.tag} <@${member.id}>`, inline: true  },
+              { name: "📅 Cuenta creada", value: `<t:${Math.floor(member.user.createdTimestamp/1000)}:R>`, inline: true },
+              { name: "👥 Miembro #",   value: `\`${guild.memberCount}\``, inline: true },
+            )
+            .setFooter({ text: `ID: ${member.id}` })
+            .setTimestamp()],
+        }).catch(() => {});
+      }
+    }
 
     } catch (err) { console.error("[MEMBER ADD]", err.message); }
   },

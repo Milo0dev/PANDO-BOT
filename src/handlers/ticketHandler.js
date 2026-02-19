@@ -5,7 +5,7 @@ const {
   EmbedBuilder,
 } = require("discord.js");
 
-const { tickets, settings, blacklist, staffStats, cooldowns } = require("../utils/database");
+const { tickets, settings, blacklist, staffStats, staffRatings, cooldowns } = require("../utils/database");
 const { generateTranscript }  = require("../utils/transcript");
 const { updateDashboard }     = require("./dashboardHandler");
 const E = require("../utils/embeds");
@@ -237,7 +237,9 @@ async function closeTicket(interaction, reason = null) {
 
   // Rating por DM
   if (config.ratings.enabled && user) {
-    await sendRating(user, ticket, channel);
+    // Determinar quién atendió el ticket (reclamado > asignado > cerrado por)
+    const staffWhoHandled = closed.claimed_by || closed.assigned_to || interaction.user.id;
+    await sendRating(user, ticket, channel, staffWhoHandled);
   }
 
   await sendLog(guild, s, "close", interaction.user, closed, {
@@ -425,18 +427,19 @@ async function moveTicket(interaction, newCategoryId) {
 // ─────────────────────────────────────────────────────
 //   RATING (por DM al usuario)
 // ─────────────────────────────────────────────────────
-async function sendRating(user, ticket, channel) {
+async function sendRating(user, ticket, channel, staffId) {
   try {
-    const embed = E.ratingEmbed(user, ticket.ticket_id);
+    const embed = E.ratingEmbed(user, ticket, staffId);
     const options = [1,2,3,4,5].map(n => ({
-      label: "⭐".repeat(n),
+      label: ["⭐","⭐⭐","⭐⭐⭐","⭐⭐⭐⭐","⭐⭐⭐⭐⭐"][n-1],
       value: String(n),
-      description: ["Muy malo","Malo","Regular","Bueno","Excelente"][n-1],
+      description: ["Muy malo 😞","Malo 😐","Regular 🙂","Bueno 😊","Excelente 🤩"][n-1],
     }));
     const row = new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
-        .setCustomId(`ticket_rating_${ticket.ticket_id}_${channel.id}`)
-        .setPlaceholder("Selecciona tu calificación...")
+        // customId: ticket_rating_TICKETID_CHANNELID_STAFFID
+        .setCustomId(`ticket_rating_${ticket.ticket_id}_${channel.id}_${staffId}`)
+        .setPlaceholder("⭐ ¿Cómo calificarías la atención?")
         .addOptions(options)
     );
     await user.send({ embeds: [embed], components: [row] });

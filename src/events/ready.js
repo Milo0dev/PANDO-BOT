@@ -2,7 +2,7 @@ const cron  = require("node-cron");
 const chalk = require("chalk");
 const { ActivityType, EmbedBuilder } = require("discord.js");
 
-const { tickets, settings, staffStats, verifSettings, verifCodes } = require("../utils/database");
+const { tickets, settings, staffStats, verifSettings, verifCodes, reminders, polls } = require("../utils/database");
 const { updateAllDashboards }            = require("../handlers/dashboardHandler");
 const { weeklyReportEmbed }              = require("../utils/embeds");
 
@@ -182,5 +182,70 @@ module.exports = {
         }
       }
     });
+
+    // ── Disparar recordatorios (cada minuto)
+    cron.schedule("* * * * *", async () => {
+      reminders.cleanup();
+      const pending = reminders.getPending();
+      for (const rem of pending) {
+        try {
+          reminders.markFired(rem.id);
+          const user = await client.users.fetch(rem.user_id).catch(() => null);
+          if (!user) continue;
+
+          // Calcular tiempo transcurrido
+          const elapsed = Date.now() - new Date(rem.created_at).getTime();
+          const mins    = Math.floor(elapsed / 60000);
+          const timeStr = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h ${mins%60}m` : `${Math.floor(mins/1440)}d`;
+
+          await user.send({
+            embeds: [new EmbedBuilder()
+              .setColor(0xFEE75C)
+              .setTitle("⏰ Recordatorio")
+              .setDescription(rem.text)
+              .addFields({ name: "⏱️ Establecido hace", value: timeStr, inline: true })
+              .setFooter({ text: "Recordatorio de PANDO BOT" })
+              .setTimestamp()],
+          }).catch(() => {
+            // Si DMs cerrados, intentar en el canal original
+            if (rem.channel_id) {
+              const guild = client.guilds.cache.get(rem.guild_id);
+              const ch    = guild?.channels.cache.get(rem.channel_id);
+              ch?.send({ content: `<@${rem.user_id}>`, embeds: [new EmbedBuilder().setColor(0xFEE75C).setTitle("⏰ Recordatorio").setDescription(rem.text).setTimestamp()] }).catch(() => {});
+            }
+          });
+        } catch (e) { console.error("[REMINDERS]", e.message); }
+      }
+    });
+
+    // ── Cerrar encuestas expiradas (cada minuto)
+    cron.schedule("* * * * *", async () => {
+      const { polls: pollsDb } = require("../utils/database");
+      const { buildPollEmbed } = require("../handlers/pollHandler");
+      const expired = pollsDb.getActive();
+      for (const poll of expired) {
+        try {
+          pollsDb.end(poll.id);
+          const guild = client.guilds.cache.get(poll.guild_id);
+          if (!guild) continue;
+          const ch  = guild.channels.cache.get(poll.channel_id);
+          if (!ch) continue;
+          const msg = await ch.messages.fetch(poll.message_id).catch(() => null);
+          if (!msg) continue;
+          // Actualizar el mensaje con los resultados finales
+          const finalEmbed = buildPollEmbed(poll, true);
+          await msg.edit({ embeds: [finalEmbed], components: [] }).catch(() => {});
+          await ch.send({
+            embeds: [new EmbedBuilder()
+              .setColor(0x57F287)
+              .setTitle("📊 Encuesta Finalizada")
+              .setDescription(`La encuesta **"${poll.question}"** ha terminado.`)
+              .setTimestamp()],
+          }).catch(() => {});
+        } catch (e) { console.error("[POLL END]", e.message); }
+      }
+    });
+
+    console.log(chalk.green("✅ Todos los cron jobs activos"));
   },
 };

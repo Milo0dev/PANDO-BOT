@@ -25,6 +25,14 @@ const admin   = require("./src/commands/admin");
 const staff   = require("./src/commands/staff");
 const welcome = require("./src/commands/welcome");
 const verify  = require("./src/commands/verify");
+const help    = require("./src/commands/help");
+const poll    = require("./src/commands/poll");
+const embed   = require("./src/commands/embed");
+const suggest = require("./src/commands/suggest");
+const remind  = require("./src/commands/remind");
+const rank    = require("./src/commands/rank");
+const levels  = require("./src/commands/levels");
+const modlogs = require("./src/commands/modlogs");
 
 const allCommands = [
   setup,
@@ -35,7 +43,8 @@ const allCommands = [
   admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
   admin.maintenance, admin.closeAll, admin.lockdown,
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
-  welcome, verify,
+  welcome, verify, help,
+  poll, embed, suggest, remind, rank, levels, modlogs,
 ];
 
 for (const cmd of allCommands) {

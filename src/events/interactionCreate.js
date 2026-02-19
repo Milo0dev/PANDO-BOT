@@ -2,12 +2,14 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
   ActionRowBuilder, StringSelectMenuBuilder,
   ButtonBuilder, ButtonStyle, EmbedBuilder,
-  PermissionFlagsBits,
+  PermissionFlagsBits, MessageFlags,
 } = require("discord.js");
 
 const TH = require("../handlers/ticketHandler");
 const { handleVerif } = require("../handlers/verifHandler");
-const { tickets, settings, notes, tags, blacklist, autoResponses } = require("../utils/database");
+const { buildPollEmbed, buildPollButtons } = require("../handlers/pollHandler");
+const { handleEmbedModal } = require("../commands/embed");
+const { tickets, settings, notes, tags, blacklist, autoResponses, staffRatings, polls, suggestions, suggestSettings } = require("../utils/database");
 const E = require("../utils/embeds");
 const { generateTranscript } = require("../utils/transcript");
 const config = require("../../config");
@@ -16,56 +18,69 @@ module.exports = {
   name: "interactionCreate",
   async execute(interaction, client) {
     try {
-      // ── SLASH COMMANDS
+
+      // ══════════════════════════════════════════
+      //   SLASH COMMANDS
+      // ══════════════════════════════════════════
       if (interaction.isChatInputCommand()) {
         const cmd = client.commands.get(interaction.commandName);
         if (cmd) await cmd.execute(interaction, client);
         return;
       }
 
-      // ── AUTOCOMPLETE
+      // ══════════════════════════════════════════
+      //   AUTOCOMPLETE
+      // ══════════════════════════════════════════
       if (interaction.isAutocomplete()) {
         const cmd = client.commands.get(interaction.commandName);
         if (cmd?.autocomplete) await cmd.autocomplete(interaction);
         return;
       }
 
-      // ── SELECT MENU
+      // ══════════════════════════════════════════
+      //   SELECT MENUS
+      // ══════════════════════════════════════════
       if (interaction.isStringSelectMenu()) {
+
         // ── Selección de categoría de ticket
         if (interaction.customId === "ticket_category_select") {
           const catId    = interaction.values[0];
           const category = config.categories.find(c => c.id === catId);
-          if (!category) return interaction.reply({ embeds: [E.errorEmbed("Categoría no encontrada.")], ephemeral: true });
+          if (!category) return interaction.reply({ embeds: [E.errorEmbed("Categoría no encontrada.")], flags: MessageFlags.Ephemeral });
 
-          // Pre-verificaciones
           const s      = settings.get(interaction.guild.id);
-          if (s.maintenance_mode) return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], ephemeral: true });
+          if (s.maintenance_mode) return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], flags: MessageFlags.Ephemeral });
 
           const banned = blacklist.check(interaction.user.id, interaction.guild.id);
-          if (banned) return interaction.reply({ embeds: [E.errorEmbed(`Estás en la lista negra.\n**Razón:** ${banned.reason || "Sin razón"}`)], ephemeral: true });
+          if (banned) return interaction.reply({ embeds: [E.errorEmbed("Estás en la lista negra.\n**Razón:** " + (banned.reason || "Sin razón"))], flags: MessageFlags.Ephemeral });
 
           const open = tickets.getByUser(interaction.user.id, interaction.guild.id);
           if (open.length >= (s.max_tickets || 3)) {
-            return interaction.reply({ embeds: [E.errorEmbed(`Ya tienes **${open.length}/${s.max_tickets || 3}** tickets abiertos.`)], ephemeral: true });
+            return interaction.reply({ embeds: [E.errorEmbed("Ya tienes **" + open.length + "/" + (s.max_tickets || 3) + "** tickets abiertos.")], flags: MessageFlags.Ephemeral });
           }
 
           return interaction.showModal(TH.buildModal(category));
         }
 
-        // ── Rating de ticket (viene por DM, buscar por channel_id en customId)
+        // ── Rating de ticket (viene por DM)
         if (interaction.customId.startsWith("ticket_rating_")) {
           const parts     = interaction.customId.split("_");
-          const channelId = parts[parts.length - 1];
+          const staffId   = parts[parts.length - 1];
+          const channelId = parts[parts.length - 2];
+          const ticketId  = parts[parts.length - 3];
           const rating    = parseInt(interaction.values[0]);
 
           tickets.setRating(channelId, rating);
+          staffRatings.add(interaction.guildId || "dm", staffId, rating, ticketId, interaction.user.id);
 
-          const stars = "⭐".repeat(rating);
+          const starsMap = ["","⭐","⭐⭐","⭐⭐⭐","⭐⭐⭐⭐","⭐⭐⭐⭐⭐"];
+          const labelMap = ["","Muy malo 😞","Malo 😐","Regular 🙂","Bueno 😊","Excelente 🤩"];
+          const colorMap = [0, 0xED4245, 0xFEE75C, 0xFEE75C, 0x57F287, 0xFFD700];
+
           const embed = new EmbedBuilder()
-            .setColor(E.Colors.GOLD)
+            .setColor(colorMap[rating] || E.Colors.GOLD)
             .setTitle("⭐ ¡Gracias por tu calificación!")
-            .setDescription(`Calificaste la atención con **${stars} (${rating}/5)**.\n\nTu opinión es muy valiosa para nosotros.`)
+            .setDescription("Calificaste la atención con **" + starsMap[rating] + " " + rating + "/5** — **" + labelMap[rating] + "**\n\nTu opinión ayuda a mejorar la calidad del soporte. ¡Gracias! 💙")
             .setTimestamp();
 
           const disabled = new ActionRowBuilder().addComponents(
@@ -80,47 +95,55 @@ module.exports = {
         }
       }
 
-      // ── MODALS
+      // ══════════════════════════════════════════
+      //   MODALS
+      // ══════════════════════════════════════════
       if (interaction.isModalSubmit()) {
+
         // ── Formulario de ticket
         if (interaction.customId.startsWith("ticket_modal_")) {
           const catId    = interaction.customId.replace("ticket_modal_", "");
           const category = config.categories.find(c => c.id === catId);
           const answers  = [];
           (category?.questions || []).slice(0, 5).forEach((_, i) => {
-            const v = interaction.fields.getTextInputValue(`answer_${i}`);
+            const v = interaction.fields.getTextInputValue("answer_" + i);
             if (v) answers.push(v);
           });
           return TH.createTicket(interaction, catId, answers);
         }
 
-        // ── Modal de cierre
+        // ── Modal de cierre de ticket
         if (interaction.customId === "ticket_close_modal") {
           const s = settings.get(interaction.guild.id);
           if (!checkStaff(interaction.member, s)) {
-            return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede cerrar tickets.")], ephemeral: true });
+            return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede cerrar tickets.")], flags: MessageFlags.Ephemeral });
           }
           const reason = interaction.fields.getTextInputValue("close_reason");
           return TH.closeTicket(interaction, reason || null);
         }
 
-        // ── Modal de nota
+        // ── Modal de nota de ticket
         if (interaction.customId === "ticket_note_modal") {
           const content = interaction.fields.getTextInputValue("note_content");
-          const ticket  = tickets.get(interaction.channel?.id);
-          if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
+          const ticket  = tickets.get(interaction.channel && interaction.channel.id);
+          if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], flags: MessageFlags.Ephemeral });
           notes.add(ticket.ticket_id, interaction.user.id, content);
           return interaction.reply({
-            embeds: [new EmbedBuilder().setColor(E.Colors.WARNING).setTitle("📝 Nota interna añadida").setDescription(content).setFooter({ text: `Por ${interaction.user.tag}` }).setTimestamp()],
-            ephemeral: true,
+            embeds: [new EmbedBuilder()
+              .setColor(E.Colors.WARNING)
+              .setTitle("📝 Nota interna añadida")
+              .setDescription(content)
+              .setFooter({ text: "Por " + interaction.user.tag })
+              .setTimestamp()],
+            flags: MessageFlags.Ephemeral,
           });
         }
 
-        // ── Modal de rename
+        // ── Modal de rename de ticket
         if (interaction.customId === "ticket_rename_modal") {
           const name = interaction.fields.getTextInputValue("new_name").toLowerCase().replace(/[^a-z0-9-]/g, "-").substring(0, 32);
           await interaction.channel.setName(name);
-          return interaction.reply({ embeds: [E.successEmbed(`Canal renombrado a **${name}**`)], ephemeral: true });
+          return interaction.reply({ embeds: [E.successEmbed("Canal renombrado a **" + name + "**")], flags: MessageFlags.Ephemeral });
         }
 
         // ── Modal de auto-respuesta
@@ -129,65 +152,126 @@ module.exports = {
           const response = interaction.fields.getTextInputValue("response");
           try {
             autoResponses.create(interaction.guild.id, trigger, response, interaction.user.id);
-            return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta para **"${trigger}"** creada.`)], ephemeral: true });
+            return interaction.reply({ embeds: [E.successEmbed("Auto-respuesta para **\"" + trigger + "\"** creada.")], flags: MessageFlags.Ephemeral });
           } catch {
-            return interaction.reply({ embeds: [E.errorEmbed(`Ya existe una auto-respuesta para **"${trigger}"**.`)], ephemeral: true });
+            return interaction.reply({ embeds: [E.errorEmbed("Ya existe una auto-respuesta para **\"" + trigger + "\"**.")], flags: MessageFlags.Ephemeral });
           }
+        }
+
+        // ── Modals de EMBED (crear / editar)
+        if (interaction.customId.startsWith("embed_create_") || interaction.customId.startsWith("embed_edit_")) {
+          return handleEmbedModal(interaction);
+        }
+
+        // ── Modals de VERIFICACIÓN
+        if (interaction.customId === "verify_code_modal" || interaction.customId === "verify_question_modal") {
+          return handleVerif(interaction);
         }
       }
 
-      // ── VERIFICACIÓN (botones y modals)
-      const verifIds = ["verify_start", "verify_help", "verify_enter_code", "verify_resend_code", "verify_code_modal", "verify_question_modal"];
-      if (
-        (interaction.isButton() && verifIds.includes(interaction.customId)) ||
-        (interaction.isModalSubmit() && ["verify_code_modal", "verify_question_modal"].includes(interaction.customId))
-      ) {
-        return handleVerif(interaction);
-      }
-
-      // ── BUTTONS
+      // ══════════════════════════════════════════
+      //   BOTONES
+      // ══════════════════════════════════════════
       if (interaction.isButton()) {
         const { customId } = interaction;
-        const s = settings.get(interaction.guild.id);
 
-        // ── Verificación de staff para todos los botones del ticket
+        // ── Verificación
+        const verifIds = ["verify_start", "verify_help", "verify_enter_code", "verify_resend_code"];
+        if (verifIds.includes(customId)) {
+          return handleVerif(interaction);
+        }
+
+        // ── Help navigation (tiene su propio collector)
+        if (customId.startsWith("help_")) return;
+
+        // ── Botones de ENCUESTA
+        if (customId.startsWith("poll_vote_")) {
+          const parts  = customId.split("_");
+          const pollId = parts[2];
+          const optId  = parseInt(parts[3]);
+          const poll   = polls.getById(pollId);
+
+          if (!poll)      return interaction.reply({ embeds: [E.errorEmbed("Esta encuesta ya no existe.")], flags: MessageFlags.Ephemeral });
+          if (poll.ended) return interaction.reply({ embeds: [E.errorEmbed("Esta encuesta ya ha finalizado.")], flags: MessageFlags.Ephemeral });
+          if (new Date(poll.ends_at) <= new Date()) {
+            polls.end(pollId);
+            return interaction.reply({ embeds: [E.errorEmbed("Esta encuesta ha expirado.")], flags: MessageFlags.Ephemeral });
+          }
+
+          const updated = polls.vote(pollId, interaction.user.id, [optId]);
+          if (!updated) return interaction.reply({ embeds: [E.errorEmbed("Error al registrar el voto.")], flags: MessageFlags.Ephemeral });
+
+          await interaction.update({ embeds: [buildPollEmbed(updated)], components: buildPollButtons(updated) });
+          return;
+        }
+
+        // ── Botones de SUGERENCIAS
+        if (customId.startsWith("suggest_upvote_") || customId.startsWith("suggest_downvote_")) {
+          const type  = customId.startsWith("suggest_upvote_") ? "up" : "down";
+          const sugId = customId.replace("suggest_upvote_", "").replace("suggest_downvote_", "");
+          const sug   = suggestions.getById(sugId);
+
+          if (!sug)                   return interaction.reply({ embeds: [E.errorEmbed("Esta sugerencia ya no existe.")], flags: MessageFlags.Ephemeral });
+          if (sug.status !== "pending") return interaction.reply({ embeds: [E.errorEmbed("Esta sugerencia ya fue revisada y no acepta más votos.")], flags: MessageFlags.Ephemeral });
+
+          const updated  = suggestions.vote(sugId, interaction.user.id, type);
+          if (!updated)  return interaction.reply({ embeds: [E.errorEmbed("Error al registrar el voto.")], flags: MessageFlags.Ephemeral });
+
+          const ss       = suggestSettings.get(interaction.guild.id);
+          const sugMod   = require("../commands/suggest");
+          const newEmbed = sugMod.buildSuggestEmbed(updated, interaction.guild, ss.anonymous);
+          const newRow   = sugMod.buildVoteButtons(sugId);
+
+          await interaction.update({ embeds: [newEmbed], components: [newRow] });
+          return;
+        }
+
+        // ── Botones de TICKET (requieren staff)
+        const s = settings.get(interaction.guild.id);
         const staffOnlyButtons = ["ticket_close", "ticket_claim", "ticket_reopen", "ticket_transcript"];
         if (staffOnlyButtons.includes(customId) && !checkStaff(interaction.member, s)) {
           return interaction.reply({
             embeds: [E.errorEmbed("❌ Solo el **staff** puede usar estos botones.")],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
           });
         }
 
         if (customId === "ticket_close") {
           const ticket = tickets.get(interaction.channel.id);
-          if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
-          if (ticket.status === "closed") return interaction.reply({ embeds: [E.errorEmbed("Ya está cerrado.")], ephemeral: true });
+          if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], flags: MessageFlags.Ephemeral });
+          if (ticket.status === "closed") return interaction.reply({ embeds: [E.errorEmbed("Ya está cerrado.")], flags: MessageFlags.Ephemeral });
 
           const modal = new ModalBuilder().setCustomId("ticket_close_modal").setTitle("Cerrar Ticket");
           modal.addComponents(new ActionRowBuilder().addComponents(
-            new TextInputBuilder().setCustomId("close_reason").setLabel("Razón de cierre (opcional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(200)
+            new TextInputBuilder()
+              .setCustomId("close_reason")
+              .setLabel("Razón de cierre (opcional)")
+              .setStyle(TextInputStyle.Short)
+              .setRequired(false)
+              .setMaxLength(200)
           ));
           return interaction.showModal(modal);
         }
 
-        if (customId === "ticket_claim")      return TH.claimTicket(interaction);
-        if (customId === "ticket_reopen")     return TH.reopenTicket(interaction);
+        if (customId === "ticket_claim")  return TH.claimTicket(interaction);
+        if (customId === "ticket_reopen") return TH.reopenTicket(interaction);
 
         if (customId === "ticket_transcript") {
           const ticket = tickets.get(interaction.channel.id);
-          if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
-          await interaction.deferReply({ ephemeral: true });
+          if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], flags: MessageFlags.Ephemeral });
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
           try {
             const { attachment } = await generateTranscript(interaction.channel, ticket, interaction.guild);
             return interaction.editReply({ embeds: [E.successEmbed("Transcripción generada.")], files: [attachment] });
-          } catch { return interaction.editReply({ embeds: [E.errorEmbed("Error al generar la transcripción.")] }); }
+          } catch {
+            return interaction.editReply({ embeds: [E.errorEmbed("Error al generar la transcripción.")] });
+          }
         }
       }
 
     } catch (err) {
       console.error("[INTERACTION ERROR]", err);
-      const payload = { embeds: [E.errorEmbed("Ocurrió un error inesperado.")], ephemeral: true };
+      const payload = { embeds: [E.errorEmbed("Ocurrió un error inesperado.")], flags: MessageFlags.Ephemeral };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }

@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const { welcomeSettings } = require("../utils/database");
+const { welcomeSettings, modlogSettings } = require("../utils/database");
 
 module.exports = {
   name: "guildMemberRemove",
@@ -36,6 +36,32 @@ module.exports = {
       );
 
       await ch.send({ embeds: [embed] }).catch(() => {});
+    // ── MODLOG de LEAVE
+    const ml = modlogSettings.get(guild.id);
+    if (ml.enabled && ml.log_leaves && ml.channel) {
+      const logCh = guild.channels.cache.get(ml.channel);
+      if (logCh) {
+        const roles = member.roles.cache
+          .filter(r => r.id !== guild.id)
+          .sort((a, b) => b.position - a.position)
+          .map(r => `<@&${r.id}>`).slice(0, 5).join(", ") || "Ninguno";
+        await logCh.send({
+          embeds: [new EmbedBuilder()
+            .setColor(0xED4245)
+            .setTitle("📤 Miembro Salió")
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .addFields(
+              { name: "👤 Usuario",   value: `${member.user.tag} <@${member.id}>`, inline: true },
+              { name: "📅 Se unió",   value: member.joinedAt ? `<t:${Math.floor(member.joinedTimestamp/1000)}:R>` : "?", inline: true },
+              { name: "👥 Quedamos",  value: String(guild.memberCount), inline: true },
+              { name: "🏷️ Tenía roles", value: roles, inline: false },
+            )
+            .setFooter({ text: `ID: ${member.id}` })
+            .setTimestamp()],
+        }).catch(() => {});
+      }
+    }
+
     } catch (err) { console.error("[MEMBER REMOVE]", err.message); }
   },
 };
