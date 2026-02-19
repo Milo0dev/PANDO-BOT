@@ -8,16 +8,20 @@ const DATA_DIR = path.join(__dirname, "../../data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const F = {
-  tickets:       path.join(DATA_DIR, "tickets.json"),
-  notes:         path.join(DATA_DIR, "notes.json"),
-  blacklist:     path.join(DATA_DIR, "blacklist.json"),
-  settings:      path.join(DATA_DIR, "settings.json"),
-  staffStats:    path.join(DATA_DIR, "staff_stats.json"),
-  tags:          path.join(DATA_DIR, "tags.json"),
-  cooldowns:     path.join(DATA_DIR, "cooldowns.json"),
-  staffStatus:   path.join(DATA_DIR, "staff_status.json"),
-  autoResponses: path.join(DATA_DIR, "auto_responses.json"),
-  ticketLogs:    path.join(DATA_DIR, "ticket_logs.json"),
+  tickets:        path.join(DATA_DIR, "tickets.json"),
+  notes:          path.join(DATA_DIR, "notes.json"),
+  blacklist:      path.join(DATA_DIR, "blacklist.json"),
+  settings:       path.join(DATA_DIR, "settings.json"),
+  staffStats:     path.join(DATA_DIR, "staff_stats.json"),
+  tags:           path.join(DATA_DIR, "tags.json"),
+  cooldowns:      path.join(DATA_DIR, "cooldowns.json"),
+  staffStatus:    path.join(DATA_DIR, "staff_status.json"),
+  autoResponses:  path.join(DATA_DIR, "auto_responses.json"),
+  ticketLogs:     path.join(DATA_DIR, "ticket_logs.json"),
+  welcomeSettings:path.join(DATA_DIR, "welcome_settings.json"),
+  verifSettings:  path.join(DATA_DIR, "verif_settings.json"),
+  verifCodes:     path.join(DATA_DIR, "verif_codes.json"),
+  verifLogs:      path.join(DATA_DIR, "verif_logs.json"),
 };
 
 // ─────────────────────────────────────────────────────
@@ -451,4 +455,187 @@ const ticketLogs = {
   get(channelId) { return this._r().filter(l => l.channel_id === channelId).slice(-50); },
 };
 
-module.exports = { tickets, notes, blacklist, settings, staffStats, tags, cooldowns, staffStatus, autoResponses, ticketLogs };
+
+// ─────────────────────────────────────────────────────
+//   WELCOME / GOODBYE SETTINGS
+// ─────────────────────────────────────────────────────
+const welcomeSettings = {
+  _r() { return readObj(F.welcomeSettings); },
+  _s(d) { save(F.welcomeSettings, d); },
+
+  _default(guildId) {
+    return {
+      guild_id: guildId,
+      // Welcome
+      welcome_enabled:       false,
+      welcome_channel:       null,
+      welcome_message:       "¡Bienvenido/a **{mention}** al servidor **{server}**! 🎉\nEres el miembro número **{count}**.",
+      welcome_color:         "5865F2",
+      welcome_title:         "👋 ¡Bienvenido/a!",
+      welcome_banner:        null,   // URL de imagen de banner
+      welcome_thumbnail:     true,   // Mostrar avatar del usuario
+      welcome_footer:        "¡Esperamos que disfrutes tu estadía!",
+      welcome_dm:            false,  // Enviar DM de bienvenida
+      welcome_dm_message:    "¡Hola **{user}**! Bienvenido/a a **{server}**. Esperamos que disfrutes tu estadía.",
+      // Auto-rol al entrar
+      welcome_autorole:      null,   // ID de rol a asignar automáticamente
+      // Goodbye
+      goodbye_enabled:       false,
+      goodbye_channel:       null,
+      goodbye_message:       "**{user}** ha abandonado el servidor. Nos quedamos con **{count}** miembros.",
+      goodbye_color:         "ED4245",
+      goodbye_title:         "👋 Hasta luego",
+      goodbye_thumbnail:     true,
+      goodbye_footer:        "Esperamos verte de nuevo pronto.",
+    };
+  },
+
+  get(guildId) {
+    const all = this._r();
+    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
+    const def = this._default(guildId);
+    let changed = false;
+    for (const k of Object.keys(def)) {
+      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+    }
+    if (changed) this._s(all);
+    return all[guildId];
+  },
+
+  update(guildId, data) {
+    const all = this._r();
+    if (!all[guildId]) all[guildId] = this._default(guildId);
+    all[guildId] = { ...all[guildId], ...data };
+    this._s(all);
+    return all[guildId];
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   VERIFICATION SETTINGS
+// ─────────────────────────────────────────────────────
+const verifSettings = {
+  _r() { return readObj(F.verifSettings); },
+  _s(d) { save(F.verifSettings, d); },
+
+  _default(guildId) {
+    return {
+      guild_id:              guildId,
+      enabled:               false,
+      mode:                  "button",   // button | code | question
+      channel:               null,       // canal de verificación
+      verified_role:         null,       // rol al verificar
+      unverified_role:       null,       // rol al entrar (sin acceso)
+      log_channel:           null,       // canal de logs de verificación
+      panel_message_id:      null,       // ID del mensaje del panel
+      // Contenido del panel
+      panel_title:           "✅ Verificación",
+      panel_description:     "Para acceder al servidor, debes verificarte.\nHaz clic en el botón de abajo para comenzar.",
+      panel_color:           "57F287",
+      panel_image:           null,
+      // Para modo question
+      question:              "¿Leíste las reglas del servidor?",
+      question_answer:       "si",       // respuesta correcta (insensible a mayúsculas)
+      // Anti-raid
+      antiraid_enabled:      false,
+      antiraid_joins:        10,         // joins en X segundos activan antiraid
+      antiraid_seconds:      10,
+      antiraid_action:       "pause",    // pause | kick
+      // Configuración extra
+      dm_on_verify:          true,       // DM al verificarse
+      kick_unverified_hours: 0,          // horas para kickear no verificados (0=desactivado)
+    };
+  },
+
+  get(guildId) {
+    const all = this._r();
+    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
+    const def = this._default(guildId);
+    let changed = false;
+    for (const k of Object.keys(def)) {
+      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+    }
+    if (changed) this._s(all);
+    return all[guildId];
+  },
+
+  update(guildId, data) {
+    const all = this._r();
+    if (!all[guildId]) all[guildId] = this._default(guildId);
+    all[guildId] = { ...all[guildId], ...data };
+    this._s(all);
+    return all[guildId];
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   VERIFICATION CODES (modo code)
+// ─────────────────────────────────────────────────────
+const verifCodes = {
+  _r() { return readArr(F.verifCodes); },
+  _s(d) { save(F.verifCodes, d); },
+
+  generate(userId, guildId) {
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const all  = this._r().filter(c => !(c.user_id === userId && c.guild_id === guildId));
+    all.push({ user_id: userId, guild_id: guildId, code, created_at: now(), expires_at: new Date(Date.now() + 10 * 60000).toISOString() });
+    this._s(all);
+    return code;
+  },
+
+  verify(userId, guildId, inputCode) {
+    const all   = this._r();
+    const entry = all.find(c => c.user_id === userId && c.guild_id === guildId);
+    if (!entry) return { valid: false, reason: "no_code" };
+    if (new Date(entry.expires_at) < new Date()) {
+      this._s(all.filter(c => !(c.user_id === userId && c.guild_id === guildId)));
+      return { valid: false, reason: "expired" };
+    }
+    if (entry.code !== inputCode.toUpperCase().trim()) return { valid: false, reason: "wrong" };
+    this._s(all.filter(c => !(c.user_id === userId && c.guild_id === guildId)));
+    return { valid: true };
+  },
+
+  getActive(userId, guildId) {
+    const all   = this._r();
+    const entry = all.find(c => c.user_id === userId && c.guild_id === guildId && new Date(c.expires_at) > new Date());
+    return entry ? entry.code : null;
+  },
+
+  cleanup() {
+    const now_ = new Date();
+    this._s(this._r().filter(c => new Date(c.expires_at) > now_));
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   VERIFICATION LOGS
+// ─────────────────────────────────────────────────────
+const verifLogs = {
+  _r() { return readArr(F.verifLogs); },
+  _s(d) { save(F.verifLogs, d); },
+
+  add(guildId, userId, status, detail = null) {
+    const all = this._r();
+    all.push({ id: uid(), guild_id: guildId, user_id: userId, status, detail, created_at: now() });
+    if (all.length > 1000) all.splice(0, all.length - 1000);
+    this._s(all);
+  },
+
+  getRecent(guildId, limit = 20) {
+    return this._r()
+      .filter(l => l.guild_id === guildId)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .slice(0, limit);
+  },
+
+  getStats(guildId) {
+    const all      = this._r().filter(l => l.guild_id === guildId);
+    const verified = all.filter(l => l.status === "verified").length;
+    const failed   = all.filter(l => l.status === "failed").length;
+    const kicked   = all.filter(l => l.status === "kicked").length;
+    return { total: all.length, verified, failed, kicked };
+  },
+};
+
+module.exports = { tickets, notes, blacklist, settings, staffStats, tags, cooldowns, staffStatus, autoResponses, ticketLogs, welcomeSettings, verifSettings, verifCodes, verifLogs };

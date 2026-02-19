@@ -208,3 +208,125 @@ module.exports.closeAll = {
     return interaction.editReply({ embeds: [E.successEmbed(`Se cerraron **${closed}** tickets correctamente.`)] });
   },
 };
+
+// ────── /lockdown ────────────────────────────────────────────────────
+module.exports.lockdown = {
+  data: new SlashCommandBuilder()
+    .setName("lockdown")
+    .setDescription("🔒 Bloquear o desbloquear canales para los usuarios")
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
+    .addSubcommand(s => s
+      .setName("lock")
+      .setDescription("🔒 Bloquear un canal (usuarios no pueden escribir)")
+      .addChannelOption(o => o.setName("canal").setDescription("Canal a bloquear (vacío = canal actual)").setRequired(false))
+      .addStringOption(o => o.setName("razon").setDescription("Razón del bloqueo").setRequired(false))
+    )
+    .addSubcommand(s => s
+      .setName("unlock")
+      .setDescription("🔓 Desbloquear un canal (usuarios pueden volver a escribir)")
+      .addChannelOption(o => o.setName("canal").setDescription("Canal a desbloquear (vacío = canal actual)").setRequired(false))
+      .addStringOption(o => o.setName("razon").setDescription("Razón del desbloqueo").setRequired(false))
+    )
+    .addSubcommand(s => s
+      .setName("all")
+      .setDescription("🌐 Bloquear o desbloquear TODOS los canales del servidor")
+      .addStringOption(o => o.setName("accion").setDescription("lock o unlock").setRequired(true)
+        .addChoices({ name: "🔒 Bloquear todo", value: "lock" }, { name: "🔓 Desbloquear todo", value: "unlock" }))
+      .addStringOption(o => o.setName("razon").setDescription("Razón").setRequired(false))
+    ),
+
+  async execute(interaction) {
+    const sub   = interaction.options.getSubcommand();
+    const razon = interaction.options.getString("razon") || "Sin razón especificada";
+    const guild = interaction.guild;
+    const everyoneRole = guild.roles.everyone;
+
+    // ── lock / unlock de un canal
+    if (sub === "lock" || sub === "unlock") {
+      const canal  = interaction.options.getChannel("canal") || interaction.channel;
+      const locking = sub === "lock";
+
+      await interaction.deferReply({ ephemeral: true });
+
+      try {
+        // Aplicar el permiso: deny SendMessages para lock, null (heredar) para unlock
+        await canal.permissionOverwrites.edit(everyoneRole, {
+          SendMessages: locking ? false : null,
+          AddReactions: locking ? false : null,
+        });
+
+        // Mensaje en el canal afectado
+        await canal.send({
+          embeds: [new EmbedBuilder()
+            .setColor(locking ? E.Colors.ERROR : E.Colors.SUCCESS)
+            .setTitle(locking ? "🔒 Canal Bloqueado" : "🔓 Canal Desbloqueado")
+            .setDescription(
+              locking
+                ? `Este canal ha sido **bloqueado** temporalmente.\nLos usuarios no pueden enviar mensajes.\n\n**Razón:** ${razon}`
+                : `Este canal ha sido **desbloqueado**.\nLos usuarios pueden volver a escribir.\n\n**Razón:** ${razon}`
+            )
+            .addFields({ name: "🛡️ Por", value: `<@${interaction.user.id}>`, inline: true })
+            .setTimestamp()],
+        }).catch(() => {});
+
+        return interaction.editReply({
+          embeds: [E.successEmbed(
+            locking
+              ? `Canal ${canal} bloqueado correctamente.\nLos usuarios pueden ver pero no escribir.`
+              : `Canal ${canal} desbloqueado correctamente.`
+          )],
+        });
+      } catch (err) {
+        return interaction.editReply({ embeds: [E.errorEmbed(`No se pudo ${locking ? "bloquear" : "desbloquear"} el canal. Verifica mis permisos.`)] });
+      }
+    }
+
+    // ── lock / unlock de TODOS los canales
+    if (sub === "all") {
+      const accion  = interaction.options.getString("accion");
+      const locking = accion === "lock";
+
+      await interaction.deferReply({ ephemeral: true });
+
+      const textChannels = guild.channels.cache.filter(c =>
+        c.type === 0 && // GuildText
+        c.permissionsFor(interaction.client.user)?.has("ManageChannels")
+      );
+
+      let count = 0;
+      for (const [, canal] of textChannels) {
+        try {
+          await canal.permissionOverwrites.edit(everyoneRole, {
+            SendMessages: locking ? false : null,
+            AddReactions: locking ? false : null,
+          });
+
+          // Solo enviar mensaje en canales donde el bot pueda escribir
+          if (canal.permissionsFor(interaction.client.user)?.has("SendMessages")) {
+            await canal.send({
+              embeds: [new EmbedBuilder()
+                .setColor(locking ? E.Colors.ERROR : E.Colors.SUCCESS)
+                .setTitle(locking ? "🔒 Servidor Bloqueado" : "🔓 Servidor Desbloqueado")
+                .setDescription(
+                  locking
+                    ? `El servidor ha sido puesto en **modo bloqueo**.\n**Razón:** ${razon}`
+                    : `El servidor ha sido **desbloqueado**.\n**Razón:** ${razon}`
+                )
+                .addFields({ name: "🛡️ Por", value: `<@${interaction.user.id}>`, inline: true })
+                .setTimestamp()],
+            }).catch(() => {});
+          }
+          count++;
+        } catch {}
+      }
+
+      return interaction.editReply({
+        embeds: [E.successEmbed(
+          locking
+            ? `🔒 **${count} canales** bloqueados correctamente.\nLos usuarios pueden ver pero no escribir en ningún canal.`
+            : `🔓 **${count} canales** desbloqueados correctamente.`
+        )],
+      });
+    }
+  },
+};

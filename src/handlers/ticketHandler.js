@@ -302,14 +302,19 @@ async function claimTicket(interaction) {
   let dmEnviado = false;
   try {
     const user = await interaction.client.users.fetch(ticket.user_id);
+
+    // Link directo al canal del ticket (clickeable en Discord)
+    const channelLink = `https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}`;
+
     const dmEmbed = new EmbedBuilder()
       .setColor(E.Colors.SUCCESS)
       .setTitle("👋 ¡El staff ya está atendiendo tu ticket!")
       .setDescription(
         `Tu ticket **#${ticket.ticket_id}** en **${interaction.guild.name}** ya tiene a alguien atendiéndolo.\n\n` +
-        `**👤 Staff asignado:** ${interaction.user.tag}\n` +
-        `**📁 Categoría:** ${ticket.category}\n\n` +
-        `Ve al servidor y responde en el canal de tu ticket para continuar.`
+        `**👤 Staff asignado:** <@${interaction.user.id}>\n` +
+        `**📁 Categoría:** ${ticket.category}\n` +
+        `**💬 Canal:** [Ir al ticket](${channelLink})\n\n` +
+        `Haz clic en el enlace de arriba para ir directamente a tu ticket y continuar la conversación.`
       )
       .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
       .setFooter({ text: `${interaction.guild.name} • Sistema de Tickets` })
@@ -325,10 +330,11 @@ async function claimTicket(interaction) {
     embeds: [new EmbedBuilder()
       .setColor(E.Colors.PRIMARY)
       .setDescription(
-        `👋 <@${interaction.user.id}> ha reclamado este ticket.\n` +
+        `👋 Has reclamado el ticket **#${ticket.ticket_id}** correctamente.\n` +
         (dmEnviado ? "📩 Se notificó al usuario por DM." : "📩 No se pudo notificar al usuario (DMs desactivados).")
       )
       .setTimestamp()],
+    ephemeral: true,
   });
 }
 

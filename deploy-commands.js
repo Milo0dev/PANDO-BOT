@@ -6,6 +6,8 @@ const setup   = require("./src/commands/setup");
 const ticket  = require("./src/commands/ticket");
 const admin   = require("./src/commands/admin");
 const staff   = require("./src/commands/staff");
+const welcome = require("./src/commands/welcome");
+const verify  = require("./src/commands/verify");
 
 const commands = [
   setup,
@@ -14,8 +16,9 @@ const commands = [
   ticket.priority, ticket.move, ticket.note, ticket.transcript,
   ticket.info, ticket.history,
   admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
-  admin.maintenance, admin.closeAll,
+  admin.maintenance, admin.closeAll, admin.lockdown,
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
+  welcome, verify,
 ].map(c => c.data.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);

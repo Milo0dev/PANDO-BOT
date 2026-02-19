@@ -2,7 +2,7 @@ const cron  = require("node-cron");
 const chalk = require("chalk");
 const { ActivityType, EmbedBuilder } = require("discord.js");
 
-const { tickets, settings, staffStats } = require("../utils/database");
+const { tickets, settings, staffStats, verifSettings, verifCodes } = require("../utils/database");
 const { updateAllDashboards }            = require("../handlers/dashboardHandler");
 const { weeklyReportEmbed }              = require("../utils/embeds");
 
@@ -138,6 +138,36 @@ module.exports = {
           const lb    = staffStats.getLeaderboard(guild.id);
           await ch.send({ embeds: [weeklyReportEmbed(stats, guild, lb)] });
         } catch (e) { console.error("[WEEKLY REPORT]", e.message); }
+      }
+    });
+
+    // ── Auto-kick de no verificados (cada 30 minutos)
+    cron.schedule("*/30 * * * *", async () => {
+      verifCodes.cleanup(); // Limpiar códigos expirados
+      for (const [, guild] of client.guilds.cache) {
+        const vs = verifSettings.get(guild.id);
+        if (!vs.enabled || !vs.kick_unverified_hours || !vs.unverified_role) continue;
+        const cutoff = Date.now() - vs.kick_unverified_hours * 3600000;
+        try {
+          const members = await guild.members.fetch();
+          for (const [, member] of members) {
+            if (!member.roles.cache.has(vs.unverified_role)) continue;
+            if (member.joinedTimestamp && member.joinedTimestamp < cutoff) {
+              await member.kick(`No verificado tras ${vs.kick_unverified_hours}h`).catch(() => {});
+              const { verifLogs } = require("../utils/database");
+              verifLogs.add(guild.id, member.id, "kicked", `Auto-kick tras ${vs.kick_unverified_hours}h sin verificar`);
+              if (vs.log_channel) {
+                const logCh = guild.channels.cache.get(vs.log_channel);
+                const { EmbedBuilder } = require("discord.js");
+                await logCh?.send({
+                  embeds: [new EmbedBuilder().setColor(0xED4245).setTitle("🚫 Auto-kick: No verificado")
+                    .setDescription(`<@${member.id}> (\`${member.user.tag}\`) fue expulsado por no verificarse en ${vs.kick_unverified_hours}h.`)
+                    .setTimestamp()],
+                }).catch(() => {});
+              }
+            }
+          }
+        } catch (e) { console.error("[AUTO-KICK VERIF]", e.message); }
       }
     });
 

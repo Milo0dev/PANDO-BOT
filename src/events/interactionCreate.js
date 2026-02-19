@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 
 const TH = require("../handlers/ticketHandler");
+const { handleVerif } = require("../handlers/verifHandler");
 const { tickets, settings, notes, tags, blacklist, autoResponses } = require("../utils/database");
 const E = require("../utils/embeds");
 const { generateTranscript } = require("../utils/transcript");
@@ -95,6 +96,10 @@ module.exports = {
 
         // ── Modal de cierre
         if (interaction.customId === "ticket_close_modal") {
+          const s = settings.get(interaction.guild.id);
+          if (!checkStaff(interaction.member, s)) {
+            return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede cerrar tickets.")], ephemeral: true });
+          }
           const reason = interaction.fields.getTextInputValue("close_reason");
           return TH.closeTicket(interaction, reason || null);
         }
@@ -131,19 +136,33 @@ module.exports = {
         }
       }
 
+      // ── VERIFICACIÓN (botones y modals)
+      const verifIds = ["verify_start", "verify_help", "verify_enter_code", "verify_resend_code", "verify_code_modal", "verify_question_modal"];
+      if (
+        (interaction.isButton() && verifIds.includes(interaction.customId)) ||
+        (interaction.isModalSubmit() && ["verify_code_modal", "verify_question_modal"].includes(interaction.customId))
+      ) {
+        return handleVerif(interaction);
+      }
+
       // ── BUTTONS
       if (interaction.isButton()) {
         const { customId } = interaction;
+        const s = settings.get(interaction.guild.id);
+
+        // ── Verificación de staff para todos los botones del ticket
+        const staffOnlyButtons = ["ticket_close", "ticket_claim", "ticket_reopen", "ticket_transcript"];
+        if (staffOnlyButtons.includes(customId) && !checkStaff(interaction.member, s)) {
+          return interaction.reply({
+            embeds: [E.errorEmbed("❌ Solo el **staff** puede usar estos botones.")],
+            ephemeral: true,
+          });
+        }
 
         if (customId === "ticket_close") {
           const ticket = tickets.get(interaction.channel.id);
           if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
           if (ticket.status === "closed") return interaction.reply({ embeds: [E.errorEmbed("Ya está cerrado.")], ephemeral: true });
-
-          const s      = settings.get(interaction.guild.id);
-          const isOwner = interaction.user.id === ticket.user_id;
-          const isStaff = checkStaff(interaction.member, s);
-          if (!isOwner && !isStaff) return interaction.reply({ embeds: [E.errorEmbed("Solo el creador o el staff puede cerrar este ticket.")], ephemeral: true });
 
           const modal = new ModalBuilder().setCustomId("ticket_close_modal").setTitle("Cerrar Ticket");
           modal.addComponents(new ActionRowBuilder().addComponents(
@@ -158,8 +177,6 @@ module.exports = {
         if (customId === "ticket_transcript") {
           const ticket = tickets.get(interaction.channel.id);
           if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
-          const s = settings.get(interaction.guild.id);
-          if (!checkStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede generar transcripciones.")], ephemeral: true });
           await interaction.deferReply({ ephemeral: true });
           try {
             const { attachment } = await generateTranscript(interaction.channel, ticket, interaction.guild);

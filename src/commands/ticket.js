@@ -25,8 +25,8 @@ module.exports.close = {
     const t = getTicket(interaction.channel);
     if (!t) return interaction.reply({ embeds: [E.errorEmbed("Este no es un canal de ticket.")], ephemeral: true });
     const s = settings.get(interaction.guild.id);
-    if (!isStaff(interaction.member, s) && interaction.user.id !== t.user_id)
-      return interaction.reply({ embeds: [E.errorEmbed("Solo el creador o el staff puede cerrar este ticket.")], ephemeral: true });
+    if (!isStaff(interaction.member, s))
+      return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede cerrar tickets.")], ephemeral: true });
     return TH.closeTicket(interaction, interaction.options.getString("razon"));
   },
 };
@@ -82,6 +82,8 @@ module.exports.add = {
     .addUserOption(o => o.setName("usuario").setDescription("Usuario a añadir").setRequired(true)),
   async execute(interaction) {
     if (!getTicket(interaction.channel)) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
+    const s = settings.get(interaction.guild.id);
+    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede añadir usuarios al ticket.")], ephemeral: true });
     return TH.addUser(interaction, interaction.options.getUser("usuario"));
   },
 };
@@ -92,6 +94,8 @@ module.exports.remove = {
     .addUserOption(o => o.setName("usuario").setDescription("Usuario a quitar").setRequired(true)),
   async execute(interaction) {
     if (!getTicket(interaction.channel)) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
+    const s = settings.get(interaction.guild.id);
+    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede quitar usuarios del ticket.")], ephemeral: true });
     return TH.removeUser(interaction, interaction.options.getUser("usuario"));
   },
 };
@@ -207,7 +211,9 @@ module.exports.info = {
   async execute(interaction) {
     const t = getTicket(interaction.channel);
     if (!t) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
-    return interaction.reply({ embeds: [E.ticketInfo(t)] });
+    const s = settings.get(interaction.guild.id);
+    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede ver la información del ticket.")], ephemeral: true });
+    return interaction.reply({ embeds: [E.ticketInfo(t)], ephemeral: true });
   },
 };
 
