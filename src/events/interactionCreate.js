@@ -13,6 +13,7 @@ const { tickets, settings, notes, tags, blacklist, autoResponses, staffRatings, 
 const E = require("../utils/embeds");
 const { generateTranscript } = require("../utils/transcript");
 const config = require("../../config");
+const handleMusicButtons = require('../handlers/musicButtonHandler');
 
 module.exports = {
   name: "interactionCreate",
@@ -174,6 +175,10 @@ module.exports = {
       // ══════════════════════════════════════════
       if (interaction.isButton()) {
         const { customId } = interaction;
+      if (interaction.customId.startsWith('music_')) {
+          await handleMusicButtons(interaction);
+          return;
+    }  
 
         // ── Verificación
         const verifIds = ["verify_start", "verify_help", "verify_enter_code", "verify_resend_code"];

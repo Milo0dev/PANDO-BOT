@@ -16,6 +16,7 @@ const remind  = require("./src/commands/remind");
 const rank    = require("./src/commands/rank");
 const levels  = require("./src/commands/levels");
 const modlogs = require("./src/commands/modlogs");
+const music = require("./src/commands/music");
 
 const commands = [
   setup,
@@ -28,6 +29,7 @@ const commands = [
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
   welcome, verify, help,
   poll, embed, suggest, remind, rank, levels, modlogs,
+  music.play, music.skip, music.stop, music.pause, music.resume, music.queue, music.nowplaying, music.shuffle, music.remove, music.clear, music.volume, music.loop
 ].map(c => c.data.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);

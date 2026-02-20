@@ -8,6 +8,7 @@ const path  = require("path");
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent,
@@ -33,6 +34,7 @@ const remind  = require("./src/commands/remind");
 const rank    = require("./src/commands/rank");
 const levels  = require("./src/commands/levels");
 const modlogs = require("./src/commands/modlogs");
+const music = require("./src/commands/music");
 
 const allCommands = [
   setup,
@@ -45,6 +47,9 @@ const allCommands = [
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
   welcome, verify, help,
   poll, embed, suggest, remind, rank, levels, modlogs,
+  music.play, music.skip, music.stop, music.pause, music.resume, 
+  music.queue, music.nowplaying, music.shuffle, music.remove, 
+  music.clear, music.volume, music.loop
 ];
 
 for (const cmd of allCommands) {
@@ -69,11 +74,18 @@ process.on("unhandledRejection", err => console.error(chalk.red("[ERROR]"), err?
 process.on("uncaughtException",  err => console.error(chalk.red("[EXCEPTION]"), err?.message || err));
 client.on("error", err => console.error(chalk.red("[CLIENT ERROR]"), err?.message));
 
+process.removeAllListeners("warning"); // <--- Esta es la línea mágica que borra la regla original
+process.on("warning", (warning) => {
+  // Ocultar la advertencia inofensiva de los milisegundos negativos
+  if (warning.name === "TimeoutNegativeWarning") return; 
+  console.warn(warning);
+});
+
 // ── Banner
 console.log(chalk.blue(`
 ╔══════════════════════════════════════════╗
 ║                                          ║
-║    🎫  DISCORD TICKET BOT  v3.0  🎫     ║
+║    🎫  DISCORD TICKET BOT  v1.5  🎫     ║
 ║         Sistema Profesional Completo     ║
 ║                                          ║
 ╚══════════════════════════════════════════╝
