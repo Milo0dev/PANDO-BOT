@@ -1,215 +1,400 @@
-const fs   = require("fs");
+const { MongoClient, ObjectId } = require("mongodb");
+const chalk = require("chalk");
+const fs = require("fs");
 const path = require("path");
 
 // ─────────────────────────────────────────────────────
-//   CONFIGURACIÓN DE ARCHIVOS
+//   CONFIGURACIÓN DE MONGODB
 // ─────────────────────────────────────────────────────
-const DATA_DIR = path.join(__dirname, "../../data");
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://PandoBot:@pandobot.sfbdy6u.mongodb.net/?appName=PandoBot";
+const DB_NAME = process.env.MONGO_DB || "pando_bot";
 
-const F = {
-  tickets:        path.join(DATA_DIR, "tickets.json"),
-  notes:          path.join(DATA_DIR, "notes.json"),
-  blacklist:      path.join(DATA_DIR, "blacklist.json"),
-  settings:       path.join(DATA_DIR, "settings.json"),
-  staffStats:     path.join(DATA_DIR, "staff_stats.json"),
-  tags:           path.join(DATA_DIR, "tags.json"),
-  cooldowns:      path.join(DATA_DIR, "cooldowns.json"),
-  staffStatus:    path.join(DATA_DIR, "staff_status.json"),
-  autoResponses:  path.join(DATA_DIR, "auto_responses.json"),
-  ticketLogs:     path.join(DATA_DIR, "ticket_logs.json"),
-  welcomeSettings:path.join(DATA_DIR, "welcome_settings.json"),
-  verifSettings:  path.join(DATA_DIR, "verif_settings.json"),
-  verifCodes:     path.join(DATA_DIR, "verif_codes.json"),
-  verifLogs:      path.join(DATA_DIR, "verif_logs.json"),
-  staffRatings:   path.join(DATA_DIR, "staff_ratings.json"),
-  modlogSettings: path.join(DATA_DIR, "modlog_settings.json"),
-  levelSettings:  path.join(DATA_DIR, "level_settings.json"),
-  levels:         path.join(DATA_DIR, "levels.json"),
-  reminders:      path.join(DATA_DIR, "reminders.json"),
-  suggestSettings:path.join(DATA_DIR, "suggest_settings.json"),
-  suggestions:    path.join(DATA_DIR, "suggestions.json"),
-  polls:          path.join(DATA_DIR, "polls.json"),
-};
+let client = null;
+let db = null;
 
 // ─────────────────────────────────────────────────────
-//   HELPERS
+//   CONEXIÓN A MONGODB
 // ─────────────────────────────────────────────────────
-function readArr(file) {
-  try { return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : []; }
-  catch { return []; }
+async function connectDB() {
+  if (db) return db;
+  
+  try {
+    client = new MongoClient(MONGO_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+    });
+    
+    await client.connect();
+    db = client.db(DB_NAME);
+    
+    // Crear índices
+    await createIndexes();
+    
+    console.log(chalk.green("✅ Conectado a MongoDB"));
+    return db;
+  } catch (error) {
+    console.error(chalk.red("❌ Error conectando a MongoDB:"), error.message);
+    throw error;
+  }
 }
-function readObj(file) {
-  try { return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : {}; }
-  catch { return {}; }
+
+async function createIndexes() {
+  try {
+    // Índices para tickets
+    await db.collection("tickets").createIndex({ channel_id: 1 }, { unique: true });
+    await db.collection("tickets").createIndex({ guild_id: 1, status: 1 });
+    await db.collection("tickets").createIndex({ user_id: 1, guild_id: 1 });
+    await db.collection("tickets").createIndex({ ticket_id: 1 }, { unique: true });
+    
+    // Índices para settings
+    await db.collection("settings").createIndex({ guild_id: 1 }, { unique: true });
+    
+    // Índices para levels
+    await db.collection("levels").createIndex({ guild_id: 1, user_id: 1 }, { unique: true });
+    await db.collection("levels").createIndex({ guild_id: 1, total_xp: -1 });
+    
+    // Índices para otros
+    await db.collection("notes").createIndex({ ticket_id: 1 });
+    await db.collection("blacklist").createIndex({ guild_id: 1, user_id: 1 });
+    await db.collection("reminders").createIndex({ fire_at: 1 });
+    await db.collection("verifCodes").createIndex({ expires_at: 1 });
+    
+    console.log(chalk.blue("📇 Índices de MongoDB creados"));
+  } catch (error) {
+    console.error(chalk.yellow("⚠️ Error creando índices:"), error.message);
+  }
 }
-function save(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+
+function getDB() {
+  if (!db) throw new Error("Base de datos no conectada. Llama a connectDB() primero.");
+  return db;
 }
+
 function now() { return new Date().toISOString(); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+// ─────────────────────────────────────────────────────
+//   HELPERS CON VALIDACIÓN Y ERRORES
+// ─────────────────────────────────────────────────────
+function logError(context, error, extra = {}) {
+  const errorLog = {
+    context,
+    message: error.message || String(error),
+    stack: error.stack,
+    ...extra,
+    timestamp: now()
+  };
+  
+  // Log en consola con chalk
+  console.error(chalk.red(`[ERROR] ${context}:`), error.message);
+  
+  // Guardar en archivo de logs si se desea
+  try {
+    const logsDir = path.join(__dirname, "../../data/logs");
+    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+    
+    const logFile = path.join(logsDir, `errors_${new Date().toISOString().split("T")[0]}.json`);
+    const logs = fs.existsSync(logFile) ? JSON.parse(fs.readFileSync(logFile, "utf8")) : [];
+    logs.push(errorLog);
+    
+    // Mantener solo últimos 1000 errores
+    if (logs.length > 1000) logs.splice(0, logs.length - 1000);
+    
+    fs.writeFileSync(logFile, JSON.stringify(logs, null, 2));
+  } catch (e) {
+    // Silencioso si falla el logging
+  }
+  
+  return errorLog;
+}
+
+// Validación de entrada
+function validateInput(value, type, options = {}) {
+  const { minLength, maxLength, pattern, allowedChars } = options;
+  
+  if (value === undefined || value === null) {
+    if (options.required) throw new Error(`Campo requerido`);
+    return value;
+  }
+  
+  if (typeof value === "string") {
+    if (minLength && value.length < minLength) {
+      throw new Error(`Mínimo ${minLength} caracteres`);
+    }
+    if (maxLength && value.length > maxLength) {
+      throw new Error(`Máximo ${maxLength} caracteres`);
+    }
+    if (pattern && !pattern.test(value)) {
+      throw new Error(`Formato inválido`);
+    }
+    if (allowedChars) {
+      const invalid = value.split("").filter(c => !allowedChars.includes(c));
+      if (invalid.length > 0) {
+        throw new Error(`Caracteres no permitidos: ${invalid.join(", ")}`);
+      }
+    }
+  }
+  
+  return value;
+}
+
+// Sanitización de entrada
+function sanitizeString(str, maxLen = 1000) {
+  if (!str || typeof str !== "string") return "";
+  return str.slice(0, maxLen).trim();
+}
+
+function sanitizeChannelName(name) {
+  if (!name || typeof name !== "string") return "";
+  return name.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 32);
+}
 
 // ─────────────────────────────────────────────────────
 //   TICKETS
 // ─────────────────────────────────────────────────────
 const tickets = {
-  _r() { return readArr(F.tickets); },
-  _s(d) { save(F.tickets, d); },
-
-  create(data) {
-    const all = this._r();
-    const t = {
-      _id:                  uid(),
-      ticket_id:            data.ticket_id,
-      channel_id:           data.channel_id,
-      guild_id:             data.guild_id,
-      user_id:              data.user_id,
-      category:             data.category,
-      category_id:          data.category_id || null,
-      status:               "open",
-      priority:             data.priority || "normal",
-      claimed_by:           null,
-      assigned_to:          null,
-      subject:              data.subject || null,
-      created_at:           now(),
-      closed_at:            null,
-      closed_by:            null,
-      close_reason:         null,
-      last_activity:        now(),
-      message_count:        0,
-      staff_message_count:  0,
-      first_staff_response: null,
-      rating:               null,
-      rating_comment:       null,
-      transcript_url:       null,
-      answers:              data.answers || null,
-      reopen_count:         0,
-      reopened_at:          null,
-      reopened_by:          null,
-    };
-    all.push(t);
-    this._s(all);
-    return t;
-  },
-
-  get(channelId)   { return this._r().find(t => t.channel_id  === channelId)  || null; },
-  getById(id)      { return this._r().find(t => t.ticket_id   === id)         || null; },
-
-  getByUser(userId, guildId, status = "open") {
-    return this._r().filter(t => t.user_id === userId && t.guild_id === guildId && t.status === status);
-  },
-
-  getAllOpen(guildId) {
-    return this._r().filter(t => t.guild_id === guildId && t.status === "open")
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  },
-
-  getAllByGuild(guildId) {
-    return this._r().filter(t => t.guild_id === guildId)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  },
-
-  update(channelId, data) {
-    const all = this._r();
-    const i = all.findIndex(t => t.channel_id === channelId);
-    if (i === -1) return null;
-    all[i] = { ...all[i], ...data };
-    this._s(all);
-    return all[i];
-  },
-
-  close(channelId, closedBy, reason) {
-    return this.update(channelId, {
-      status: "closed", closed_at: now(), closed_by: closedBy, close_reason: reason || null,
-    });
-  },
-
-  reopen(channelId, reopenedBy) {
-    const t = this.get(channelId);
-    if (!t) return null;
-    return this.update(channelId, {
-      status:       "open",
-      closed_at:    null,
-      closed_by:    null,
-      close_reason: null,
-      reopened_at:  now(),
-      reopened_by:  reopenedBy,
-      reopen_count: (t.reopen_count || 0) + 1,
-      last_activity: now(),
-    });
-  },
-
-  incrementMessages(channelId, isStaff = false) {
-    const all = this._r();
-    const i = all.findIndex(t => t.channel_id === channelId);
-    if (i === -1) return;
-    all[i].message_count = (all[i].message_count || 0) + 1;
-    all[i].last_activity = now();
-    if (isStaff) {
-      all[i].staff_message_count = (all[i].staff_message_count || 0) + 1;
-      if (!all[i].first_staff_response) all[i].first_staff_response = now();
+  collection() { return getDB().collection("tickets"); },
+  
+  async create(data) {
+    try {
+      validateInput(data.channel_id, "string", { required: true, maxLength: 50 });
+      validateInput(data.guild_id, "string", { required: true, maxLength: 50 });
+      validateInput(data.user_id, "string", { required: true, maxLength: 50 });
+      validateInput(data.category, "string", { maxLength: 100 });
+      
+      const ticket = {
+        _id: ObjectId(),
+        ticket_id:            data.ticket_id,
+        channel_id:           data.channel_id,
+        guild_id:             data.guild_id,
+        user_id:              data.user_id,
+        category:             data.category || "general",
+        category_id:          data.category_id || null,
+        status:               "open",
+        priority:             data.priority || "normal",
+        claimed_by:           null,
+        assigned_to:          null,
+        subject:              data.subject || null,
+        created_at:           now(),
+        closed_at:            null,
+        closed_by:            null,
+        close_reason:         null,
+        last_activity:        now(),
+        message_count:        0,
+        staff_message_count:  0,
+        first_staff_response: null,
+        rating:               null,
+        rating_comment:       null,
+        transcript_url:       null,
+        answers:              data.answers || null,
+        reopen_count:         0,
+        reopened_at:          null,
+        reopened_by:          null,
+      };
+      
+      await this.collection().insertOne(ticket);
+      return ticket;
+    } catch (error) {
+      logError("tickets.create", error, { data });
+      throw error;
     }
-    this._s(all);
   },
 
-  setRating(channelId, rating, comment = null) {
-    return this.update(channelId, { rating, rating_comment: comment });
+  async get(channelId) {
+    try {
+      return await this.collection().findOne({ channel_id: channelId }) || null;
+    } catch (error) {
+      logError("tickets.get", error, { channelId });
+      return null;
+    }
   },
 
-  getInactive(guildId, minutes) {
-    const cutoff = new Date(Date.now() - minutes * 60000);
-    return this._r().filter(t =>
-      t.guild_id === guildId &&
-      t.status   === "open"  &&
-      new Date(t.last_activity) < cutoff
-    );
+  async getById(id) {
+    try {
+      return await this.collection().findOne({ ticket_id: id }) || null;
+    } catch (error) {
+      logError("tickets.getById", error, { id });
+      return null;
+    }
   },
 
-  getWithoutStaffResponse(guildId, minutes) {
-    const cutoff = new Date(Date.now() - minutes * 60000);
-    return this._r().filter(t =>
-      t.guild_id === guildId &&
-      t.status   === "open"  &&
-      !t.first_staff_response &&
-      new Date(t.created_at) < cutoff
-    );
+  async getByUser(userId, guildId, status = "open") {
+    try {
+      return await this.collection()
+        .find({ user_id: userId, guild_id: guildId, status })
+        .toArray();
+    } catch (error) {
+      logError("tickets.getByUser", error, { userId, guildId, status });
+      return [];
+    }
   },
 
-  getStats(guildId) {
-    const all    = this._r().filter(t => t.guild_id === guildId);
-    const open   = all.filter(t => t.status === "open").length;
-    const closed = all.filter(t => t.status === "closed").length;
-
-    const today  = new Date(); today.setHours(0,0,0,0);
-    const openedToday  = all.filter(t => new Date(t.created_at) >= today).length;
-    const closedToday  = all.filter(t => t.closed_at && new Date(t.closed_at) >= today).length;
-
-    const thisWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const openedWeek  = all.filter(t => new Date(t.created_at) >= thisWeek).length;
-    const closedWeek  = all.filter(t => t.closed_at && new Date(t.closed_at) >= thisWeek).length;
-
-    const ratings = all.filter(t => t.rating !== null).map(t => t.rating);
-    const avg_rating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : null;
-
-    const closedWithTime = all.filter(t => t.status === "closed" && t.closed_at && t.first_staff_response);
-    const avg_response_minutes = closedWithTime.length
-      ? closedWithTime.reduce((acc, t) => acc + (new Date(t.first_staff_response) - new Date(t.created_at)) / 60000, 0) / closedWithTime.length
-      : null;
-
-    const avg_close_minutes = all.filter(t => t.closed_at).length
-      ? all.filter(t => t.closed_at).reduce((acc, t) => acc + (new Date(t.closed_at) - new Date(t.created_at)) / 60000, 0) / all.filter(t => t.closed_at).length
-      : null;
-
-    // Categorías más usadas
-    const catCount = {};
-    all.forEach(t => { catCount[t.category] = (catCount[t.category] || 0) + 1; });
-    const topCategories = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
-
-    return { total: all.length, open, closed, openedToday, closedToday, openedWeek, closedWeek, avg_rating, avg_response_minutes, avg_close_minutes, topCategories };
+  async getAllOpen(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId, status: "open" })
+        .sort({ created_at: -1 })
+        .toArray();
+    } catch (error) {
+      logError("tickets.getAllOpen", error, { guildId });
+      return [];
+    }
   },
 
-  delete(channelId) {
-    this._s(this._r().filter(t => t.channel_id !== channelId));
+  async getAllByGuild(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId })
+        .sort({ created_at: -1 })
+        .toArray();
+    } catch (error) {
+      logError("tickets.getAllByGuild", error, { guildId });
+      return [];
+    }
+  },
+
+  async update(channelId, data) {
+    try {
+      validateInput(channelId, "string", { required: true });
+      
+      const result = await this.collection().findOneAndUpdate(
+        { channel_id: channelId },
+        { $set: { ...data, last_activity: now() } },
+        { returnDocument: "after" }
+      );
+      return result;
+    } catch (error) {
+      logError("tickets.update", error, { channelId, data });
+      return null;
+    }
+  },
+
+  async close(channelId, closedBy, reason) {
+    return this.update(channelId, {
+      status: "closed",
+      closed_at: now(),
+      closed_by: closedBy,
+      close_reason: sanitizeString(reason, 500),
+    });
+  },
+
+  async reopen(channelId, reopenedBy) {
+    const t = await this.get(channelId);
+    if (!t) return null;
+    
+    return this.update(channelId, {
+      status: "open",
+      closed_at: null,
+      closed_by: null,
+      close_reason: null,
+      reopened_at: now(),
+      reopened_by: reopenedBy,
+      reopen_count: (t.reopen_count || 0) + 1,
+    });
+  },
+
+  async incrementMessages(channelId, isStaff = false) {
+    try {
+      const update = {
+        $inc: { message_count: 1 },
+        $set: { last_activity: now() }
+      };
+      
+      if (isStaff) {
+        update.$inc.staff_message_count = 1;
+        update.$setOnInsert = { first_staff_response: now() };
+      }
+      
+      await this.collection().updateOne(
+        { channel_id: channelId },
+        update
+      );
+    } catch (error) {
+      logError("tickets.incrementMessages", error, { channelId, isStaff });
+    }
+  },
+
+  async setRating(channelId, rating, comment = null) {
+    return this.update(channelId, { 
+      rating, 
+      rating_comment: sanitizeString(comment, 500) 
+    });
+  },
+
+  async getInactive(guildId, minutes) {
+    try {
+      const cutoff = new Date(Date.now() - minutes * 60000);
+      return await this.collection()
+        .find({
+          guild_id: guildId,
+          status: "open",
+          last_activity: { $lt: cutoff }
+        })
+        .toArray();
+    } catch (error) {
+      logError("tickets.getInactive", error, { guildId, minutes });
+      return [];
+    }
+  },
+
+  async getWithoutStaffResponse(guildId, minutes) {
+    try {
+      const cutoff = new Date(Date.now() - minutes * 60000);
+      return await this.collection()
+        .find({
+          guild_id: guildId,
+          status: "open",
+          first_staff_response: null,
+          created_at: { $lt: cutoff }
+        })
+        .toArray();
+    } catch (error) {
+      logError("tickets.getWithoutStaffResponse", error, { guildId, minutes });
+      return [];
+    }
+  },
+
+  async getStats(guildId) {
+    try {
+      const all = await this.collection()
+        .find({ guild_id: guildId })
+        .toArray();
+      
+      const open = all.filter(t => t.status === "open").length;
+      const closed = all.filter(t => t.status === "closed").length;
+
+      const today = new Date(); today.setHours(0,0,0,0);
+      const openedToday = all.filter(t => new Date(t.created_at) >= today).length;
+      const closedToday = all.filter(t => t.closed_at && new Date(t.closed_at) >= today).length;
+
+      const thisWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const openedWeek = all.filter(t => new Date(t.created_at) >= thisWeek).length;
+      const closedWeek = all.filter(t => t.closed_at && new Date(t.closed_at) >= thisWeek).length;
+
+      const ratings = all.filter(t => t.rating !== null).map(t => t.rating);
+      const avg_rating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : null;
+
+      // Categorías más usadas
+      const catCount = {};
+      all.forEach(t => { catCount[t.category] = (catCount[t.category] || 0) + 1; });
+      const topCategories = Object.entries(catCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+      return { 
+        total: all.length, open, closed, openedToday, closedToday, 
+        openedWeek, closedWeek, avg_rating, topCategories 
+      };
+    } catch (error) {
+      logError("tickets.getStats", error, { guildId });
+      return { total: 0, open: 0, closed: 0 };
+    }
+  },
+
+  async delete(channelId) {
+    try {
+      await this.collection().deleteOne({ channel_id: channelId });
+    } catch (error) {
+      logError("tickets.delete", error, { channelId });
+    }
   },
 };
 
@@ -217,118 +402,218 @@ const tickets = {
 //   NOTAS
 // ─────────────────────────────────────────────────────
 const notes = {
-  _r() { return readArr(F.notes); },
-  _s(d) { save(F.notes, d); },
-  add(ticketId, staffId, note) {
-    const all   = this._r();
-    const entry = { id: uid(), ticket_id: ticketId, staff_id: staffId, note, created_at: now() };
-    all.push(entry);
-    this._s(all);
-    return entry;
+  collection() { return getDB().collection("notes"); },
+  
+  async add(ticketId, staffId, note) {
+    try {
+      validateInput(ticketId, "string", { required: true });
+      validateInput(note, "string", { required: true, maxLength: 500 });
+      
+      const entry = {
+        _id: ObjectId(),
+        ticket_id: ticketId,
+        staff_id: staffId,
+        note: sanitizeString(note, 500),
+        created_at: now()
+      };
+      
+      await this.collection().insertOne(entry);
+      return entry;
+    } catch (error) {
+      logError("notes.add", error, { ticketId, staffId });
+      throw error;
+    }
   },
-  get(ticketId) {
-    return this._r().filter(n => n.ticket_id === ticketId)
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  async get(ticketId) {
+    try {
+      return await this.collection()
+        .find({ ticket_id: ticketId })
+        .sort({ created_at: 1 })
+        .toArray();
+    } catch (error) {
+      logError("notes.get", error, { ticketId });
+      return [];
+    }
   },
-  delete(id) { this._s(this._r().filter(n => n.id !== id)); },
+
+  async delete(id) {
+    try {
+      await this.collection().deleteOne({ _id: new ObjectId(id) });
+    } catch (error) {
+      logError("notes.delete", error, { id });
+    }
+  },
 };
 
 // ─────────────────────────────────────────────────────
 //   BLACKLIST
 // ─────────────────────────────────────────────────────
 const blacklist = {
-  _r() { return readArr(F.blacklist); },
-  _s(d) { save(F.blacklist, d); },
-  add(userId, guildId, reason, addedBy) {
-    const all = this._r().filter(b => !(b.user_id === userId && b.guild_id === guildId));
-    all.push({ id: uid(), user_id: userId, guild_id: guildId, reason, added_by: addedBy, added_at: now() });
-    this._s(all);
+  collection() { return getDB().collection("blacklist"); },
+  
+  async add(userId, guildId, reason, addedBy) {
+    try {
+      validateInput(userId, "string", { required: true });
+      validateInput(guildId, "string", { required: true });
+      
+      // Verificar si ya existe
+      const existing = await this.collection().findOne({ user_id: userId, guild_id: guildId });
+      if (existing) return;
+      
+      const entry = {
+        _id: ObjectId(),
+        user_id: userId,
+        guild_id: guildId,
+        reason: sanitizeString(reason, 500),
+        added_by: addedBy,
+        added_at: now()
+      };
+      
+      await this.collection().insertOne(entry);
+    } catch (error) {
+      logError("blacklist.add", error, { userId, guildId });
+      throw error;
+    }
   },
-  remove(userId, guildId) {
-    const all = this._r(); const prev = all.length;
-    this._s(all.filter(b => !(b.user_id === userId && b.guild_id === guildId)));
-    return { changes: prev - this._r().length };
+
+  async remove(userId, guildId) {
+    try {
+      const result = await this.collection().deleteOne({ user_id: userId, guild_id: guildId });
+      return { changes: result.deletedCount };
+    } catch (error) {
+      logError("blacklist.remove", error, { userId, guildId });
+      return { changes: 0 };
+    }
   },
-  check(userId, guildId)  { return this._r().find(b => b.user_id === userId && b.guild_id === guildId) || null; },
-  getAll(guildId)         { return this._r().filter(b => b.guild_id === guildId).sort((a, b) => new Date(b.added_at) - new Date(a.added_at)); },
+
+  async check(userId, guildId) {
+    try {
+      return await this.collection().findOne({ user_id: userId, guild_id: guildId }) || null;
+    } catch (error) {
+      logError("blacklist.check", error, { userId, guildId });
+      return null;
+    }
+  },
+
+  async getAll(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId })
+        .sort({ added_at: -1 })
+        .toArray();
+    } catch (error) {
+      logError("blacklist.getAll", error, { guildId });
+      return [];
+    }
+  },
 };
 
 // ─────────────────────────────────────────────────────
 //   SETTINGS
 // ─────────────────────────────────────────────────────
 const settings = {
-  _r() { return readObj(F.settings); },
-  _s(d) { save(F.settings, d); },
-
+  collection() { return getDB().collection("settings"); },
+  
   _default(guildId) {
     return {
-      guild_id:              guildId,
-      // Canales
-      log_channel:           null,
-      transcript_channel:    null,
-      dashboard_channel:     null,
-      dashboard_message_id:  null,
+      guild_id: guildId,
+      log_channel: null,
+      transcript_channel: null,
+      dashboard_channel: null,
+      dashboard_message_id: null,
       weekly_report_channel: null,
-      // Roles
-      support_role:          null,
-      admin_role:            null,
-      verify_role:           null,
-      // Límites
-      max_tickets:           3,
-      global_ticket_limit:   0,
-      cooldown_minutes:      0,
-      min_days:              0,
-      // Auto-close
-      auto_close_minutes:    0,
-      // SLA
-      sla_minutes:           0,
-      smart_ping_minutes:    0,
-      // DM
-      dm_on_open:            true,
-      dm_on_close:           true,
-      // Logs
-      log_edits:             true,
-      log_deletes:           true,
-      // Mantenimiento
-      maintenance_mode:      false,
-      maintenance_reason:    null,
-      // Contadores
-      ticket_counter:        0,
-      // Panel
-      panel_message_id:      null,
-      panel_channel_id:      null,
-      // Timestamps
-      created_at:            now(),
+      support_role: null,
+      admin_role: null,
+      verify_role: null,
+      max_tickets: 3,
+      global_ticket_limit: 0,
+      cooldown_minutes: 0,
+      min_days: 0,
+      auto_close_minutes: 0,
+      sla_minutes: 0,
+      smart_ping_minutes: 0,
+      dm_on_open: true,
+      dm_on_close: true,
+      log_edits: true,
+      log_deletes: true,
+      maintenance_mode: false,
+      maintenance_reason: null,
+      ticket_counter: 0,
+      panel_message_id: null,
+      panel_channel_id: null,
+      created_at: now(),
     };
   },
 
-  get(guildId) {
-    const all = this._r();
-    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
-    // Asegurar campos nuevos en configs antiguas
-    const def = this._default(guildId);
-    let changed = false;
-    for (const k of Object.keys(def)) {
-      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+  async get(guildId) {
+    try {
+      let s = await this.collection().findOne({ guild_id: guildId });
+      
+      if (!s) {
+        s = this._default(guildId);
+        await this.collection().insertOne(s);
+      }
+      
+      // Asegurar campos nuevos
+      const def = this._default(guildId);
+      let changed = false;
+      for (const k of Object.keys(def)) {
+        if (s[k] === undefined) {
+          s[k] = def[k];
+          changed = true;
+        }
+      }
+      
+      if (changed) {
+        await this.collection().updateOne(
+          { guild_id: guildId },
+          { $set: s }
+        );
+      }
+      
+      return s;
+    } catch (error) {
+      logError("settings.get", error, { guildId });
+      return this._default(guildId);
     }
-    if (changed) this._s(all);
-    return all[guildId];
   },
 
-  update(guildId, data) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId] = { ...all[guildId], ...data };
-    this._s(all);
-    return all[guildId];
+  async update(guildId, data) {
+    try {
+      validateInput(guildId, "string", { required: true });
+      
+      const existing = await this.collection().findOne({ guild_id: guildId });
+      if (!existing) {
+        const newSettings = { ...this._default(guildId), ...data };
+        await this.collection().insertOne(newSettings);
+        return newSettings;
+      }
+      
+      await this.collection().updateOne(
+        { guild_id: guildId },
+        { $set: data }
+      );
+      
+      return this.get(guildId);
+    } catch (error) {
+      logError("settings.update", error, { guildId, data });
+      return null;
+    }
   },
 
-  incrementCounter(guildId) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId].ticket_counter = (all[guildId].ticket_counter || 0) + 1;
-    this._s(all);
-    return all[guildId].ticket_counter;
+  async incrementCounter(guildId) {
+    try {
+      const result = await this.collection().findOneAndUpdate(
+        { guild_id: guildId },
+        { $inc: { ticket_counter: 1 } },
+        { returnDocument: "after" }
+      );
+      return result?.ticket_counter || 1;
+    } catch (error) {
+      logError("settings.incrementCounter", error, { guildId });
+      return 1;
+    }
   },
 };
 
@@ -336,485 +621,187 @@ const settings = {
 //   STAFF STATS
 // ─────────────────────────────────────────────────────
 const staffStats = {
-  _k(guildId, staffId) { return `${guildId}::${staffId}`; },
-  _r() { return readObj(F.staffStats); },
-  _s(d) { save(F.staffStats, d); },
-  _ensure(all, guildId, staffId) {
-    const k = this._k(guildId, staffId);
-    if (!all[k]) all[k] = { guild_id: guildId, staff_id: staffId, tickets_closed: 0, tickets_claimed: 0, tickets_assigned: 0, last_updated: now() };
-    return k;
+  collection() { return getDB().collection("staffStats"); },
+  
+  _key(guildId, staffId) { return `${guildId}::${staffId}`; },
+  
+  async _ensure(guildId, staffId) {
+    const key = this._key(guildId, staffId);
+    const existing = await this.collection().findOne({ key });
+    
+    if (!existing) {
+      await this.collection().insertOne({
+        key,
+        guild_id: guildId,
+        staff_id: staffId,
+        tickets_closed: 0,
+        tickets_claimed: 0,
+        tickets_assigned: 0,
+        last_updated: now()
+      });
+    }
   },
-  incrementClosed(guildId, staffId)   { const all = this._r(); const k = this._ensure(all, guildId, staffId); all[k].tickets_closed++;   all[k].last_updated = now(); this._s(all); },
-  incrementClaimed(guildId, staffId)  { const all = this._r(); const k = this._ensure(all, guildId, staffId); all[k].tickets_claimed++;  all[k].last_updated = now(); this._s(all); },
-  incrementAssigned(guildId, staffId) { const all = this._r(); const k = this._ensure(all, guildId, staffId); all[k].tickets_assigned++; all[k].last_updated = now(); this._s(all); },
-  getLeaderboard(guildId) {
-    return Object.values(this._r()).filter(s => s.guild_id === guildId)
-      .sort((a, b) => b.tickets_closed - a.tickets_closed).slice(0, 10);
+
+  async incrementClosed(guildId, staffId) {
+    try {
+      await this._ensure(guildId, staffId);
+      await this.collection().updateOne(
+        { key: this._key(guildId, staffId) },
+        { $inc: { tickets_closed: 1 }, $set: { last_updated: now() } }
+      );
+    } catch (error) {
+      logError("staffStats.incrementClosed", error, { guildId, staffId });
+    }
   },
-  get(guildId, staffId) { return this._r()[this._k(guildId, staffId)] || null; },
+
+  async incrementClaimed(guildId, staffId) {
+    try {
+      await this._ensure(guildId, staffId);
+      await this.collection().updateOne(
+        { key: this._key(guildId, staffId) },
+        { $inc: { tickets_claimed: 1 }, $set: { last_updated: now() } }
+      );
+    } catch (error) {
+      logError("staffStats.incrementClaimed", error, { guildId, staffId });
+    }
+  },
+
+  async incrementAssigned(guildId, staffId) {
+    try {
+      await this._ensure(guildId, staffId);
+      await this.collection().updateOne(
+        { key: this._key(guildId, staffId) },
+        { $inc: { tickets_assigned: 1 }, $set: { last_updated: now() } }
+      );
+    } catch (error) {
+      logError("staffStats.incrementAssigned", error, { guildId, staffId });
+    }
+  },
+
+  async getLeaderboard(guildId, limit = 10) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId })
+        .sort({ tickets_closed: -1 })
+        .limit(limit)
+        .toArray();
+    } catch (error) {
+      logError("staffStats.getLeaderboard", error, { guildId });
+      return [];
+    }
+  },
+
+  async get(guildId, staffId) {
+    try {
+      return await this.collection().findOne({ key: this._key(guildId, staffId) }) || null;
+    } catch (error) {
+      logError("staffStats.get", error, { guildId, staffId });
+      return null;
+    }
+  },
 };
 
 // ─────────────────────────────────────────────────────
-//   STAFF RATINGS (calificaciones individuales por staff)
+//   STAFF RATINGS
 // ─────────────────────────────────────────────────────
 const staffRatings = {
-  _r() { return readArr(F.staffRatings); },
-  _s(d) { save(F.staffRatings, d); },
-
-  // Añadir calificación individual vinculada a un staff
-  add(guildId, staffId, rating, ticketId, userId, comment = null) {
-    const all = this._r();
-    all.push({
-      id:         uid(),
-      guild_id:   guildId,
-      staff_id:   staffId,
-      rating,
-      ticket_id:  ticketId,
-      user_id:    userId,
-      comment,
-      created_at: now(),
-    });
-    this._s(all);
-  },
-
-  // Stats de un staff específico
-  getStaffStats(guildId, staffId) {
-    const all     = this._r().filter(r => r.guild_id === guildId && r.staff_id === staffId);
-    const total   = all.length;
-    if (!total) return { total: 0, avg: null, dist: { 1:0,2:0,3:0,4:0,5:0 }, recent: [] };
-    const avg     = all.reduce((s, r) => s + r.rating, 0) / total;
-    const dist    = { 1:0, 2:0, 3:0, 4:0, 5:0 };
-    all.forEach(r => dist[r.rating]++);
-    const recent  = all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
-    return { total, avg: Math.round(avg * 100) / 100, dist, recent };
-  },
-
-  // Leaderboard completo ordenado por rating promedio (mínimo 3 calificaciones para aparecer)
-  getLeaderboard(guildId, minRatings = 1) {
-    const all     = this._r().filter(r => r.guild_id === guildId);
-    const byStaff = {};
-    for (const r of all) {
-      if (!byStaff[r.staff_id]) byStaff[r.staff_id] = [];
-      byStaff[r.staff_id].push(r.rating);
-    }
-    return Object.entries(byStaff)
-      .filter(([, ratings]) => ratings.length >= minRatings)
-      .map(([staffId, ratings]) => ({
+  collection() { return getDB().collection("staffRatings"); },
+  
+  async add(guildId, staffId, rating, ticketId, userId, comment = null) {
+    try {
+      validateInput(rating, "number", { required: true, minLength: 1, maxLength: 5 });
+      
+      const entry = {
+        _id: ObjectId(),
+        guild_id: guildId,
         staff_id: staffId,
-        total:    ratings.length,
-        avg:      Math.round((ratings.reduce((s, r) => s + r, 0) / ratings.length) * 100) / 100,
-        dist:     ratings.reduce((d, r) => { d[r] = (d[r] || 0) + 1; return d; }, {}),
-      }))
-      .sort((a, b) => b.avg - a.avg || b.total - a.total)
-      .slice(0, 15);
-  },
-
-  // Historial completo de calificaciones de un staff con detalles
-  getHistory(guildId, staffId, limit = 10) {
-    return this._r()
-      .filter(r => r.guild_id === guildId && r.staff_id === staffId)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, limit);
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   TAGS
-// ─────────────────────────────────────────────────────
-const tags = {
-  _r() { return readArr(F.tags); },
-  _s(d) { save(F.tags, d); },
-  create(guildId, name, content, createdBy) {
-    const all = this._r();
-    if (all.find(t => t.guild_id === guildId && t.name === name)) throw new Error("Ya existe");
-    const t = { id: uid(), guild_id: guildId, name, content, created_by: createdBy, uses: 0, created_at: now() };
-    all.push(t); this._s(all); return t;
-  },
-  get(guildId, name)  { return this._r().find(t => t.guild_id === guildId && t.name === name) || null; },
-  getAll(guildId)     { return this._r().filter(t => t.guild_id === guildId).sort((a, b) => b.uses - a.uses); },
-  use(guildId, name)  { const all = this._r(); const i = all.findIndex(t => t.guild_id === guildId && t.name === name); if (i !== -1) { all[i].uses++; this._s(all); } },
-  update(guildId, name, content) { const all = this._r(); const i = all.findIndex(t => t.guild_id === guildId && t.name === name); if (i !== -1) { all[i].content = content; this._s(all); return all[i]; } return null; },
-  delete(guildId, name) { this._s(this._r().filter(t => !(t.guild_id === guildId && t.name === name))); },
-};
-
-// ─────────────────────────────────────────────────────
-//   COOLDOWNS
-// ─────────────────────────────────────────────────────
-const cooldowns = {
-  _r() { return readArr(F.cooldowns); },
-  _s(d) { save(F.cooldowns, d); },
-  set(userId, guildId) {
-    const all = this._r().filter(c => !(c.user_id === userId && c.guild_id === guildId));
-    all.push({ user_id: userId, guild_id: guildId, last_ticket_at: now() });
-    this._s(all);
-  },
-  check(userId, guildId, minutes) {
-    const entry = this._r().find(c => c.user_id === userId && c.guild_id === guildId);
-    if (!entry) return null;
-    const diff = (Date.now() - new Date(entry.last_ticket_at).getTime()) / 60000;
-    if (diff < minutes) return Math.ceil(minutes - diff);
-    return null;
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   STAFF STATUS (modo ausente)
-// ─────────────────────────────────────────────────────
-const staffStatus = {
-  _k(guildId, staffId) { return `${guildId}::${staffId}`; },
-  _r() { return readObj(F.staffStatus); },
-  _s(d) { save(F.staffStatus, d); },
-  setAway(guildId, staffId, reason) {
-    const all = this._r();
-    all[this._k(guildId, staffId)] = { guild_id: guildId, staff_id: staffId, is_away: true, away_reason: reason || null, away_since: now() };
-    this._s(all);
-  },
-  setOnline(guildId, staffId) {
-    const all = this._r();
-    delete all[this._k(guildId, staffId)];
-    this._s(all);
-  },
-  isAway(guildId, staffId)  { const e = this._r()[this._k(guildId, staffId)]; return e ? e.is_away : false; },
-  getAway(guildId)          { return Object.values(this._r()).filter(s => s.guild_id === guildId && s.is_away); },
-  get(guildId, staffId)     { return this._r()[this._k(guildId, staffId)] || null; },
-};
-
-// ─────────────────────────────────────────────────────
-//   AUTO-RESPUESTAS
-// ─────────────────────────────────────────────────────
-const autoResponses = {
-  _r() { return readArr(F.autoResponses); },
-  _s(d) { save(F.autoResponses, d); },
-  create(guildId, trigger, response, createdBy) {
-    const all = this._r();
-    if (all.find(a => a.guild_id === guildId && a.trigger.toLowerCase() === trigger.toLowerCase())) throw new Error("Ya existe");
-    const entry = { id: uid(), guild_id: guildId, trigger, response, created_by: createdBy, uses: 0, enabled: true, created_at: now() };
-    all.push(entry); this._s(all); return entry;
-  },
-  match(guildId, message) {
-    const text = message.toLowerCase();
-    return this._r().find(a => a.guild_id === guildId && a.enabled && text.includes(a.trigger.toLowerCase())) || null;
-  },
-  getAll(guildId) { return this._r().filter(a => a.guild_id === guildId); },
-  get(guildId, trigger) { return this._r().find(a => a.guild_id === guildId && a.trigger.toLowerCase() === trigger.toLowerCase()) || null; },
-  toggle(guildId, trigger) {
-    const all = this._r();
-    const i = all.findIndex(a => a.guild_id === guildId && a.trigger.toLowerCase() === trigger.toLowerCase());
-    if (i === -1) return null;
-    all[i].enabled = !all[i].enabled; this._s(all); return all[i];
-  },
-  use(guildId, trigger) {
-    const all = this._r();
-    const i = all.findIndex(a => a.guild_id === guildId && a.trigger.toLowerCase() === trigger.toLowerCase());
-    if (i !== -1) { all[i].uses++; this._s(all); }
-  },
-  delete(guildId, trigger) { this._s(this._r().filter(a => !(a.guild_id === guildId && a.trigger.toLowerCase() === trigger.toLowerCase()))); },
-};
-
-// ─────────────────────────────────────────────────────
-//   TICKET LOGS (edición/eliminación de mensajes)
-// ─────────────────────────────────────────────────────
-const ticketLogs = {
-  _r() { return readArr(F.ticketLogs); },
-  _s(d) { save(F.ticketLogs, d); },
-  add(guildId, channelId, type, data) {
-    const all = this._r();
-    all.push({ id: uid(), guild_id: guildId, channel_id: channelId, type, data, created_at: now() });
-    // Mantener solo los últimos 500 logs para no crecer indefinidamente
-    if (all.length > 500) all.splice(0, all.length - 500);
-    this._s(all);
-  },
-  get(channelId) { return this._r().filter(l => l.channel_id === channelId).slice(-50); },
-};
-
-
-// ─────────────────────────────────────────────────────
-//   WELCOME / GOODBYE SETTINGS
-// ─────────────────────────────────────────────────────
-const welcomeSettings = {
-  _r() { return readObj(F.welcomeSettings); },
-  _s(d) { save(F.welcomeSettings, d); },
-
-  _default(guildId) {
-    return {
-      guild_id: guildId,
-      // Welcome
-      welcome_enabled:       false,
-      welcome_channel:       null,
-      welcome_message:       "¡Bienvenido/a **{mention}** al servidor **{server}**! 🎉\nEres el miembro número **{count}**.",
-      welcome_color:         "5865F2",
-      welcome_title:         "👋 ¡Bienvenido/a!",
-      welcome_banner:        null,   // URL de imagen de banner
-      welcome_thumbnail:     true,   // Mostrar avatar del usuario
-      welcome_footer:        "¡Esperamos que disfrutes tu estadía!",
-      welcome_dm:            false,  // Enviar DM de bienvenida
-      welcome_dm_message:    "¡Hola **{user}**! Bienvenido/a a **{server}**. Esperamos que disfrutes tu estadía.",
-      // Auto-rol al entrar
-      welcome_autorole:      null,   // ID de rol a asignar automáticamente
-      // Goodbye
-      goodbye_enabled:       false,
-      goodbye_channel:       null,
-      goodbye_message:       "**{user}** ha abandonado el servidor. Nos quedamos con **{count}** miembros.",
-      goodbye_color:         "ED4245",
-      goodbye_title:         "👋 Hasta luego",
-      goodbye_thumbnail:     true,
-      goodbye_footer:        "Esperamos verte de nuevo pronto.",
-    };
-  },
-
-  get(guildId) {
-    const all = this._r();
-    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
-    const def = this._default(guildId);
-    let changed = false;
-    for (const k of Object.keys(def)) {
-      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+        rating,
+        ticket_id: ticketId,
+        user_id: userId,
+        comment: sanitizeString(comment, 500),
+        created_at: now()
+      };
+      
+      await this.collection().insertOne(entry);
+      return entry;
+    } catch (error) {
+      logError("staffRatings.add", error, { guildId, staffId, rating });
+      throw error;
     }
-    if (changed) this._s(all);
-    return all[guildId];
   },
 
-  update(guildId, data) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId] = { ...all[guildId], ...data };
-    this._s(all);
-    return all[guildId];
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   VERIFICATION SETTINGS
-// ─────────────────────────────────────────────────────
-const verifSettings = {
-  _r() { return readObj(F.verifSettings); },
-  _s(d) { save(F.verifSettings, d); },
-
-  _default(guildId) {
-    return {
-      guild_id:              guildId,
-      enabled:               false,
-      mode:                  "button",   // button | code | question
-      channel:               null,       // canal de verificación
-      verified_role:         null,       // rol al verificar
-      unverified_role:       null,       // rol al entrar (sin acceso)
-      log_channel:           null,       // canal de logs de verificación
-      panel_message_id:      null,       // ID del mensaje del panel
-      // Contenido del panel
-      panel_title:           "✅ Verificación",
-      panel_description:     "Para acceder al servidor, debes verificarte.\nHaz clic en el botón de abajo para comenzar.",
-      panel_color:           "57F287",
-      panel_image:           null,
-      // Para modo question
-      question:              "¿Leíste las reglas del servidor?",
-      question_answer:       "si",       // respuesta correcta (insensible a mayúsculas)
-      // Anti-raid
-      antiraid_enabled:      false,
-      antiraid_joins:        10,         // joins en X segundos activan antiraid
-      antiraid_seconds:      10,
-      antiraid_action:       "pause",    // pause | kick
-      // Configuración extra
-      dm_on_verify:          true,       // DM al verificarse
-      kick_unverified_hours: 0,          // horas para kickear no verificados (0=desactivado)
-    };
-  },
-
-  get(guildId) {
-    const all = this._r();
-    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
-    const def = this._default(guildId);
-    let changed = false;
-    for (const k of Object.keys(def)) {
-      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+  async getStaffStats(guildId, staffId) {
+    try {
+      const all = await this.collection()
+        .find({ guild_id: guildId, staff_id: staffId })
+        .toArray();
+      
+      const total = all.length;
+      if (!total) return { total: 0, avg: null, dist: { 1:0,2:0,3:0,4:0,5:0 }, recent: [] };
+      
+      const avg = all.reduce((s, r) => s + r.rating, 0) / total;
+      const dist = { 1:0, 2:0, 3:0, 4:0, 5:0 };
+      all.forEach(r => dist[r.rating]++);
+      const recent = all.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+      
+      return { total, avg: Math.round(avg * 100) / 100, dist, recent };
+    } catch (error) {
+      logError("staffRatings.getStaffStats", error, { guildId, staffId });
+      return { total: 0, avg: null };
     }
-    if (changed) this._s(all);
-    return all[guildId];
   },
 
-  update(guildId, data) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId] = { ...all[guildId], ...data };
-    this._s(all);
-    return all[guildId];
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   VERIFICATION CODES (modo code)
-// ─────────────────────────────────────────────────────
-const verifCodes = {
-  _r() { return readArr(F.verifCodes); },
-  _s(d) { save(F.verifCodes, d); },
-
-  generate(userId, guildId) {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const all  = this._r().filter(c => !(c.user_id === userId && c.guild_id === guildId));
-    all.push({ user_id: userId, guild_id: guildId, code, created_at: now(), expires_at: new Date(Date.now() + 10 * 60000).toISOString() });
-    this._s(all);
-    return code;
-  },
-
-  verify(userId, guildId, inputCode) {
-    const all   = this._r();
-    const entry = all.find(c => c.user_id === userId && c.guild_id === guildId);
-    if (!entry) return { valid: false, reason: "no_code" };
-    if (new Date(entry.expires_at) < new Date()) {
-      this._s(all.filter(c => !(c.user_id === userId && c.guild_id === guildId)));
-      return { valid: false, reason: "expired" };
+  async getLeaderboard(guildId, minRatings = 1) {
+    try {
+      const all = await this.collection()
+        .find({ guild_id: guildId })
+        .toArray();
+      
+      const byStaff = {};
+      for (const r of all) {
+        if (!byStaff[r.staff_id]) byStaff[r.staff_id] = [];
+        byStaff[r.staff_id].push(r.rating);
+      }
+      
+      return Object.entries(byStaff)
+        .filter(([, ratings]) => ratings.length >= minRatings)
+        .map(([staffId, ratings]) => ({
+          staff_id: staffId,
+          total: ratings.length,
+          avg: Math.round((ratings.reduce((s, r) => s + r, 0) / ratings.length) * 100) / 100,
+        }))
+        .sort((a, b) => b.avg - a.avg || b.total - a.total)
+        .slice(0, 15);
+    } catch (error) {
+      logError("staffRatings.getLeaderboard", error, { guildId });
+      return [];
     }
-    if (entry.code !== inputCode.toUpperCase().trim()) return { valid: false, reason: "wrong" };
-    this._s(all.filter(c => !(c.user_id === userId && c.guild_id === guildId)));
-    return { valid: true };
   },
 
-  getActive(userId, guildId) {
-    const all   = this._r();
-    const entry = all.find(c => c.user_id === userId && c.guild_id === guildId && new Date(c.expires_at) > new Date());
-    return entry ? entry.code : null;
-  },
-
-  cleanup() {
-    const now_ = new Date();
-    this._s(this._r().filter(c => new Date(c.expires_at) > now_));
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   VERIFICATION LOGS
-// ─────────────────────────────────────────────────────
-const verifLogs = {
-  _r() { return readArr(F.verifLogs); },
-  _s(d) { save(F.verifLogs, d); },
-
-  add(guildId, userId, status, detail = null) {
-    const all = this._r();
-    all.push({ id: uid(), guild_id: guildId, user_id: userId, status, detail, created_at: now() });
-    if (all.length > 1000) all.splice(0, all.length - 1000);
-    this._s(all);
-  },
-
-  getRecent(guildId, limit = 20) {
-    return this._r()
-      .filter(l => l.guild_id === guildId)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, limit);
-  },
-
-  getStats(guildId) {
-    const all      = this._r().filter(l => l.guild_id === guildId);
-    const verified = all.filter(l => l.status === "verified").length;
-    const failed   = all.filter(l => l.status === "failed").length;
-    const kicked   = all.filter(l => l.status === "kicked").length;
-    return { total: all.length, verified, failed, kicked };
-  },
-};
-
-
-// ─────────────────────────────────────────────────────
-//   MOD LOG SETTINGS
-// ─────────────────────────────────────────────────────
-const modlogSettings = {
-  _r() { return readObj(F.modlogSettings); },
-  _s(d) { save(F.modlogSettings, d); },
-  _default(guildId) {
-    return {
-      guild_id:         guildId,
-      enabled:          false,
-      channel:          null,
-      log_bans:         true,
-      log_unbans:       true,
-      log_kicks:        true,
-      log_msg_delete:   true,
-      log_msg_edit:     true,
-      log_role_add:     true,
-      log_role_remove:  true,
-      log_nickname:     true,
-      log_joins:        false,
-      log_leaves:       false,
-      log_voice:        false,
-    };
-  },
-  get(guildId) {
-    const all = this._r();
-    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
-    const def = this._default(guildId);
-    let changed = false;
-    for (const k of Object.keys(def)) {
-      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+  async getHistory(guildId, staffId, limit = 10) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId, staff_id: staffId })
+        .sort({ created_at: -1 })
+        .limit(limit)
+        .toArray();
+    } catch (error) {
+      logError("staffRatings.getHistory", error, { guildId, staffId });
+      return [];
     }
-    if (changed) this._s(all);
-    return all[guildId];
-  },
-  update(guildId, data) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId] = { ...all[guildId], ...data };
-    this._s(all);
-    return all[guildId];
   },
 };
 
 // ─────────────────────────────────────────────────────
-//   LEVEL SETTINGS
-// ─────────────────────────────────────────────────────
-const levelSettings = {
-  _r() { return readObj(F.levelSettings); },
-  _s(d) { save(F.levelSettings, d); },
-  _default(guildId) {
-    return {
-      guild_id:         guildId,
-      enabled:          false,
-      channel:          null,       // canal de anuncios de subida (null = mismo canal)
-      xp_per_message:   15,         // XP base por mensaje
-      xp_cooldown:      60,         // segundos entre XP
-      xp_min:           10,         // XP mínimo por mensaje
-      xp_max:           25,         // XP máximo por mensaje
-      levelup_message:  "🎉 ¡Felicidades {mention}! Subiste al **nivel {level}**! 🏆",
-      ignored_channels: [],         // canales donde no se gana XP
-      ignored_roles:    [],         // roles que no ganan XP
-      role_rewards:     [],         // [{ level: N, role_id: "..." }]
-      double_xp_roles:  [],         // roles con XP x2
-      stack_roles:      true,       // mantener roles anteriores al subir
-    };
-  },
-  get(guildId) {
-    const all = this._r();
-    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
-    const def = this._default(guildId);
-    let changed = false;
-    for (const k of Object.keys(def)) {
-      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
-    }
-    if (changed) this._s(all);
-    return all[guildId];
-  },
-  update(guildId, data) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId] = { ...all[guildId], ...data };
-    this._s(all);
-    return all[guildId];
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   LEVELS (user XP data)
+//   LEVELS
 // ─────────────────────────────────────────────────────
 const levels = {
-  _k(guildId, userId) { return guildId + "::" + userId; },
-  _r() { return readObj(F.levels); },
-  _s(d) { save(F.levels, d); },
-  _ensure(all, guildId, userId) {
-    const k = this._k(guildId, userId);
-    if (!all[k]) all[k] = { guild_id: guildId, user_id: userId, xp: 0, level: 0, total_xp: 0, last_xp_at: null, messages: 0 };
-    return k;
-  },
-
-  // Calcular XP necesario para el siguiente nivel (fórmula estándar)
+  collection() { return getDB().collection("levels"); },
+  
+  _key(guildId, userId) { return `${guildId}::${userId}`; },
+  
   xpForLevel(level) { return Math.floor(100 * Math.pow(level, 1.5) + 100); },
-
-  // Calcular nivel a partir de XP total
+  
   levelFromXp(totalXp) {
     let level = 0;
     let xpNeeded = 0;
@@ -825,52 +812,162 @@ const levels = {
     return level;
   },
 
-  addXp(guildId, userId, amount) {
-    const all   = this._r();
-    const k     = this._ensure(all, guildId, userId);
-    const entry = all[k];
-    entry.total_xp += amount;
-    entry.messages++;
-    entry.last_xp_at = now();
-    const newLevel = this.levelFromXp(entry.total_xp);
-    const leveled  = newLevel > entry.level;
-    entry.level    = newLevel;
-    this._s(all);
-    return { leveled, level: newLevel, total_xp: entry.total_xp };
+  async addXp(guildId, userId, amount) {
+    try {
+      const key = this._key(guildId, userId);
+      let entry = await this.collection().findOne({ key });
+      
+      if (!entry) {
+        entry = {
+          key,
+          guild_id: guildId,
+          user_id: userId,
+          xp: 0,
+          level: 0,
+          total_xp: 0,
+          last_xp_at: null,
+          messages: 0
+        };
+      }
+      
+      entry.total_xp += amount;
+      entry.messages++;
+      entry.last_xp_at = now();
+      
+      const newLevel = this.levelFromXp(entry.total_xp);
+      const leveled = newLevel > entry.level;
+      entry.level = newLevel;
+      
+      await this.collection().replaceOne({ key }, entry, { upsert: true });
+      
+      return { leveled, level: newLevel, total_xp: entry.total_xp };
+    } catch (error) {
+      logError("levels.addXp", error, { guildId, userId, amount });
+      return { leveled: false, level: 0, total_xp: 0 };
+    }
   },
 
-  get(guildId, userId) {
-    const all = this._r();
-    const k   = this._k(guildId, userId);
-    return all[k] || { guild_id: guildId, user_id: userId, xp: 0, level: 0, total_xp: 0, messages: 0 };
+  async get(guildId, userId) {
+    try {
+      const key = this._key(guildId, userId);
+      return await this.collection().findOne({ key }) || {
+        guild_id: guildId,
+        user_id: userId,
+        xp: 0,
+        level: 0,
+        total_xp: 0,
+        messages: 0
+      };
+    } catch (error) {
+      logError("levels.get", error, { guildId, userId });
+      return { level: 0, total_xp: 0 };
+    }
   },
 
-  getLeaderboard(guildId, limit = 15) {
-    return Object.values(this._r())
-      .filter(e => e.guild_id === guildId)
-      .sort((a, b) => b.total_xp - a.total_xp)
-      .slice(0, limit);
+  async getLeaderboard(guildId, limit = 15) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId })
+        .sort({ total_xp: -1 })
+        .limit(limit)
+        .toArray();
+    } catch (error) {
+      logError("levels.getLeaderboard", error, { guildId });
+      return [];
+    }
   },
 
-  getRank(guildId, userId) {
-    const sorted = this.getLeaderboard(guildId, 9999);
-    const idx    = sorted.findIndex(e => e.user_id === userId);
-    return idx === -1 ? null : idx + 1;
+  async getRank(guildId, userId) {
+    try {
+      const leaderboard = await this.getLeaderboard(guildId, 9999);
+      const idx = leaderboard.findIndex(e => e.user_id === userId);
+      return idx === -1 ? null : idx + 1;
+    } catch (error) {
+      logError("levels.getRank", error, { guildId, userId });
+      return null;
+    }
   },
 
-  setXp(guildId, userId, amount) {
-    const all = this._r();
-    const k   = this._ensure(all, guildId, userId);
-    all[k].total_xp = amount;
-    all[k].level    = this.levelFromXp(amount);
-    this._s(all);
+  async setXp(guildId, userId, amount) {
+    try {
+      const key = this._key(guildId, userId);
+      await this.collection().updateOne(
+        { key },
+        { 
+          $set: { 
+            total_xp: amount,
+            level: this.levelFromXp(amount)
+          }
+        },
+        { upsert: true }
+      );
+    } catch (error) {
+      logError("levels.setXp", error, { guildId, userId, amount });
+    }
   },
 
-  reset(guildId, userId) {
-    const all = this._r();
-    const k   = this._k(guildId, userId);
-    delete all[k];
-    this._s(all);
+  async reset(guildId, userId) {
+    try {
+      const key = this._key(guildId, userId);
+      await this.collection().deleteOne({ key });
+    } catch (error) {
+      logError("levels.reset", error, { guildId, userId });
+    }
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   LEVEL SETTINGS
+// ─────────────────────────────────────────────────────
+const levelSettings = {
+  collection() { return getDB().collection("levelSettings"); },
+  
+  _default(guildId) {
+    return {
+      guild_id: guildId,
+      enabled: false,
+      channel: null,
+      xp_per_message: 15,
+      xp_cooldown: 60,
+      xp_min: 10,
+      xp_max: 25,
+      levelup_message: "🎉 ¡Felicidades {mention}! Subiste al **nivel {level}**! 🏆",
+      ignored_channels: [],
+      ignored_roles: [],
+      role_rewards: [],
+      double_xp_roles: [],
+      stack_roles: true,
+    };
+  },
+
+  async get(guildId) {
+    try {
+      let s = await this.collection().findOne({ guild_id: guildId });
+      
+      if (!s) {
+        s = this._default(guildId);
+        await this.collection().insertOne(s);
+      }
+      
+      return s;
+    } catch (error) {
+      logError("levelSettings.get", error, { guildId });
+      return this._default(guildId);
+    }
+  },
+
+  async update(guildId, data) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId },
+        { $set: data },
+        { upsert: true }
+      );
+      return this.get(guildId);
+    } catch (error) {
+      logError("levelSettings.update", error, { guildId, data });
+      return null;
+    }
   },
 };
 
@@ -878,151 +975,88 @@ const levels = {
 //   REMINDERS
 // ─────────────────────────────────────────────────────
 const reminders = {
-  _r() { return readArr(F.reminders); },
-  _s(d) { save(F.reminders, d); },
-
-  create(userId, guildId, channelId, text, fireAt) {
-    const all = this._r();
-    const id  = uid();
-    all.push({ id, user_id: userId, guild_id: guildId, channel_id: channelId, text, fire_at: fireAt, created_at: now(), fired: false });
-    this._s(all);
-    return id;
-  },
-
-  getPending() {
-    const now_ = new Date();
-    return this._r().filter(r => !r.fired && new Date(r.fire_at) <= now_);
-  },
-
-  markFired(id) {
-    const all = this._r();
-    const idx = all.findIndex(r => r.id === id);
-    if (idx !== -1) { all[idx].fired = true; this._s(all); }
-  },
-
-  getByUser(userId, guildId) {
-    return this._r()
-      .filter(r => r.user_id === userId && r.guild_id === guildId && !r.fired)
-      .sort((a, b) => new Date(a.fire_at) - new Date(b.fire_at));
-  },
-
-  delete(id, userId) {
-    const all = this._r();
-    const idx = all.findIndex(r => r.id === id && r.user_id === userId);
-    if (idx === -1) return false;
-    all.splice(idx, 1);
-    this._s(all);
-    return true;
-  },
-
-  cleanup() {
-    const cutoff = new Date(Date.now() - 7 * 24 * 3600000); // 7 días
-    this._s(this._r().filter(r => !r.fired || new Date(r.fire_at) > cutoff));
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   SUGGESTION SETTINGS
-// ─────────────────────────────────────────────────────
-const suggestSettings = {
-  _r() { return readObj(F.suggestSettings); },
-  _s(d) { save(F.suggestSettings, d); },
-  _default(guildId) {
-    return {
-      guild_id:          guildId,
-      enabled:           false,
-      channel:           null,
-      log_channel:       null,
-      approved_channel:  null,
-      rejected_channel:  null,
-      dm_on_result:      true,
-      require_reason:    false,
-      cooldown_minutes:  5,
-      anonymous:         false,
-    };
-  },
-  get(guildId) {
-    const all = this._r();
-    if (!all[guildId]) { all[guildId] = this._default(guildId); this._s(all); }
-    const def = this._default(guildId);
-    let changed = false;
-    for (const k of Object.keys(def)) {
-      if (all[guildId][k] === undefined) { all[guildId][k] = def[k]; changed = true; }
+  collection() { return getDB().collection("reminders"); },
+  
+  async create(userId, guildId, channelId, text, fireAt) {
+    try {
+      validateInput(text, "string", { required: true, maxLength: 1000 });
+      
+      const entry = {
+        _id: ObjectId(),
+        user_id: userId,
+        guild_id: guildId,
+        channel_id: channelId,
+        text: sanitizeString(text, 1000),
+        fire_at: fireAt,
+        created_at: now(),
+        fired: false
+      };
+      
+      await this.collection().insertOne(entry);
+      return entry._id.toString();
+    } catch (error) {
+      logError("reminders.create", error, { userId, guildId });
+      throw error;
     }
-    if (changed) this._s(all);
-    return all[guildId];
-  },
-  update(guildId, data) {
-    const all = this._r();
-    if (!all[guildId]) all[guildId] = this._default(guildId);
-    all[guildId] = { ...all[guildId], ...data };
-    this._s(all);
-    return all[guildId];
-  },
-};
-
-// ─────────────────────────────────────────────────────
-//   SUGGESTIONS
-// ─────────────────────────────────────────────────────
-const suggestions = {
-  _r() { return readArr(F.suggestions); },
-  _s(d) { save(F.suggestions, d); },
-
-  create(guildId, userId, text, messageId, channelId) {
-    const all = this._r();
-    const num = all.filter(s => s.guild_id === guildId).length + 1;
-    const s   = { id: uid(), num, guild_id: guildId, user_id: userId, text, message_id: messageId, channel_id: channelId, status: "pending", upvotes: [], downvotes: [], staff_comment: null, reviewed_by: null, created_at: now() };
-    all.push(s);
-    this._s(all);
-    return s;
   },
 
-  getByMessage(messageId) { return this._r().find(s => s.message_id === messageId) || null; },
-  getById(id)             { return this._r().find(s => s.id === id) || null; },
-  getByNum(guildId, num)  { return this._r().find(s => s.guild_id === guildId && s.num === num) || null; },
-
-  vote(id, userId, type) { // type: 'up' | 'down'
-    const all = this._r();
-    const idx = all.findIndex(s => s.id === id);
-    if (idx === -1) return null;
-    // Quitar voto opuesto
-    const opposite = type === "up" ? "downvotes" : "upvotes";
-    const current  = type === "up" ? "upvotes"   : "downvotes";
-    all[idx][opposite] = all[idx][opposite].filter(v => v !== userId);
-    // Toggle propio voto
-    if (all[idx][current].includes(userId)) {
-      all[idx][current] = all[idx][current].filter(v => v !== userId);
-    } else {
-      all[idx][current].push(userId);
+  async getPending() {
+    try {
+      const now_ = new Date();
+      return await this.collection()
+        .find({ fired: false, fire_at: { $lte: now_ } })
+        .toArray();
+    } catch (error) {
+      logError("reminders.getPending", error);
+      return [];
     }
-    this._s(all);
-    return all[idx];
   },
 
-  setStatus(id, status, reviewedBy, comment = null) {
-    const all = this._r();
-    const idx = all.findIndex(s => s.id === id);
-    if (idx === -1) return null;
-    all[idx].status       = status;
-    all[idx].reviewed_by  = reviewedBy;
-    all[idx].staff_comment = comment;
-    all[idx].reviewed_at  = now();
-    this._s(all);
-    return all[idx];
+  async markFired(id) {
+    try {
+      await this.collection().updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { fired: true } }
+      );
+    } catch (error) {
+      logError("reminders.markFired", error, { id });
+    }
   },
 
-  updateMessageId(id, messageId) {
-    const all = this._r();
-    const idx = all.findIndex(s => s.id === id);
-    if (idx !== -1) { all[idx].message_id = messageId; this._s(all); }
+  async getByUser(userId, guildId) {
+    try {
+      return await this.collection()
+        .find({ user_id: userId, guild_id: guildId, fired: false })
+        .sort({ fire_at: 1 })
+        .toArray();
+    } catch (error) {
+      logError("reminders.getByUser", error, { userId, guildId });
+      return [];
+    }
   },
 
-  getStats(guildId) {
-    const all      = this._r().filter(s => s.guild_id === guildId);
-    const pending  = all.filter(s => s.status === "pending").length;
-    const approved = all.filter(s => s.status === "approved").length;
-    const rejected = all.filter(s => s.status === "rejected").length;
-    return { total: all.length, pending, approved, rejected };
+  async delete(id, userId) {
+    try {
+      const result = await this.collection().deleteOne({ _id: new ObjectId(id), user_id: userId });
+      return result.deletedCount > 0;
+    } catch (error) {
+      logError("reminders.delete", error, { id, userId });
+      return false;
+    }
+  },
+
+  async cleanup() {
+    try {
+      const cutoff = new Date(Date.now() - 7 * 24 * 3600000);
+      await this.collection().deleteMany({
+        $or: [
+          { fired: true },
+          { fire_at: { $lt: cutoff } }
+        ]
+      });
+    } catch (error) {
+      logError("reminders.cleanup", error);
+    }
   },
 };
 
@@ -1030,70 +1064,662 @@ const suggestions = {
 //   POLLS
 // ─────────────────────────────────────────────────────
 const polls = {
-  _r() { return readArr(F.polls); },
-  _s(d) { save(F.polls, d); },
-
-  create(guildId, channelId, messageId, creatorId, question, options, endsAt, allowMultiple) {
-    const all = this._r();
-    const p   = {
-      id:           uid(),
-      guild_id:     guildId,
-      channel_id:   channelId,
-      message_id:   messageId,
-      creator_id:   creatorId,
-      question,
-      options:      options.map((o, i) => ({ id: i, text: o, votes: [] })),
-      allow_multiple: allowMultiple,
-      ended:        false,
-      ends_at:      endsAt,
-      created_at:   now(),
-    };
-    all.push(p);
-    this._s(all);
-    return p;
-  },
-
-  vote(id, userId, optionIds) {
-    const all = this._r();
-    const idx = all.findIndex(p => p.id === id);
-    if (idx === -1) return null;
-    const poll = all[idx];
-    if (poll.ended) return null;
-    // Quitar votos anteriores del usuario
-    poll.options.forEach(o => { o.votes = o.votes.filter(v => v !== userId); });
-    // Añadir nuevos votos
-    const maxVotes = poll.allow_multiple ? optionIds.length : 1;
-    for (const oid of optionIds.slice(0, maxVotes)) {
-      const opt = poll.options.find(o => o.id === oid);
-      if (opt && !opt.votes.includes(userId)) opt.votes.push(userId);
+  collection() { return getDB().collection("polls"); },
+  
+  async create(guildId, channelId, messageId, creatorId, question, options, endsAt, allowMultiple) {
+    try {
+      validateInput(question, "string", { required: true, maxLength: 500 });
+      
+      const poll = {
+        _id: ObjectId(),
+        guild_id: guildId,
+        channel_id: channelId,
+        message_id: messageId,
+        creator_id: creatorId,
+        question: sanitizeString(question, 500),
+        options: options.map((o, i) => ({ id: i, text: sanitizeString(o, 200), votes: [] })),
+        allow_multiple: allowMultiple,
+        ended: false,
+        ends_at: endsAt,
+        created_at: now()
+      };
+      
+      await this.collection().insertOne(poll);
+      return poll;
+    } catch (error) {
+      logError("polls.create", error, { guildId, question });
+      throw error;
     }
-    this._s(all);
-    return poll;
   },
 
-  end(id) {
-    const all = this._r();
-    const idx = all.findIndex(p => p.id === id);
-    if (idx === -1) return null;
-    all[idx].ended = true;
-    all[idx].ended_at = now();
-    this._s(all);
-    return all[idx];
+  async vote(id, userId, optionIds) {
+    try {
+      const poll = await this.collection().findOne({ _id: new ObjectId(id) });
+      if (!poll || poll.ended) return null;
+      
+      // Quitar votos anteriores
+      poll.options.forEach(o => {
+        o.votes = o.votes.filter(v => v !== userId);
+      });
+      
+      // Añadir nuevos votos
+      const maxVotes = poll.allow_multiple ? optionIds.length : 1;
+      for (const oid of optionIds.slice(0, maxVotes)) {
+        const opt = poll.options.find(o => o.id === oid);
+        if (opt && !opt.votes.includes(userId)) {
+          opt.votes.push(userId);
+        }
+      }
+      
+      await this.collection().replaceOne({ _id: poll._id }, poll);
+      return poll;
+    } catch (error) {
+      logError("polls.vote", error, { id, userId });
+      return null;
+    }
   },
 
-  getActive() {
-    const now_ = new Date();
-    return this._r().filter(p => !p.ended && new Date(p.ends_at) <= now_);
+  async end(id) {
+    try {
+      await this.collection().updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { ended: true, ended_at: now() } }
+      );
+      return true;
+    } catch (error) {
+      logError("polls.end", error, { id });
+      return false;
+    }
   },
 
-  getByMessage(messageId) { return this._r().find(p => p.message_id === messageId) || null; },
-  getById(id)             { return this._r().find(p => p.id === id) || null; },
+  async getActive() {
+    try {
+      const now_ = new Date();
+      return await this.collection()
+        .find({ ended: false, ends_at: { $lte: now_ } })
+        .toArray();
+    } catch (error) {
+      logError("polls.getActive", error);
+      return [];
+    }
+  },
 
-  getByGuild(guildId, includeEnded = false) {
-    return this._r()
-      .filter(p => p.guild_id === guildId && (includeEnded || !p.ended))
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  async getByMessage(messageId) {
+    try {
+      return await this.collection().findOne({ message_id: messageId }) || null;
+    } catch (error) {
+      logError("polls.getByMessage", error, { messageId });
+      return null;
+    }
+  },
+
+  async getByGuild(guildId, includeEnded = false) {
+    try {
+      const query = { guild_id: guildId };
+      if (!includeEnded) query.ended = false;
+      
+      return await this.collection()
+        .find(query)
+        .sort({ created_at: -1 })
+        .toArray();
+    } catch (error) {
+      logError("polls.getByGuild", error, { guildId });
+      return [];
+    }
   },
 };
 
-module.exports = { tickets, notes, blacklist, settings, staffStats, staffRatings, tags, cooldowns, staffStatus, autoResponses, ticketLogs, welcomeSettings, verifSettings, verifCodes, verifLogs, modlogSettings, levelSettings, levels, reminders, suggestSettings, suggestions, polls };
+// ─────────────────────────────────────────────────────
+//   OTRAS COLECCIONES (simplificadas para compatibilidad)
+// ─────────────────────────────────────────────────────
+
+const tags = {
+  collection() { return getDB().collection("tags"); },
+  
+  async create(guildId, name, content, createdBy) {
+    try {
+      const existing = await this.collection().findOne({ guild_id: guildId, name });
+      if (existing) throw new Error("Ya existe");
+      
+      const tag = {
+        _id: ObjectId(),
+        guild_id: guildId,
+        name: sanitizeString(name, 50),
+        content: sanitizeString(content, 2000),
+        created_by: createdBy,
+        uses: 0,
+        created_at: now()
+      };
+      
+      await this.collection().insertOne(tag);
+      return tag;
+    } catch (error) {
+      logError("tags.create", error, { guildId, name });
+      throw error;
+    }
+  },
+
+  async get(guildId, name) {
+    try {
+      return await this.collection().findOne({ guild_id: guildId, name }) || null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async getAll(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId })
+        .sort({ uses: -1 })
+        .toArray();
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async use(guildId, name) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId, name },
+        { $inc: { uses: 1 } }
+      );
+    } catch (error) {}
+  },
+
+  async update(guildId, name, content) {
+    try {
+      const result = await this.collection().findOneAndUpdate(
+        { guild_id: guildId, name },
+        { $set: { content: sanitizeString(content, 2000) } },
+        { returnDocument: "after" }
+      );
+      return result;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async delete(guildId, name) {
+    try {
+      await this.collection().deleteOne({ guild_id: guildId, name });
+    } catch (error) {}
+  },
+};
+
+const cooldowns = {
+  collection() { return getDB().collection("cooldowns"); },
+  
+  async set(userId, guildId) {
+    try {
+      await this.collection().deleteMany({ user_id: userId, guild_id: guildId });
+      await this.collection().insertOne({
+        user_id: userId,
+        guild_id: guildId,
+        last_ticket_at: now()
+      });
+    } catch (error) {}
+  },
+
+  async check(userId, guildId, minutes) {
+    try {
+      const entry = await this.collection().findOne({ user_id: userId, guild_id: guildId });
+      if (!entry) return null;
+      
+      const diff = (Date.now() - new Date(entry.last_ticket_at).getTime()) / 60000;
+      if (diff < minutes) return Math.ceil(minutes - diff);
+      return null;
+    } catch (error) {
+      return null;
+    }
+  },
+};
+
+const staffStatus = {
+  collection() { return getDB().collection("staffStatus"); },
+  
+  _key(guildId, staffId) { return `${guildId}::${staffId}`; },
+  
+  async setAway(guildId, staffId, reason) {
+    try {
+      await this.collection().updateOne(
+        { _id: this._key(guildId, staffId) },
+        { 
+          $set: { 
+            guild_id: guildId, 
+            staff_id: staffId, 
+            is_away: true, 
+            away_reason: sanitizeString(reason, 200), 
+            away_since: now() 
+          }
+        },
+        { upsert: true }
+      );
+    } catch (error) {}
+  },
+
+  async setOnline(guildId, staffId) {
+    try {
+      await this.collection().deleteOne({ _id: this._key(guildId, staffId) });
+    } catch (error) {}
+  },
+
+  async isAway(guildId, staffId) {
+    try {
+      const e = await this.collection().findOne({ _id: this._key(guildId, staffId) });
+      return e ? e.is_away : false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  async getAway(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId, is_away: true })
+        .toArray();
+    } catch (error) {
+      return [];
+    }
+  },
+};
+
+const verifSettings = {
+  collection() { return getDB().collection("verifSettings"); },
+  
+  _default(guildId) {
+    return {
+      guild_id: guildId,
+      enabled: false,
+      mode: "button",
+      channel: null,
+      verified_role: null,
+      unverified_role: null,
+      log_channel: null,
+      panel_message_id: null,
+      panel_title: "✅ Verificación",
+      panel_description: "Para acceder al servidor, debes verificarte.",
+      panel_color: "57F287",
+      panel_image: null,
+      question: "¿Leíste las reglas del servidor?",
+      question_answer: "si",
+      antiraid_enabled: false,
+      antiraid_joins: 10,
+      antiraid_seconds: 10,
+      antiraid_action: "pause",
+      dm_on_verify: true,
+      kick_unverified_hours: 0,
+    };
+  },
+
+  async get(guildId) {
+    try {
+      let s = await this.collection().findOne({ guild_id: guildId });
+      if (!s) {
+        s = this._default(guildId);
+        await this.collection().insertOne(s);
+      }
+      return s;
+    } catch (error) {
+      return this._default(guildId);
+    }
+  },
+
+  async update(guildId, data) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId },
+        { $set: data },
+        { upsert: true }
+      );
+      return this.get(guildId);
+    } catch (error) {
+      return null;
+    }
+  },
+};
+
+const verifCodes = {
+  collection() { return getDB().collection("verifCodes"); },
+  
+  async generate(userId, guildId) {
+    try {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const expires_at = new Date(Date.now() + 10 * 60000);
+      
+      await this.collection().deleteMany({ user_id: userId, guild_id: guildId });
+      await this.collection().insertOne({
+        user_id: userId,
+        guild_id: guildId,
+        code,
+        created_at: now(),
+        expires_at: expires_at.toISOString()
+      });
+      
+      return code;
+    } catch (error) {
+      logError("verifCodes.generate", error, { userId, guildId });
+      throw error;
+    }
+  },
+
+  async verify(userId, guildId, inputCode) {
+    try {
+      const entry = await this.collection().findOne({ user_id: userId, guild_id: guildId });
+      if (!entry) return { valid: false, reason: "no_code" };
+      
+      if (new Date(entry.expires_at) < new Date()) {
+        await this.collection().deleteOne({ _id: entry._id });
+        return { valid: false, reason: "expired" };
+      }
+      
+      if (entry.code !== inputCode.toUpperCase().trim()) {
+        return { valid: false, reason: "wrong" };
+      }
+      
+      await this.collection().deleteOne({ _id: entry._id });
+      return { valid: true };
+    } catch (error) {
+      logError("verifCodes.verify", error, { userId, guildId });
+      return { valid: false, reason: "error" };
+    }
+  },
+
+  async getActive(userId, guildId) {
+    try {
+      const entry = await this.collection().findOne({ 
+        user_id: userId, 
+        guild_id: guildId,
+        expires_at: { $gt: new Date() }
+      });
+      return entry ? entry.code : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async cleanup() {
+    try {
+      await this.collection().deleteMany({
+        expires_at: { $lt: new Date() }
+      });
+    } catch (error) {}
+  },
+};
+
+const welcomeSettings = {
+  collection() { return getDB().collection("welcomeSettings"); },
+  
+  _default(guildId) {
+    return {
+      guild_id: guildId,
+      welcome_enabled: false,
+      welcome_channel: null,
+      welcome_message: "¡Bienvenido/a **{mention}** al servidor **{server}**! 🎉",
+      welcome_color: "5865F2",
+      welcome_title: "👋 ¡Bienvenido/a!",
+      welcome_banner: null,
+      welcome_thumbnail: true,
+      welcome_footer: "¡Espero que disfrutes tu estadía!",
+      welcome_dm: false,
+      welcome_dm_message: "¡Hola **{user}**! Bienvenido/a a **{server}**.",
+      welcome_autorole: null,
+      goodbye_enabled: false,
+      goodbye_channel: null,
+      goodbye_message: "**{user}** ha abandonado el servidor.",
+      goodbye_color: "ED4245",
+      goodbye_title: "👋 Hasta luego",
+      goodbye_thumbnail: true,
+      goodbye_footer: "Espero verte de nuevo pronto.",
+    };
+  },
+
+  async get(guildId) {
+    try {
+      let s = await this.collection().findOne({ guild_id: guildId });
+      if (!s) {
+        s = this._default(guildId);
+        await this.collection().insertOne(s);
+      }
+      return s;
+    } catch (error) {
+      return this._default(guildId);
+    }
+  },
+
+  async update(guildId, data) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId },
+        { $set: data },
+        { upsert: true }
+      );
+      return this.get(guildId);
+    } catch (error) {
+      return null;
+    }
+  },
+};
+
+const modlogSettings = {
+  collection() { return getDB().collection("modlogSettings"); },
+  
+  _default(guildId) {
+    return {
+      guild_id: guildId,
+      enabled: false,
+      channel: null,
+      log_bans: true,
+      log_unbans: true,
+      log_kicks: true,
+      log_msg_delete: true,
+      log_msg_edit: true,
+      log_role_add: true,
+      log_role_remove: true,
+      log_nickname: true,
+      log_joins: false,
+      log_leaves: false,
+      log_voice: false,
+    };
+  },
+
+  async get(guildId) {
+    try {
+      let s = await this.collection().findOne({ guild_id: guildId });
+      if (!s) {
+        s = this._default(guildId);
+        await this.collection().insertOne(s);
+      }
+      return s;
+    } catch (error) {
+      return this._default(guildId);
+    }
+  },
+
+  async update(guildId, data) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId },
+        { $set: data },
+        { upsert: true }
+      );
+      return this.get(guildId);
+    } catch (error) {
+      return null;
+    }
+  },
+};
+
+const suggestSettings = {
+  collection() { return getDB().collection("suggestSettings"); },
+  
+  _default(guildId) {
+    return {
+      guild_id: guildId,
+      enabled: false,
+      channel: null,
+      log_channel: null,
+      approved_channel: null,
+      rejected_channel: null,
+      dm_on_result: true,
+      require_reason: false,
+      cooldown_minutes: 5,
+      anonymous: false,
+    };
+  },
+
+  async get(guildId) {
+    try {
+      let s = await this.collection().findOne({ guild_id: guildId });
+      if (!s) {
+        s = this._default(guildId);
+        await this.collection().insertOne(s);
+      }
+      return s;
+    } catch (error) {
+      return this._default(guildId);
+    }
+  },
+
+  async update(guildId, data) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId },
+        { $set: data },
+        { upsert: true }
+      );
+      return this.get(guildId);
+    } catch (error) {
+      return null;
+    }
+  },
+};
+
+const suggestions = {
+  collection() { return getDB().collection("suggestions"); },
+  
+  async create(guildId, userId, text, messageId, channelId) {
+    try {
+      const count = await this.collection().countDocuments({ guild_id: guildId });
+      
+      const suggestion = {
+        _id: ObjectId(),
+        num: count + 1,
+        guild_id: guildId,
+        user_id: userId,
+        text: sanitizeString(text, 1000),
+        message_id: messageId,
+        channel_id: channelId,
+        status: "pending",
+        upvotes: [],
+        downvotes: [],
+        staff_comment: null,
+        reviewed_by: null,
+        created_at: now()
+      };
+      
+      await this.collection().insertOne(suggestion);
+      return suggestion;
+    } catch (error) {
+      logError("suggestions.create", error, { guildId, userId });
+      throw error;
+    }
+  },
+
+  async getByMessage(messageId) {
+    try {
+      return await this.collection().findOne({ message_id: messageId }) || null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async vote(id, userId, type) {
+    try {
+      const suggestion = await this.collection().findOne({ _id: new ObjectId(id) });
+      if (!suggestion) return null;
+      
+      const opposite = type === "up" ? "downvotes" : "upvotes";
+      const current = type === "up" ? "upvotes" : "downvotes";
+      
+      suggestion[opposite] = suggestion[opposite].filter(v => v !== userId);
+      
+      if (suggestion[current].includes(userId)) {
+        suggestion[current] = suggestion[current].filter(v => v !== userId);
+      } else {
+        suggestion[current].push(userId);
+      }
+      
+      await this.collection().replaceOne({ _id: suggestion._id }, suggestion);
+      return suggestion;
+    } catch (error) {
+      logError("suggestions.vote", error, { id, userId, type });
+      return null;
+    }
+  },
+
+  async setStatus(id, status, reviewedBy, comment = null) {
+    try {
+      await this.collection().updateOne(
+        { _id: new ObjectId(id) },
+        { 
+          $set: { 
+            status,
+            reviewed_by: reviewedBy,
+            staff_comment: sanitizeString(comment, 500),
+            reviewed_at: now()
+          }
+        }
+      );
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  async getStats(guildId) {
+    try {
+      const all = await this.collection()
+        .find({ guild_id: guildId })
+        .toArray();
+      
+      return {
+        total: all.length,
+        pending: all.filter(s => s.status === "pending").length,
+        approved: all.filter(s => s.status === "approved").length,
+        rejected: all.filter(s => s.status === "rejected").length
+      };
+    } catch (error) {
+      return { total: 0, pending: 0, approved: 0, rejected: 0 };
+    }
+  },
+};
+
+// Exportar todo
+module.exports = {
+  connectDB,
+  getDB,
+  logError,
+  validateInput,
+  sanitizeString,
+  sanitizeChannelName,
+  tickets,
+  notes,
+  blacklist,
+  settings,
+  staffStats,
+  staffRatings,
+  tags,
+  cooldowns,
+  staffStatus,
+  verifSettings,
+  verifCodes,
+  welcomeSettings,
+  modlogSettings,
+  levelSettings,
+  levels,
+  reminders,
+  suggestSettings,
+  suggestions,
+  polls,
+};
