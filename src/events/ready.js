@@ -12,13 +12,15 @@ module.exports = {
   async execute(client) {
     console.log(chalk.green(`\n✅ Conectado como ${chalk.bold(client.user.tag)}`));
     console.log(chalk.blue(`📊 Servidores: ${chalk.bold(client.guilds.cache.size)}`));
-    console.log(chalk.yellow(`🎫 Ticket Bot v3.0 listo\n`));
+    console.log(chalk.yellow(`🎫 Pando Bot v1.0 listo\n`));
 
     // ── Actividad rotativa
     const activities = [
       { name: "🎫 Gestionando tickets",                    type: ActivityType.Watching },
-      { name: `${client.guilds.cache.size} servidores`,   type: ActivityType.Watching },
+      { name: `Supervisando ${client.guilds.cache.size} servidores 👀`,   type: ActivityType.Watching },
       { name: "🛠️ Soporte 24/7",                           type: ActivityType.Playing  },
+      { name: "Probando GitHub 🚀", type: ActivityType.Playing },
+      { name: "Mi Creador es Camilo 👻", type: ActivityType.Playing },
     ];
     let ai = 0;
     const setActivity = () => { client.user.setActivity(activities[ai++ % activities.length]); };

@@ -85,8 +85,8 @@ process.on("warning", (warning) => {
 console.log(chalk.blue(`
 ╔══════════════════════════════════════════╗
 ║                                          ║
-║    🎫  DISCORD TICKET BOT  v1.5  🎫     ║
-║         Sistema Profesional Completo     ║
+║        🐼  PANDO BOT  v1.0  🐼          ║
+║      Sistema Profesional Completo        ║
 ║                                          ║
 ╚══════════════════════════════════════════╝
 `));
