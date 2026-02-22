@@ -8,10 +8,10 @@ const musicHandler = require("../handlers/musicHandler");
 module.exports.play = {
   data: new SlashCommandBuilder()
     .setName("play")
-    .setDescription("🎵 Reproducir música desde YouTube o Spotify")
+    .setDescription("🎵 Reproducir música desde SoundCloud o Spotify")
     .addStringOption(o => o
       .setName("busqueda")
-      .setDescription("URL de YouTube/Spotify o términos de búsqueda")
+      .setDescription("URL de SoundCloud o términos de búsqueda")
       .setRequired(true))
     .addBooleanOption(o => o
       .setName("siguiente")

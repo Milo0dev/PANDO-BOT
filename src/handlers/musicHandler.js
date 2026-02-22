@@ -227,19 +227,21 @@ async function getYoutubeInfo(query) {
     }
     
     // Buscar en YouTube
-    const searched = await play.search(query, { limit: 1 });
+    const clientID = await play.getFreeClientID();
+    play.setToken({ soundcloud: { client_id: clientID } });
+    const searched = await play.search(query, { limit: 1, source: { soundcloud: "tracks" } });
     if (searched.length === 0) {
-      return null;
+        return null;
     }
-    
+
     const video = searched[0];
     return {
-      title: video.title,
-      artist: video.channel.name,
-      duration: formatDuration(video.durationInSec),
-      durationSeconds: video.durationInSec,
-      thumbnail: video.thumbnails[0].url,
-      url: video.url,
+        title: video.title || video.name,
+        artist: video.user?.name || video.channel?.name || "Desconocido",
+        duration: formatDuration(video.durationInSec),
+        durationSeconds: video.durationInSec,
+        thumbnail: video.thumbnail || (video.thumbnails ? video.thumbnails[0].url : ""),
+        url: video.url,
     };
   } catch (error) {
     console.error("Error obteniendo info de YouTube:", error);
