@@ -23,7 +23,13 @@ module.exports = {
       { name: "Mi Creador es Camilo 👻", type: ActivityType.Playing },
     ];
     let ai = 0;
-    const setActivity = () => { client.user.setActivity(activities[ai++ % activities.length]); };
+    const setActivity = () => { 
+      try {
+        client.user.setActivity(activities[ai++ % activities.length]);
+      } catch (e) {
+        console.error("Error al establecer actividad:", e.message);
+      }
+    };
     setActivity();
     setInterval(setActivity, 5 * 60 * 1000);
 
