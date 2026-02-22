@@ -90,7 +90,7 @@ console.log(chalk.blue(`
 ║                                          ║
 ╚══════════════════════════════════════════╝
 `));
-
+console.log("🔥 BOT ACTUALIZADO - " + new Date().toLocaleTimeString());
 // ── Iniciar
 client.login(process.env.DISCORD_TOKEN).catch(err => {
   console.error(chalk.red("\n❌ Error al iniciar:"), err.message);
