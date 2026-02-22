@@ -31,6 +31,7 @@ async function startBot() {
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.MessageContent,
       GatewayIntentBits.DirectMessages,
+      GatewayIntentBits.GuildPresences, // ← Necesario para la presencia
     ],
     partials: [Partials.Channel, Partials.Message, Partials.GuildMember],
   });
