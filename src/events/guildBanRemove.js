@@ -6,8 +6,8 @@ module.exports = {
   async execute(ban, client) {
     try {
       const { guild, user } = ban;
-      const ml = modlogSettings.get(guild.id);
-      if (!ml.enabled || !ml.log_unbans || !ml.channel) return;
+      const ml = await modlogSettings.get(guild.id);
+      if (!ml || !ml.enabled || !ml.log_unbans || !ml.channel) return;
 
       const ch = guild.channels.cache.get(ml.channel);
       if (!ch) return;

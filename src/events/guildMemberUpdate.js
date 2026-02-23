@@ -6,8 +6,8 @@ module.exports = {
   async execute(oldMember, newMember, client) {
     try {
       const guild = newMember.guild;
-      const ml    = modlogSettings.get(guild.id);
-      if (!ml.enabled || !ml.channel) return;
+      const ml    = await modlogSettings.get(guild.id);
+      if (!ml || !ml.enabled || !ml.channel) return;
 
       const ch = guild.channels.cache.get(ml.channel);
       if (!ch) return;

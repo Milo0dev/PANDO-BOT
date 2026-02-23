@@ -444,6 +444,14 @@ const notes = {
       logError("notes.delete", error, { id });
     }
   },
+
+  async clear(ticketId) {
+    try {
+      await this.collection().deleteMany({ ticket_id: ticketId });
+    } catch (error) {
+      logError("notes.clear", error, { ticketId });
+    }
+  },
 };
 
 // ─────────────────────────────────────────────────────
@@ -1056,6 +1064,142 @@ const reminders = {
       });
     } catch (error) {
       logError("reminders.cleanup", error);
+    }
+  },
+};
+
+// ─────────────────────────────────────────────────────
+//   AUTO RESPONSES
+// ─────────────────────────────────────────────────────
+const autoResponses = {
+  collection() { return getDB().collection("autoResponses"); },
+  
+  async create(guildId, trigger, response, createdBy) {
+    try {
+      validateInput(trigger, "string", { required: true, maxLength: 100 });
+      validateInput(response, "string", { required: true, maxLength: 2000 });
+      
+      // Verificar si ya existe
+      const existing = await this.collection().findOne({ guild_id: guildId, trigger });
+      if (existing) {
+        // Actualizar existente
+        await this.collection().updateOne(
+          { _id: existing._id },
+          { $set: { response, updated_by: createdBy, updated_at: now() } }
+        );
+        return existing;
+      }
+      
+      const entry = {
+        _id: new ObjectId(),
+        guild_id: guildId,
+        trigger: trigger.toLowerCase(),
+        response: sanitizeString(response, 2000),
+        created_by: createdBy,
+        created_at: now(),
+        uses: 0,
+        enabled: true
+      };
+      
+      await this.collection().insertOne(entry);
+      return entry;
+    } catch (error) {
+      logError("autoResponses.create", error, { guildId, trigger });
+      throw error;
+    }
+  },
+
+  async get(guildId, trigger) {
+    try {
+      return await this.collection().findOne({ 
+        guild_id: guildId, 
+        trigger: trigger.toLowerCase(),
+        enabled: true 
+      }) || null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async match(guildId, message) {
+    try {
+      if (!message) return null;
+      
+      const all = await this.collection()
+        .find({ guild_id: guildId, enabled: true })
+        .toArray();
+      
+      const msgLower = message.toLowerCase();
+      
+      // Buscar coincidencia exacta o parcial
+      for (const ar of all) {
+        if (msgLower.includes(ar.trigger)) {
+          return ar;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async use(guildId, trigger) {
+    try {
+      await this.collection().updateOne(
+        { guild_id: guildId, trigger: trigger.toLowerCase() },
+        { $inc: { uses: 1 } }
+      );
+    } catch (error) {}
+  },
+
+  async toggle(guildId, trigger) {
+    try {
+      const ar = await this.collection().findOne({ guild_id: guildId, trigger: trigger.toLowerCase() });
+      if (!ar) return null;
+      
+      const newEnabled = !ar.enabled;
+      await this.collection().updateOne(
+        { _id: ar._id },
+        { $set: { enabled: newEnabled } }
+      );
+      
+      return { ...ar, enabled: newEnabled };
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async delete(guildId, trigger) {
+    try {
+      const result = await this.collection().deleteOne({ 
+        guild_id: guildId, 
+        trigger: trigger.toLowerCase() 
+      });
+      return result.deletedCount > 0;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  async getAll(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId })
+        .sort({ uses: -1 })
+        .toArray();
+    } catch (error) {
+      return [];
+    }
+  },
+
+  async getEnabled(guildId) {
+    try {
+      return await this.collection()
+        .find({ guild_id: guildId, enabled: true })
+        .toArray();
+    } catch (error) {
+      return [];
     }
   },
 };
@@ -1722,4 +1866,5 @@ module.exports = {
   suggestSettings,
   suggestions,
   polls,
+  autoResponses,
 };

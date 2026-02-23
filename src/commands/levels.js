@@ -55,7 +55,7 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const sub   = interaction.options.getSubcommand();
     const gid   = interaction.guild.id;
-    const ls    = levelSettings.get(gid);
+    const ls    = await levelSettings.get(gid);
     const ok    = msg => interaction.reply({ embeds: [E.successEmbed(msg)], flags: MessageFlags.Ephemeral });
     const er    = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],   flags: MessageFlags.Ephemeral });
 
@@ -63,13 +63,13 @@ module.exports = {
     if (group === "config") {
       if (sub === "activar") {
         const estado = interaction.options.getBoolean("estado");
-        levelSettings.update(gid, { enabled: estado });
+        await levelSettings.update(gid, { enabled: estado });
         return ok(`Sistema de niveles **${estado ? "✅ activado" : "❌ desactivado"}**.`);
       }
 
       if (sub === "canal") {
         const canal = interaction.options.getChannel("canal");
-        levelSettings.update(gid, { channel: canal?.id || null });
+        await levelSettings.update(gid, { channel: canal?.id || null });
         return ok(canal ? `Canal de nivel-up: ${canal}` : "Los anuncios se enviarán en el mismo canal donde escribe el usuario.");
       }
 
@@ -78,25 +78,25 @@ module.exports = {
         const max = interaction.options.getInteger("maximo");
         const cd  = interaction.options.getInteger("cooldown");
         if (min > max) return er("El XP mínimo no puede ser mayor que el máximo.");
-        levelSettings.update(gid, { xp_min: min, xp_max: max, xp_cooldown: cd });
+        await levelSettings.update(gid, { xp_min: min, xp_max: max, xp_cooldown: cd });
         return ok(`XP por mensaje: **${min}–${max}** · Cooldown: **${cd}s**`);
       }
 
       if (sub === "mensaje") {
         const texto = interaction.options.getString("texto");
-        levelSettings.update(gid, { levelup_message: texto });
+        await levelSettings.update(gid, { levelup_message: texto });
         return ok(`Mensaje de nivel actualizado.\n**Variables:** \`{mention}\` \`{user}\` \`{level}\` \`{xp}\`\n\n**Preview:** ${texto.replace(/{mention}/g,"@usuario").replace(/{user}/g,"usuario").replace(/{level}/g,"5").replace(/{xp}/g,"1250")}`);
       }
 
       if (sub === "rolreward") {
         const nivel = interaction.options.getInteger("nivel");
         const rol   = interaction.options.getRole("rol");
-        const lsNow = levelSettings.get(gid);
-        let rewards = lsNow.role_rewards || [];
+        const lsNow = await levelSettings.get(gid);
+        let rewards = lsNow?.role_rewards || [];
 
         if (!rol) {
           rewards = rewards.filter(r => r.level !== nivel);
-          levelSettings.update(gid, { role_rewards: rewards });
+          await levelSettings.update(gid, { role_rewards: rewards });
           return ok(`Recompensa del nivel **${nivel}** eliminada.`);
         }
 
@@ -104,69 +104,69 @@ module.exports = {
         if (existing !== -1) rewards[existing].role_id = rol.id;
         else rewards.push({ level: nivel, role_id: rol.id });
         rewards.sort((a, b) => a.level - b.level);
-        levelSettings.update(gid, { role_rewards: rewards });
+        await levelSettings.update(gid, { role_rewards: rewards });
         return ok(`Al llegar al nivel **${nivel}** se otorgará ${rol}.`);
       }
 
       if (sub === "ignorarcanalal") {
         const canal   = interaction.options.getChannel("canal");
-        const lsNow   = levelSettings.get(gid);
-        let ignored   = lsNow.ignored_channels || [];
+        const lsNow   = await levelSettings.get(gid);
+        let ignored   = lsNow?.ignored_channels || [];
         if (ignored.includes(canal.id)) {
           ignored = ignored.filter(c => c !== canal.id);
-          levelSettings.update(gid, { ignored_channels: ignored });
+          await levelSettings.update(gid, { ignored_channels: ignored });
           return ok(`${canal} ya **no está ignorado** — los usuarios ganarán XP ahí.`);
         } else {
           ignored.push(canal.id);
-          levelSettings.update(gid, { ignored_channels: ignored });
+          await levelSettings.update(gid, { ignored_channels: ignored });
           return ok(`${canal} **ignorado** — no se ganará XP en ese canal.`);
         }
       }
 
       if (sub === "doublexp") {
         const rol    = interaction.options.getRole("rol");
-        const lsNow  = levelSettings.get(gid);
-        let dxp      = lsNow.double_xp_roles || [];
+        const lsNow  = await levelSettings.get(gid);
+        let dxp      = lsNow?.double_xp_roles || [];
         if (dxp.includes(rol.id)) {
           dxp = dxp.filter(r => r !== rol.id);
-          levelSettings.update(gid, { double_xp_roles: dxp });
+          await levelSettings.update(gid, { double_xp_roles: dxp });
           return ok(`${rol} ya no tiene XP doble.`);
         } else {
           dxp.push(rol.id);
-          levelSettings.update(gid, { double_xp_roles: dxp });
+          await levelSettings.update(gid, { double_xp_roles: dxp });
           return ok(`${rol} ahora tiene **XP x2** 🔥`);
         }
       }
 
       if (sub === "resetear") {
         const user = interaction.options.getUser("usuario");
-        levels.reset(gid, user.id);
+        await levels.reset(gid, user.id);
         return ok(`XP de <@${user.id}> reiniciado a **0**.`);
       }
 
       if (sub === "setxp") {
         const user   = interaction.options.getUser("usuario");
         const amount = interaction.options.getInteger("cantidad");
-        levels.setXp(gid, user.id, amount);
+        await levels.setXp(gid, user.id, amount);
         const newLevel = levels.levelFromXp(amount);
         return ok(`XP de <@${user.id}> establecido en **${formatXP(amount)} XP** (nivel **${newLevel}**).`);
       }
 
       if (sub === "info") {
-        const lsNow   = levelSettings.get(gid);
-        const rewards = (lsNow.role_rewards || []).map(r => `Nv. **${r.level}** → <@&${r.role_id}>`).join("\n") || "Ninguna";
-        const ignored = (lsNow.ignored_channels || []).map(c => `<#${c}>`).join(", ") || "Ninguno";
-        const dxp     = (lsNow.double_xp_roles || []).map(r => `<@&${r}>`).join(", ") || "Ninguno";
+        const lsNow   = await levelSettings.get(gid);
+        const rewards = (lsNow?.role_rewards || []).map(r => `Nv. **${r.level}** → <@&${r.role_id}>`).join("\n") || "Ninguna";
+        const ignored = (lsNow?.ignored_channels || []).map(c => `<#${c}>`).join(", ") || "Ninguno";
+        const dxp     = (lsNow?.double_xp_roles || []).map(r => `<@&${r}>`).join(", ") || "Ninguno";
 
         return interaction.reply({
           embeds: [new EmbedBuilder()
             .setColor(0xFFD700)
             .setTitle("⭐ Configuración del Sistema de Niveles")
             .addFields(
-              { name: "⚙️ Estado",       value: lsNow.enabled ? "✅ Activo" : "❌ Inactivo", inline: true },
-              { name: "📢 Canal",        value: lsNow.channel ? `<#${lsNow.channel}>` : "Mismo canal", inline: true },
-              { name: "⚡ XP/mensaje",   value: `${lsNow.xp_min}–${lsNow.xp_max} XP`, inline: true },
-              { name: "⏱️ Cooldown",     value: `${lsNow.xp_cooldown}s`, inline: true },
+              { name: "⚙️ Estado",       value: lsNow?.enabled ? "✅ Activo" : "❌ Inactivo", inline: true },
+              { name: "📢 Canal",        value: lsNow?.channel ? `<#${lsNow.channel}>` : "Mismo canal", inline: true },
+              { name: "⚡ XP/mensaje",   value: `${lsNow?.xp_min || 15}–${lsNow?.xp_max || 25} XP`, inline: true },
+              { name: "⏱️ Cooldown",     value: `${lsNow?.xp_cooldown || 60}s`, inline: true },
               { name: "🔥 Roles x2 XP", value: dxp, inline: false },
               { name: "🎁 Recompensas",  value: rewards, inline: false },
               { name: "🚫 Canales ignorados", value: ignored, inline: false },

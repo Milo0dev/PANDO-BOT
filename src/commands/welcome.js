@@ -70,7 +70,7 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const sub   = interaction.options.getSubcommand();
     const gid   = interaction.guild.id;
-    const ws    = welcomeSettings.get(gid);
+    const ws    = await welcomeSettings.get(gid);
 
     const ok = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
     const er = msg => interaction.reply({ embeds: [E.errorEmbed(msg)], ephemeral: true });
@@ -89,23 +89,23 @@ module.exports = {
         .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
         .addFields(
           { name: "━━━ 👋 Bienvenida ━━━", value: "\u200b", inline: false },
-          { name: "Estado",       value: yn(ws.welcome_enabled),       inline: true },
-          { name: "Canal",        value: ch(ws.welcome_channel),       inline: true },
-          { name: "DM",           value: yn(ws.welcome_dm),            inline: true },
-          { name: "Título",       value: ws.welcome_title || "Default", inline: true },
-          { name: "Color",        value: `#${ws.welcome_color}`,       inline: true },
-          { name: "Avatar",       value: yn(ws.welcome_thumbnail),     inline: true },
-          { name: "Auto-rol",     value: rl(ws.welcome_autorole),      inline: true },
-          { name: "Banner",       value: ws.welcome_banner ? "✅ Configurado" : "❌ No", inline: true },
-          { name: "Mensaje",      value: `\`\`\`${(ws.welcome_message || "").substring(0, 100)}\`\`\``, inline: false },
+          { name: "Estado",       value: yn(ws?.welcome_enabled),       inline: true },
+          { name: "Canal",        value: ch(ws?.welcome_channel),       inline: true },
+          { name: "DM",           value: yn(ws?.welcome_dm),            inline: true },
+          { name: "Título",       value: ws?.welcome_title || "Default", inline: true },
+          { name: "Color",        value: `#${ws?.welcome_color || "5865F2"}`,       inline: true },
+          { name: "Avatar",       value: yn(ws?.welcome_thumbnail),     inline: true },
+          { name: "Auto-rol",     value: rl(ws?.welcome_autorole),      inline: true },
+          { name: "Banner",       value: ws?.welcome_banner ? "✅ Configurado" : "❌ No", inline: true },
+          { name: "Mensaje",      value: `\`\`\`${(ws?.welcome_message || "").substring(0, 100)}\`\`\``, inline: false },
           { name: "━━━ 👋 Despedida ━━━", value: "\u200b", inline: false },
-          { name: "Estado",       value: yn(ws.goodbye_enabled),       inline: true },
-          { name: "Canal",        value: ch(ws.goodbye_channel),       inline: true },
-          { name: "Título",       value: ws.goodbye_title || "Default", inline: true },
-          { name: "Color",        value: `#${ws.goodbye_color}`,       inline: true },
-          { name: "Avatar",       value: yn(ws.goodbye_thumbnail),     inline: true },
+          { name: "Estado",       value: yn(ws?.goodbye_enabled),       inline: true },
+          { name: "Canal",        value: ch(ws?.goodbye_channel),       inline: true },
+          { name: "Título",       value: ws?.goodbye_title || "Default", inline: true },
+          { name: "Color",        value: `#${ws?.goodbye_color || "ED4245"}`,       inline: true },
+          { name: "Avatar",       value: yn(ws?.goodbye_thumbnail),     inline: true },
           { name: "\u200b",       value: "\u200b",                     inline: true },
-          { name: "Mensaje",      value: `\`\`\`${(ws.goodbye_message || "").substring(0, 100)}\`\`\``, inline: false },
+          { name: "Mensaje",      value: `\`\`\`${(ws?.goodbye_message || "").substring(0, 100)}\`\`\``, inline: false },
         )
         .setFooter({ text: "Usa /welcome bienvenida o /welcome despedida para configurar" })
         .setTimestamp();
@@ -119,39 +119,39 @@ module.exports = {
     if (group === "bienvenida") {
       if (sub === "activar") {
         const estado = interaction.options.getBoolean("estado");
-        welcomeSettings.update(gid, { welcome_enabled: estado });
+        await welcomeSettings.update(gid, { welcome_enabled: estado });
         return ok(`Bienvenidas **${estado ? "✅ activadas" : "❌ desactivadas"}**.`);
       }
       if (sub === "canal") {
-        welcomeSettings.update(gid, { welcome_channel: interaction.options.getChannel("canal").id });
+        await welcomeSettings.update(gid, { welcome_channel: interaction.options.getChannel("canal").id });
         return ok(`Canal de bienvenida: ${interaction.options.getChannel("canal")}`);
       }
       if (sub === "mensaje") {
-        welcomeSettings.update(gid, { welcome_message: interaction.options.getString("texto") });
+        await welcomeSettings.update(gid, { welcome_message: interaction.options.getString("texto") });
         return ok(`Mensaje de bienvenida actualizado.\n**Variables disponibles:** ${VARS}`);
       }
       if (sub === "titulo") {
-        welcomeSettings.update(gid, { welcome_title: interaction.options.getString("texto") });
+        await welcomeSettings.update(gid, { welcome_title: interaction.options.getString("texto") });
         return ok(`Título actualizado: **${interaction.options.getString("texto")}**`);
       }
       if (sub === "color") {
         const hex = interaction.options.getString("hex").replace("#", "");
         if (!/^[0-9A-Fa-f]{6}$/.test(hex)) return er("Color inválido. Usa formato HEX de 6 caracteres (ej: `5865F2`).");
-        welcomeSettings.update(gid, { welcome_color: hex });
+        await welcomeSettings.update(gid, { welcome_color: hex });
         return ok(`Color actualizado: **#${hex}**`);
       }
       if (sub === "footer") {
-        welcomeSettings.update(gid, { welcome_footer: interaction.options.getString("texto") });
+        await welcomeSettings.update(gid, { welcome_footer: interaction.options.getString("texto") });
         return ok("Footer de bienvenida actualizado.");
       }
       if (sub === "banner") {
         const url = interaction.options.getString("url");
         if (url && !url.startsWith("http")) return er("La URL debe empezar con `https://`");
-        welcomeSettings.update(gid, { welcome_banner: url || null });
+        await welcomeSettings.update(gid, { welcome_banner: url || null });
         return ok(url ? `Banner configurado.` : "Banner eliminado.");
       }
       if (sub === "avatar") {
-        welcomeSettings.update(gid, { welcome_thumbnail: interaction.options.getBoolean("mostrar") });
+        await welcomeSettings.update(gid, { welcome_thumbnail: interaction.options.getBoolean("mostrar") });
         return ok(`Avatar del miembro en bienvenidas: **${interaction.options.getBoolean("mostrar") ? "✅ visible" : "❌ oculto"}**`);
       }
       if (sub === "dm") {
@@ -159,18 +159,18 @@ module.exports = {
         const msg    = interaction.options.getString("mensaje");
         const update = { welcome_dm: estado };
         if (msg) update.welcome_dm_message = msg;
-        welcomeSettings.update(gid, update);
+        await welcomeSettings.update(gid, update);
         return ok(`DM de bienvenida: **${estado ? "✅ activado" : "❌ desactivado"}**${msg ? "\nMensaje de DM actualizado." : ""}`);
       }
       if (sub === "autorole") {
         const rol = interaction.options.getRole("rol");
-        welcomeSettings.update(gid, { welcome_autorole: rol ? rol.id : null });
+        await welcomeSettings.update(gid, { welcome_autorole: rol ? rol.id : null });
         return ok(rol ? `Auto-rol configurado: ${rol}` : "Auto-rol **desactivado**.");
       }
       if (sub === "test") {
         await interaction.deferReply({ ephemeral: true });
-        const wsCurrent = welcomeSettings.get(gid);
-        if (!wsCurrent.welcome_channel) return interaction.editReply({ embeds: [E.errorEmbed("Configura primero el canal con `/welcome bienvenida canal`")] });
+        const wsCurrent = await welcomeSettings.get(gid);
+        if (!wsCurrent?.welcome_channel) return interaction.editReply({ embeds: [E.errorEmbed("Configura primero el canal con `/welcome bienvenida canal`")] });
         const ch = interaction.guild.channels.cache.get(wsCurrent.welcome_channel);
         if (!ch) return interaction.editReply({ embeds: [E.errorEmbed("Canal no encontrado.")] });
 
@@ -201,39 +201,39 @@ module.exports = {
     if (group === "despedida") {
       if (sub === "activar") {
         const estado = interaction.options.getBoolean("estado");
-        welcomeSettings.update(gid, { goodbye_enabled: estado });
+        await welcomeSettings.update(gid, { goodbye_enabled: estado });
         return ok(`Despedidas **${estado ? "✅ activadas" : "❌ desactivadas"}**.`);
       }
       if (sub === "canal") {
-        welcomeSettings.update(gid, { goodbye_channel: interaction.options.getChannel("canal").id });
+        await welcomeSettings.update(gid, { goodbye_channel: interaction.options.getChannel("canal").id });
         return ok(`Canal de despedida: ${interaction.options.getChannel("canal")}`);
       }
       if (sub === "mensaje") {
-        welcomeSettings.update(gid, { goodbye_message: interaction.options.getString("texto") });
+        await welcomeSettings.update(gid, { goodbye_message: interaction.options.getString("texto") });
         return ok(`Mensaje de despedida actualizado.\n**Variables disponibles:** ${VARS}`);
       }
       if (sub === "titulo") {
-        welcomeSettings.update(gid, { goodbye_title: interaction.options.getString("texto") });
+        await welcomeSettings.update(gid, { goodbye_title: interaction.options.getString("texto") });
         return ok(`Título actualizado: **${interaction.options.getString("texto")}**`);
       }
       if (sub === "color") {
         const hex = interaction.options.getString("hex").replace("#", "");
         if (!/^[0-9A-Fa-f]{6}$/.test(hex)) return er("Color inválido. Usa formato HEX de 6 caracteres (ej: `ED4245`).");
-        welcomeSettings.update(gid, { goodbye_color: hex });
+        await welcomeSettings.update(gid, { goodbye_color: hex });
         return ok(`Color actualizado: **#${hex}**`);
       }
       if (sub === "footer") {
-        welcomeSettings.update(gid, { goodbye_footer: interaction.options.getString("texto") });
+        await welcomeSettings.update(gid, { goodbye_footer: interaction.options.getString("texto") });
         return ok("Footer de despedida actualizado.");
       }
       if (sub === "avatar") {
-        welcomeSettings.update(gid, { goodbye_thumbnail: interaction.options.getBoolean("mostrar") });
+        await welcomeSettings.update(gid, { goodbye_thumbnail: interaction.options.getBoolean("mostrar") });
         return ok(`Avatar en despedidas: **${interaction.options.getBoolean("mostrar") ? "✅ visible" : "❌ oculto"}**`);
       }
       if (sub === "test") {
         await interaction.deferReply({ ephemeral: true });
-        const wsCurrent = welcomeSettings.get(gid);
-        if (!wsCurrent.goodbye_channel) return interaction.editReply({ embeds: [E.errorEmbed("Configura primero el canal con `/welcome despedida canal`")] });
+        const wsCurrent = await welcomeSettings.get(gid);
+        if (!wsCurrent?.goodbye_channel) return interaction.editReply({ embeds: [E.errorEmbed("Configura primero el canal con `/welcome despedida canal`")] });
         const ch = interaction.guild.channels.cache.get(wsCurrent.goodbye_channel);
         if (!ch) return interaction.editReply({ embeds: [E.errorEmbed("Canal no encontrado.")] });
 

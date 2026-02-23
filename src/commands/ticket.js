@@ -9,10 +9,12 @@ const { generateTranscript }          = require("../utils/transcript");
 const E  = require("../utils/embeds");
 const config = require("../../config");
 
+const MAX_NOTES_PER_TICKET = 20; // Límite máximo de notas por ticket
+
 function isStaff(member, s) {
   if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
-  if (s.support_role && member.roles.cache.has(s.support_role)) return true;
-  if (s.admin_role   && member.roles.cache.has(s.admin_role))   return true;
+  if (s?.support_role && member.roles.cache.has(s.support_role)) return true;
+  if (s?.admin_role   && member.roles.cache.has(s.admin_role))   return true;
   return false;
 }
 async function getTicket(channel) { return await tickets.get(channel.id); }
@@ -170,23 +172,57 @@ module.exports.move = {
 module.exports.note = {
   data: new SlashCommandBuilder().setName("note").setDescription("📝 Notas internas del ticket")
     .addSubcommand(s => s.setName("add").setDescription("Añadir nota").addStringOption(o => o.setName("nota").setDescription("Contenido").setRequired(true).setMaxLength(500)))
-    .addSubcommand(s => s.setName("list").setDescription("Ver notas")),
+    .addSubcommand(s => s.setName("list").setDescription("Ver notas"))
+    .addSubcommand(s => s.setName("clear").setDescription("Borrar todas las notas (solo admins)")),
   async execute(interaction) {
     const t = await getTicket(interaction.channel);
     if (!t) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], ephemeral: true });
     const s = await settings.get(interaction.guild.id);
     if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede ver/añadir notas.")], ephemeral: true });
 
+    // Subcomando clear - solo administradores
+    if (interaction.options.getSubcommand() === "clear") {
+      if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        return interaction.reply({ embeds: [E.errorEmbed("Solo administradores pueden borrar todas las notas.")], ephemeral: true });
+      }
+      await notes.clear(t.ticket_id);
+      return interaction.reply({ embeds: [E.successEmbed("Todas las notas del ticket han sido borradas.")], ephemeral: true });
+    }
+
     if (interaction.options.getSubcommand() === "add") {
+      // Verificar límite de notas
+      const existingNotes = await notes.get(t.ticket_id);
+      if (existingNotes.length >= MAX_NOTES_PER_TICKET) {
+        return interaction.reply({ 
+          embeds: [E.errorEmbed(`Límite de notas alcanzado (**${MAX_NOTES_PER_TICKET}** notas máximo por ticket. Usa \`/note clear\` para borrar si es necesario.)`)], 
+          ephemeral: true 
+        });
+      }
+      
       const nota = interaction.options.getString("nota");
       await notes.add(t.ticket_id, interaction.user.id, nota);
-      return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.WARNING).setTitle("📝 Nota añadida (solo staff)").setDescription(nota).setFooter({ text: `Por ${interaction.user.tag}` }).setTimestamp()], ephemeral: true });
+      return interaction.reply({ 
+        embeds: [new EmbedBuilder()
+          .setColor(E.Colors.WARNING)
+          .setTitle("📝 Nota añadida (solo staff)")
+          .setDescription(nota)
+          .setFooter({ text: `Por ${interaction.user.tag} · ${existingNotes.length + 1}/${MAX_NOTES_PER_TICKET}` })
+          .setTimestamp()], 
+        ephemeral: true 
+      });
     }
 
     const nl = await notes.get(t.ticket_id);
     if (!nl.length) return interaction.reply({ embeds: [E.infoEmbed("📝 Notas", "No hay notas en este ticket.")], ephemeral: true });
     const txt = nl.map((n, i) => `**${i+1}.** <@${n.staff_id}>: ${n.note}`).join("\n");
-    return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.WARNING).setTitle(`📝 Notas — #${t.ticket_id}`).setDescription(txt).setTimestamp()], ephemeral: true });
+    return interaction.reply({ 
+      embeds: [new EmbedBuilder()
+        .setColor(E.Colors.WARNING)
+        .setTitle(`📝 Notas — #${t.ticket_id} (${nl.length}/${MAX_NOTES_PER_TICKET})`)
+        .setDescription(txt)
+        .setTimestamp()], 
+      ephemeral: true 
+    });
   },
 };
 

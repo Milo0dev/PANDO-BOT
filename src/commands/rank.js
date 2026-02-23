@@ -54,9 +54,9 @@ module.exports = {
     const sub   = interaction.options.getSubcommand();
     const guild = interaction.guild;
     const gid   = guild.id;
-    const ls    = levelSettings.get(gid);
+    const ls    = await levelSettings.get(gid);
 
-    if (!ls.enabled) {
+    if (!ls?.enabled) {
       return interaction.reply({
         embeds: [E.errorEmbed("El sistema de niveles no está activado en este servidor.\nUn administrador puede activarlo con `/levels config activar`.")],
         flags: MessageFlags.Ephemeral,
@@ -66,14 +66,14 @@ module.exports = {
     // ── /rank ver
     if (sub === "ver") {
       const target = interaction.options.getUser("usuario") || interaction.user;
-      const data   = levels.get(gid, target.id);
-      const rank   = levels.getRank(gid, target.id);
+      const data   = await levels.get(gid, target.id);
+      const rank   = await levels.getRank(gid, target.id);
       const bar    = xpBar(data.total_xp, data.level);
       const color  = levelColor(data.level);
 
       // Calcular XP para siguiente nivel
       const nextLevel = data.level + 1;
-      const rewards   = (ls.role_rewards || []).filter(r => r.level > data.level).slice(0, 3);
+      const rewards   = (ls?.role_rewards || []).filter(r => r.level > data.level).slice(0, 3);
       const rewardTxt = rewards.length
         ? rewards.map(r => `Nv. **${r.level}** → <@&${r.role_id}>`).join("\n")
         : "No hay recompensas próximas";
@@ -107,8 +107,8 @@ module.exports = {
     // ── /rank top
     if (sub === "top") {
       await interaction.deferReply();
-      const lb    = levels.getLeaderboard(gid, 15);
-      const myRank = levels.getRank(gid, interaction.user.id);
+      const lb    = await levels.getLeaderboard(gid, 15);
+      const myRank = await levels.getRank(gid, interaction.user.id);
 
       if (!lb.length) {
         return interaction.editReply({

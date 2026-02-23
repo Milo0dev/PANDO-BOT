@@ -4,6 +4,27 @@ const { tickets, settings, autoResponses, levelSettings, levels } = require("../
 // Cooldown de XP en memoria: "guildId::userId" -> timestamp
 const xpCooldown = new Map();
 
+// Limpiar entradas antiguas del cooldown cada 5 minutos
+const XP_COOLDOWN_CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutos
+const XP_COOLDOWN_MAX_AGE = 30 * 60 * 1000; // 30 minutos máximo en mapa
+
+function cleanupXPCooldown() {
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [key, timestamp] of xpCooldown.entries()) {
+    if (now - timestamp > XP_COOLDOWN_MAX_AGE) {
+      xpCooldown.delete(key);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`[XP CLEANUP] Eliminadas ${cleaned} entradas del cooldown de XP`);
+  }
+}
+
+// Iniciar limpieza periódica
+setInterval(cleanupXPCooldown, XP_COOLDOWN_CLEANUP_INTERVAL);
+
 module.exports = {
   name: "messageCreate",
   async execute(message, client) {
@@ -39,11 +60,11 @@ async function handleXP(message, client) {
   if (!ls || !ls.enabled) return;
   if (!message.content || message.content.startsWith("/")) return;
 
-  // Ignorar canales excluidos
-  if (ls.ignored_channels.includes(message.channel.id)) return;
+  // Ignorar canales excluidos (con validación null)
+  if (ls.ignored_channels?.includes(message.channel.id)) return;
 
-  // Ignorar roles excluidos
-  if (ls.ignored_roles.some(r => message.member?.roles.cache.has(r))) return;
+  // Ignorar roles excluidos (con validación null)
+  if (ls.ignored_roles?.some(r => message.member?.roles.cache.has(r))) return;
 
   // Cooldown
   const key  = guild.id + "::" + message.author.id;
@@ -55,8 +76,8 @@ async function handleXP(message, client) {
   // Calcular XP a dar (aleatorio entre min y max)
   let xpAmount = Math.floor(Math.random() * (ls.xp_max - ls.xp_min + 1)) + ls.xp_min;
 
-  // XP doble si tiene rol especial
-  if (ls.double_xp_roles.some(r => message.member?.roles.cache.has(r))) xpAmount *= 2;
+  // XP doble si tiene rol especial (con validación null)
+  if (ls.double_xp_roles?.some(r => message.member?.roles.cache.has(r))) xpAmount *= 2;
 
   const result = await levels.addXp(guild.id, message.author.id, xpAmount);
 

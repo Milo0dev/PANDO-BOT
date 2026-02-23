@@ -45,13 +45,13 @@ module.exports = {
   async execute(interaction) {
     const sub  = interaction.options.getSubcommand();
     const gid  = interaction.guild.id;
-    const ml   = modlogSettings.get(gid);
+    const ml   = await modlogSettings.get(gid);
     const ok   = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
     const er   = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],   ephemeral: true });
 
     if (sub === "setup") {
       const canal = interaction.options.getChannel("canal");
-      modlogSettings.update(gid, { enabled: true, channel: canal.id });
+      await modlogSettings.update(gid, { enabled: true, channel: canal.id });
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(E.Colors.SUCCESS)
@@ -64,21 +64,21 @@ module.exports = {
 
     if (sub === "activar") {
       const estado = interaction.options.getBoolean("estado");
-      if (estado && !ml.channel) return er("Configura primero el canal con `/modlogs setup`.");
-      modlogSettings.update(gid, { enabled: estado });
+      if (estado && !ml?.channel) return er("Configura primero el canal con `/modlogs setup`.");
+      await modlogSettings.update(gid, { enabled: estado });
       return ok(`Logs de moderación **${estado ? "✅ activados" : "❌ desactivados"}**.`);
     }
 
     if (sub === "canal") {
       const canal = interaction.options.getChannel("canal");
-      modlogSettings.update(gid, { channel: canal.id });
+      await modlogSettings.update(gid, { channel: canal.id });
       return ok(`Canal de logs actualizado: ${canal}`);
     }
 
     if (sub === "config") {
       const evento = interaction.options.getString("evento");
       const estado = interaction.options.getBoolean("estado");
-      modlogSettings.update(gid, { [evento]: estado });
+      await modlogSettings.update(gid, { [evento]: estado });
       const labels = {
         log_bans: "🔨 Baneos", log_unbans: "✅ Desbaneos", log_kicks: "🚫 Kicks",
         log_msg_delete: "🗑️ Mensajes eliminados", log_msg_edit: "✏️ Mensajes editados",
@@ -89,26 +89,26 @@ module.exports = {
     }
 
     if (sub === "info") {
-      const mlNow = modlogSettings.get(gid);
+      const mlNow = await modlogSettings.get(gid);
       const yn    = v => v ? "✅" : "❌";
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(0x5865F2)
           .setTitle("📋 Configuración de Logs de Moderación")
           .addFields(
-            { name: "⚙️ Estado",            value: mlNow.enabled ? "✅ Activo" : "❌ Inactivo", inline: true },
-            { name: "📢 Canal",             value: mlNow.channel ? `<#${mlNow.channel}>` : "No configurado", inline: true },
+            { name: "⚙️ Estado",            value: mlNow?.enabled ? "✅ Activo" : "❌ Inactivo", inline: true },
+            { name: "📢 Canal",             value: mlNow?.channel ? `<#${mlNow.channel}>` : "No configurado", inline: true },
             { name: "\u200b",               value: "\u200b", inline: true },
-            { name: "🔨 Baneos",            value: yn(mlNow.log_bans),       inline: true },
-            { name: "✅ Desbaneos",          value: yn(mlNow.log_unbans),     inline: true },
-            { name: "🚫 Kicks",             value: yn(mlNow.log_kicks),      inline: true },
-            { name: "🗑️ Msgs eliminados",   value: yn(mlNow.log_msg_delete), inline: true },
-            { name: "✏️ Msgs editados",      value: yn(mlNow.log_msg_edit),   inline: true },
-            { name: "🏷️ Roles añadidos",    value: yn(mlNow.log_role_add),   inline: true },
-            { name: "🏷️ Roles quitados",    value: yn(mlNow.log_role_remove),inline: true },
-            { name: "✏️ Nicknames",          value: yn(mlNow.log_nickname),   inline: true },
-            { name: "📥 Entradas",           value: yn(mlNow.log_joins),      inline: true },
-            { name: "📤 Salidas",            value: yn(mlNow.log_leaves),     inline: true },
+            { name: "🔨 Baneos",            value: yn(mlNow?.log_bans),       inline: true },
+            { name: "✅ Desbaneos",          value: yn(mlNow?.log_unbans),     inline: true },
+            { name: "🚫 Kicks",             value: yn(mlNow?.log_kicks),      inline: true },
+            { name: "🗑️ Msgs eliminados",   value: yn(mlNow?.log_msg_delete), inline: true },
+            { name: "✏️ Msgs editados",      value: yn(mlNow?.log_msg_edit),   inline: true },
+            { name: "🏷️ Roles añadidos",    value: yn(mlNow?.log_role_add),   inline: true },
+            { name: "🏷️ Roles quitados",    value: yn(mlNow?.log_role_remove),inline: true },
+            { name: "✏️ Nicknames",          value: yn(mlNow?.log_nickname),   inline: true },
+            { name: "📥 Entradas",           value: yn(mlNow?.log_joins),      inline: true },
+            { name: "📤 Salidas",            value: yn(mlNow?.log_leaves),     inline: true },
           ).setTimestamp()],
         ephemeral: true,
       });

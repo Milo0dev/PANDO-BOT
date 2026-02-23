@@ -49,7 +49,7 @@ module.exports = {
       const canal = interaction.options.getChannel("canal");
       try {
         const msg = await sendPanel(canal, interaction.guild);
-        settings.update(gid, { panel_channel_id: canal.id, panel_message_id: msg.id });
+        await settings.update(gid, { panel_channel_id: canal.id, panel_message_id: msg.id });
         return interaction.editReply({ embeds: [E.successEmbed(`Panel enviado a ${canal}.`)] });
       } catch { return interaction.editReply({ embeds: [E.errorEmbed("Error al enviar el panel. Verifica mis permisos.")] }); }
     }
@@ -68,25 +68,25 @@ module.exports = {
       return ok(`Canal **${sub}** configurado: ${canal}`);
     }
 
-    if (sub === "staff-role")  { settings.update(gid, { support_role: interaction.options.getRole("rol").id });  return ok(`Rol de soporte: ${interaction.options.getRole("rol")}`); }
-    if (sub === "admin-role")  { settings.update(gid, { admin_role:   interaction.options.getRole("rol").id });  return ok(`Rol de admin: ${interaction.options.getRole("rol")}`);  }
+    if (sub === "staff-role")  { await settings.update(gid, { support_role: interaction.options.getRole("rol").id });  return ok(`Rol de soporte: ${interaction.options.getRole("rol")}`); }
+    if (sub === "admin-role")  { await settings.update(gid, { admin_role:   interaction.options.getRole("rol").id });  return ok(`Rol de admin: ${interaction.options.getRole("rol")}`);  }
     if (sub === "verify-role") {
       const rol = interaction.options.getRole("rol");
-      settings.update(gid, { verify_role: rol ? rol.id : null });
+      await settings.update(gid, { verify_role: rol ? rol.id : null });
       return ok(rol ? `Rol mínimo requerido: ${rol}` : "Rol mínimo **desactivado**.");
     }
 
-    if (sub === "max-tickets")   { settings.update(gid, { max_tickets:           interaction.options.getInteger("cantidad") }); return ok(`Máx. tickets por usuario: **${interaction.options.getInteger("cantidad")}**`); }
-    if (sub === "global-limit")  { settings.update(gid, { global_ticket_limit:   interaction.options.getInteger("cantidad") }); return ok(interaction.options.getInteger("cantidad") === 0 ? "Límite global **desactivado**." : `Límite global: **${interaction.options.getInteger("cantidad")}** tickets.`); }
-    if (sub === "cooldown")      { settings.update(gid, { cooldown_minutes:       interaction.options.getInteger("minutos") });  return ok(interaction.options.getInteger("minutos") === 0 ? "Cooldown **desactivado**." : `Cooldown: **${interaction.options.getInteger("minutos")} minutos**.`); }
-    if (sub === "min-days")      { settings.update(gid, { min_days:               interaction.options.getInteger("dias") });    return ok(interaction.options.getInteger("dias") === 0 ? "Días mínimos **desactivado**." : `Días mínimos en el servidor: **${interaction.options.getInteger("dias")}**.`); }
-    if (sub === "auto-close")    { settings.update(gid, { auto_close_minutes:     interaction.options.getInteger("minutos") }); return ok(interaction.options.getInteger("minutos") === 0 ? "Auto-cierre **desactivado**." : `Auto-cierre: **${interaction.options.getInteger("minutos")} minutos** de inactividad.`); }
-    if (sub === "sla")           { settings.update(gid, { sla_minutes:            interaction.options.getInteger("minutos") }); return ok(interaction.options.getInteger("minutos") === 0 ? "Alerta SLA **desactivada**." : `SLA: alerta si no hay respuesta en **${interaction.options.getInteger("minutos")} minutos**.`); }
-    if (sub === "smart-ping")    { settings.update(gid, { smart_ping_minutes:     interaction.options.getInteger("minutos") }); return ok(interaction.options.getInteger("minutos") === 0 ? "Smart ping **desactivado**." : `Smart ping: **${interaction.options.getInteger("minutos")} minutos** sin respuesta.`); }
-    if (sub === "dm-open")       { settings.update(gid, { dm_on_open:             interaction.options.getBoolean("activado") }); return ok(`DM al abrir ticket: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
-    if (sub === "dm-close")      { settings.update(gid, { dm_on_close:            interaction.options.getBoolean("activado") }); return ok(`DM al cerrar ticket: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
-    if (sub === "log-edits")     { settings.update(gid, { log_edits:              interaction.options.getBoolean("activado") }); return ok(`Log de ediciones: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
-    if (sub === "log-deletes")   { settings.update(gid, { log_deletes:            interaction.options.getBoolean("activado") }); return ok(`Log de eliminaciones: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
+    if (sub === "max-tickets")   { await settings.update(gid, { max_tickets:           interaction.options.getInteger("cantidad") }); return ok(`Máx. tickets por usuario: **${interaction.options.getInteger("cantidad")}**`); }
+    if (sub === "global-limit")  { await settings.update(gid, { global_ticket_limit:   interaction.options.getInteger("cantidad") }); return ok(interaction.options.getInteger("cantidad") === 0 ? "Límite global **desactivado**." : `Límite global: **${interaction.options.getInteger("cantidad")}** tickets.`); }
+    if (sub === "cooldown")      { await settings.update(gid, { cooldown_minutes:       interaction.options.getInteger("minutos") });  return ok(interaction.options.getInteger("minutos") === 0 ? "Cooldown **desactivado**." : `Cooldown: **${interaction.options.getInteger("minutos")} minutos**.`); }
+    if (sub === "min-days")      { await settings.update(gid, { min_days:               interaction.options.getInteger("dias") });    return ok(interaction.options.getInteger("dias") === 0 ? "Días mínimos **desactivado**." : `Días mínimos en el servidor: **${interaction.options.getInteger("dias")}**.`); }
+    if (sub === "auto-close")    { await settings.update(gid, { auto_close_minutes:     interaction.options.getInteger("minutos") }); return ok(interaction.options.getInteger("minutos") === 0 ? "Auto-cierre **desactivado**." : `Auto-cierre: **${interaction.options.getInteger("minutos")} minutos** de inactividad.`); }
+    if (sub === "sla")           { await settings.update(gid, { sla_minutes:            interaction.options.getInteger("minutos") }); return ok(interaction.options.getInteger("minutos") === 0 ? "Alerta SLA **desactivada**." : `SLA: alerta si no hay respuesta en **${interaction.options.getInteger("minutos")} minutos**.`); }
+    if (sub === "smart-ping")    { await settings.update(gid, { smart_ping_minutes:     interaction.options.getInteger("minutos") }); return ok(interaction.options.getInteger("minutos") === 0 ? "Smart ping **desactivado**." : `Smart ping: **${interaction.options.getInteger("minutos")} minutos** sin respuesta.`); }
+    if (sub === "dm-open")       { await settings.update(gid, { dm_on_open:             interaction.options.getBoolean("activado") }); return ok(`DM al abrir ticket: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
+    if (sub === "dm-close")      { await settings.update(gid, { dm_on_close:            interaction.options.getBoolean("activado") }); return ok(`DM al cerrar ticket: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
+    if (sub === "log-edits")     { await settings.update(gid, { log_edits:              interaction.options.getBoolean("activado") }); return ok(`Log de ediciones: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
+    if (sub === "log-deletes")   { await settings.update(gid, { log_deletes:            interaction.options.getBoolean("activado") }); return ok(`Log de eliminaciones: **${interaction.options.getBoolean("activado") ? "✅ Activado" : "❌ Desactivado"}**`); }
 
     if (sub === "info") {
       const yn = v => v ? "✅ Sí" : "❌ No";
