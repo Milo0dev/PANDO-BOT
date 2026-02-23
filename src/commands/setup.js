@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder } = require("discord.js");
 const { settings }    = require("../utils/database");
 const { sendPanel }   = require("../handlers/ticketHandler");
+const { updateDashboard } = require("../handlers/dashboardHandler");
 const E               = require("../utils/embeds");
 
 module.exports = {
@@ -56,7 +57,14 @@ module.exports = {
     const channelSubs = { logs: "log_channel", transcripts: "transcript_channel", dashboard: "dashboard_channel", "weekly-report": "weekly_report_channel" };
     if (channelSubs[sub]) {
       const canal = interaction.options.getChannel("canal");
-      settings.update(gid, { [channelSubs[sub]]: canal.id });
+      await settings.update(gid, { [channelSubs[sub]]: canal.id });
+      
+      // Si es el subcomando dashboard, actualizar el mensaje del dashboard inmediatamente
+      if (sub === "dashboard") {
+        await updateDashboard(interaction.guild);
+        return ok(`Canal **${sub}** configurado: ${canal}. Dashboard actualizado.`);
+      }
+      
       return ok(`Canal **${sub}** configurado: ${canal}`);
     }
 
