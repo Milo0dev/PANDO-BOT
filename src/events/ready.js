@@ -26,9 +26,20 @@ module.exports = {
     const setActivity = () => { 
       try {
         const activity = activities[ai++ % activities.length];
-        console.log(`🔧 Intentando establecer actividad: ${activity.name} (${activity.type})`);
+        console.log(`🔧 Intentando establecer actividad: "${activity.name}" (${activity.type})`);
         client.user.setActivity(activity.name, { type: activity.type });
-        console.log(`✅ Actividad establecida exitosamente`);
+        console.log(`✅ Actividad establecida exitosamente: "${activity.name}"`);
+        
+        // Verificar que la actividad se estableció correctamente
+        setTimeout(() => {
+          const currentActivity = client.user.presence?.activities?.[0];
+          if (currentActivity) {
+            console.log(`👁️  Actividad actual: "${currentActivity.name}" (${currentActivity.type})`);
+          } else {
+            console.log(`⚠️  No se detecta actividad actual en el bot`);
+          }
+        }, 2000);
+        
       } catch (e) {
         console.error("❌ Error al establecer actividad:", e.message);
         console.error("Stack:", e.stack);
