@@ -16,7 +16,7 @@ module.exports = {
     .addSubcommand(s => s.setName("memory").setDescription("Ver uso de memoria"))
     .addSubcommand(s => s.setName("cache").setDescription("Limpiar caché del bot"))
     .addSubcommand(s => s.setName("guilds").setDescription("Listar servidores conectados"))
-    .addSubcommand(s => s.setName(" voz").setDescription("Ver colas de música activas")),
+    .addSubcommand(s => s.setName("voice").setDescription("Ver colas de música activas")),
 
   async execute(interaction) {
     // Solo el owner del bot puede usar debug
