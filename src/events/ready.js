@@ -16,26 +16,20 @@ module.exports = {
 
     // ── Actividad rotativa
     const activities = [
-      { name: "🎫 Gestionando tickets",                    type: ActivityType.Watching },
-      { name: `Supervisando ${client.guilds.cache.size} servidores 👀`,   type: ActivityType.Watching },
-      { name: "🛠️ Soporte 24/7",                           type: ActivityType.Playing  },
-      { name: "Probando GitHub 🚀", type: ActivityType.Playing },
-      { name: "Mi Creador es Camilo 👻", type: ActivityType.Playing },
+      { name: "🎫 Gestionando tickets", type: ActivityType.Watching },
+      { name: `🎯 ${client.guilds.cache.size} servidores`, type: ActivityType.Watching },
+      { name: "🛠️ Soporte 24/7", type: ActivityType.Playing },
     ];
     let ai = 0;
     const setActivity = () => { 
       const activity = activities[ai++ % activities.length];
-      client.user.setPresence({
-        activities: [{
-          name: activity.name,
-          type: activity.type,
-          status: 'online'
-        }],
-        status: 'online'
-      });
+      client.user.setActivity(activity.name, { type: activity.type });
     };
-    setActivity();
-    setInterval(setActivity, 5 * 60 * 1000);
+    // Delay para asegurar que el cliente esté listo
+    setTimeout(() => {
+      setActivity();
+      setInterval(setActivity, 60000);
+    }, 5000);
 
     // ── Dashboard inicial
     await updateAllDashboards(client);
