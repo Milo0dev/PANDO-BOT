@@ -55,7 +55,25 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const sub   = interaction.options.getSubcommand();
     const gid   = interaction.guild.id;
-    const ls    = await levelSettings.get(gid);
+    let ls    = await levelSettings.get(gid);
+    
+    // Validación null - usar valores por defecto si no existe configuración
+    if (!ls || typeof ls !== 'object') {
+      ls = {
+        enabled: false,
+        channel: null,
+        xp_min: 10,
+        xp_max: 25,
+        xp_cooldown: 60,
+        levelup_message: "🎉 ¡Felicidades {mention}! Subiste al **nivel {level}**! 🏆",
+        ignored_channels: [],
+        ignored_roles: [],
+        role_rewards: [],
+        double_xp_roles: [],
+        stack_roles: true,
+      };
+    }
+    
     const ok    = msg => interaction.reply({ embeds: [E.successEmbed(msg)], flags: MessageFlags.Ephemeral });
     const er    = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],   flags: MessageFlags.Ephemeral });
 

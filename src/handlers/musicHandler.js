@@ -43,6 +43,9 @@ if (process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
 // ══════════════════════════════════════════════════════════════
 const queues = new Map();
 
+// Intervalo de limpieza de colas huérfanas (5 minutos)
+const ORPHAN_CLEANUP_INTERVAL = 5 * 60 * 1000;
+
 class MusicQueue {
   constructor(guildId, voiceChannel) {
     this.guildId = guildId;
@@ -56,6 +59,7 @@ class MusicQueue {
     this.player = null;
     this.resource = null;
     this.startTime = null;
+    this.lastActivity = Date.now();
   }
 }
 
@@ -88,6 +92,64 @@ function deleteQueue(guildId) {
     }
   }
   queues.delete(guildId);
+}
+
+/**
+ * Limpiar colas huérfanas - elimina colas cuando no hay nadie en el canal de voz
+ */
+async function cleanupOrphanedQueues(client) {
+  if (!client || !client.guilds) return;
+  
+  let cleaned = 0;
+  
+  for (const [guildId, queue] of queues.entries()) {
+    try {
+      // Verificar si la cola está inactiva por mucho tiempo
+      const inactiveTime = Date.now() - queue.lastActivity;
+      if (inactiveTime > 30 * 60 * 1000) { // 30 minutos de inactividad
+        deleteQueue(guildId);
+        cleaned++;
+        continue;
+      }
+      
+      // Verificar si hay miembros en el canal de voz (excepto el bot)
+      const guild = client.guilds.cache.get(guildId);
+      if (!guild) {
+        deleteQueue(guildId);
+        cleaned++;
+        continue;
+      }
+      
+      const channel = guild.channels.cache.get(queue.voiceChannel?.id);
+      if (!channel || channel.type !== 2) { // type 2 = voice channel
+        deleteQueue(guildId);
+        cleaned++;
+        continue;
+      }
+      
+      // Contar miembros (excluyendo al bot)
+      const members = channel.members.filter(m => !m.user.bot);
+      if (members.size === 0) {
+        // No hay usuarios, desconectar después de 1 minuto
+        if (inactiveTime > 60 * 1000) {
+          deleteQueue(guildId);
+          cleaned++;
+        }
+      }
+    } catch (error) {
+      // Silenciar errores de limpieza
+    }
+  }
+  
+  if (cleaned > 0) {
+    console.log(`[MUSIC CLEANUP] Eliminadas ${cleaned} colas huérfanas`);
+  }
+}
+
+// Iniciar limpieza periódica
+function startOrphanCleanup(client) {
+  setInterval(() => cleanupOrphanedQueues(client), ORPHAN_CLEANUP_INTERVAL);
+  console.log("[MUSIC] Limpieza de colas huérfanas iniciada (cada 5 min)");
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -283,6 +345,10 @@ async function addToQueue(guildId, voiceChannel, query, user, playNext = false) 
     if (!queue) {
       queue = createQueue(guildId, voiceChannel);
     }
+    
+    // Actualizar última actividad
+    queue.lastActivity = Date.now();
+    queue.voiceChannel = voiceChannel;
 
     const urlType = detectUrlType(query);
     let songs = [];
@@ -481,6 +547,9 @@ async function addToQueue(guildId, voiceChannel, query, user, playNext = false) 
 async function playNextSong(guildId) {
   const queue = getQueue(guildId);
   if (!queue) return;
+  
+  // Actualizar última actividad
+  queue.lastActivity = Date.now();
 
   // Si el loop está en "song", volver a reproducir la misma canción
   if (queue.loop === "song" && queue.currentSong) {
@@ -495,10 +564,14 @@ async function playNextSong(guildId) {
   if (queue.songs.length === 0) {
     queue.playing = false;
     queue.currentSong = null;
+    queue.lastActivity = Date.now(); // Resetear al quedar vacío
     setTimeout(() => {
-      const connection = getVoiceConnection(guildId);
-      if (connection) connection.destroy();
-      deleteQueue(guildId);
+      const q = getQueue(guildId);
+      if (q && q.songs.length === 0 && !q.playing) {
+        const connection = getVoiceConnection(guildId);
+        if (connection) connection.destroy();
+        deleteQueue(guildId);
+      }
     }, 300000); // 5 minutos de inactividad
     return;
   }
@@ -544,7 +617,7 @@ async function playNextSong(guildId) {
     } catch (err) {
       console.log(`⚠️ YouTube bloqueó el audio de ${song.title}. Usando el respaldo de SoundCloud...`);
       
-      // 👇 ESTO ES LO NUEVO: Generar el pase gratuito de SoundCloud
+      // Generar el pase gratuito de SoundCloud
       const scClientId = await play.getFreeClientID();
       await play.setToken({
         soundcloud: {
@@ -577,6 +650,7 @@ async function playNextSong(guildId) {
     queue.player.play(queue.resource);
     queue.playing = true;
     queue.startTime = Date.now();
+    queue.lastActivity = Date.now();
 
     console.log(`🎵 Reproduciendo: ${song.title}`);
 
@@ -692,4 +766,5 @@ module.exports = {
   setVolume,
   setLoop,
   getProgress,
+  startOrphanCleanup,
 };

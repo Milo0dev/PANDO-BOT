@@ -64,19 +64,20 @@ async function startBot() {
   const rank    = require("./src/commands/rank");
   const levels  = require("./src/commands/levels");
   const modlogs = require("./src/commands/modlogs");
-  const music = require("./src/commands/music");
-  const ping = require("./src/commands/ping");
+  const music   = require("./src/commands/music");
+  const ping    = require("./src/commands/ping");
+  const debug   = require("./src/commands/debug");
 
   const allCommands = [
-    setup, ping,
- ticket.reopen, ticket.claim,    ticket.close, ticket.unclaim,
+    setup, ping, debug,
+    ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
     ticket.assign, ticket.add, ticket.remove, ticket.rename,
     ticket.priority, ticket.move, ticket.note, ticket.transcript,
     ticket.info, ticket.history,
     admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
     admin.maintenance, admin.closeAll, admin.lockdown,
     staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
-    welcome, verify, help,
+    welcome, verify, help, debug,
     poll, embed, suggest, remind, rank, levels, modlogs,
     music.play, music.skip, music.stop, music.pause, music.resume, 
     music.queue, music.nowplaying, music.shuffle, music.remove, 
@@ -100,6 +101,16 @@ async function startBot() {
     }
   }
 
+  // ── Iniciar sistemas de auto-actualización
+  const { startDashboardAutoUpdate } = require("./src/handlers/dashboardHandler");
+  const { startOrphanCleanup } = require("./src/handlers/musicHandler");
+  
+  // Dashboard auto-update (cada 30 segundos)
+  startDashboardAutoUpdate(client);
+  
+  // Music orphan cleanup (cada 5 minutos)
+  startOrphanCleanup(client);
+
   // ── Manejo de errores global
   process.on("unhandledRejection", err => console.error(chalk.red("[ERROR]"), err?.message || err));
   process.on("uncaughtException",  err => console.error(chalk.red("[EXCEPTION]"), err?.message || err));
@@ -115,8 +126,8 @@ async function startBot() {
   console.log(chalk.blue(`
 ╔══════════════════════════════════════════╗
 ║                                          ║
-║        🐼  PANDO BOT  v1.0  🐼          ║
-║      Sistema Profesional Completo        ║
+║        🐼  PANDO BOT  v1.1  🐼          ║
+║      Sistema Profesional Completo         ║
 ║      con MongoDB                         ║
 ║                                          ║
 ╚══════════════════════════════════════════╝

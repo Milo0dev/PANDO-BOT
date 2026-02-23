@@ -15,32 +15,82 @@ const { generateTranscript } = require("../utils/transcript");
 const config = require("../../config");
 const handleMusicButtons = require('../handlers/musicButtonHandler');
 
+// ══════════════════════════════════════════════════════════════
+//   ALIASES DE COMANDOS
+// ══════════════════════════════════════════════════════════════
+const COMMAND_ALIASES = {
+  // Alias en español
+  "ayuda": "help",
+  "soporte": "help",
+  "ayudaplay": "help",
+  "estadisticas": "stats",
+  "ranking": "rank",
+  "rankingtop": "rank",
+  "verificar": "verify",
+  "bienvenida": "welcome",
+  "verificacion": "verify",
+  "configurar": "setup",
+  "panel": "setup",
+  // Comandos en inglés comunes
+  "rank": "rank",
+  "ping": "ping",
+};
+
+function resolveCommand(commandName, client) {
+  // 1. Buscar comando exacto
+  let cmd = client.commands.get(commandName);
+  if (cmd) return cmd;
+  
+  // 2. Buscar por alias
+  const alias = COMMAND_ALIASES[commandName.toLowerCase()];
+  if (alias) {
+    cmd = client.commands.get(alias);
+    if (cmd) return cmd;
+  }
+  
+  // 3. Buscar subcomandos (ej: "stats server" → "stats")
+  const parts = commandName.split(" ");
+  if (parts.length > 1) {
+    cmd = client.commands.get(parts[0]);
+    if (cmd) return cmd;
+  }
+  
+  return null;
+}
+
 module.exports = {
   name: "interactionCreate",
   async execute(interaction, client) {
     try {
 
-      // ══════════════════════════════════════════
-      //   SLASH COMMANDS
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
+      //   SLASH COMMANDS (con soporte para aliases)
+      // ══════════════════════════════════════════════════════════════
       if (interaction.isChatInputCommand()) {
-        const cmd = client.commands.get(interaction.commandName);
-        if (cmd) await cmd.execute(interaction, client);
+        const cmd = resolveCommand(interaction.commandName, client);
+        if (cmd) {
+          // Manejar subcomandos con aliases
+          const fullName = interaction.commandName;
+          const parts = fullName.split(" ");
+          
+          // Si es un subcomando, ejecutarlo normalmente
+          await cmd.execute(interaction, client);
+        }
         return;
       }
 
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       //   AUTOCOMPLETE
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       if (interaction.isAutocomplete()) {
-        const cmd = client.commands.get(interaction.commandName);
+        const cmd = resolveCommand(interaction.commandName, client);
         if (cmd?.autocomplete) await cmd.autocomplete(interaction);
         return;
       }
 
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       //   SELECT MENUS
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       if (interaction.isStringSelectMenu()) {
 
         // ── Selección de categoría de ticket
@@ -96,9 +146,9 @@ module.exports = {
         }
       }
 
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       //   MODALS
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       if (interaction.isModalSubmit()) {
 
         // ── Formulario de ticket
@@ -170,9 +220,9 @@ module.exports = {
         }
       }
 
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       //   BOTONES
-      // ══════════════════════════════════════════
+      // ══════════════════════════════════════════════════════════════
       if (interaction.isButton()) {
         const { customId } = interaction;
       if (interaction.customId.startsWith('music_')) {
