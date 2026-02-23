@@ -5,14 +5,15 @@ const fs    = require("fs");
 const path  = require("path");
 const http = require('http');
 
-// Atrapa el puerto exacto que Holy.gg le exige al servidor internamente
 const port = process.env.SERVER_PORT || process.env.PORT || 8080;
+// Atrapamos la IP específica del servidor, o usamos 0.0.0.0 por defecto
+const host = process.env.SERVER_IP || '0.0.0.0'; 
 
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Bot Online\n');
-}).listen(port, '0.0.0.0', () => {
-    console.log(`🟢 Servidor web sincronizado con Holy.gg en el puerto ${port}`);
+}).listen(port, host, () => {
+    console.log(`🟢 Serv web sincronizado en ${host}:${port}`);
 });
 
 // Debug: Mostrar variables de entorno
