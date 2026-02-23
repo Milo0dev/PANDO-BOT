@@ -6,15 +6,16 @@ const { dashboardEmbed } = require("../utils/embeds");
  */
 async function updateDashboard(guild) {
   try {
-    const s = settings.get(guild.id);
+    // Las funciones de base de datos son asíncronas
+    const s = await settings.get(guild.id);
     if (!s.dashboard_channel) return;
 
     const channel = guild.channels.cache.get(s.dashboard_channel);
     if (!channel) return;
 
-    const stats     = tickets.getStats(guild.id);
-    const awayStaff = staffStatus.getAway(guild.id);
-    const lb        = staffStats.getLeaderboard(guild.id);
+    const stats     = await tickets.getStats(guild.id);
+    const awayStaff = await staffStatus.getAway(guild.id);
+    const lb        = await staffStats.getLeaderboard(guild.id);
     const embed     = dashboardEmbed(stats, guild, awayStaff, lb);
 
     // Si ya existe el mensaje, editarlo
@@ -30,7 +31,7 @@ async function updateDashboard(guild) {
 
     // Crear nuevo mensaje
     const msg = await channel.send({ embeds: [embed] });
-    settings.update(guild.id, { dashboard_message_id: msg.id });
+    await settings.update(guild.id, { dashboard_message_id: msg.id });
   } catch (e) {
     console.error("[DASHBOARD]", e.message);
   }
