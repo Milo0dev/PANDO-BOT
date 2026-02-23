@@ -25,9 +25,13 @@ module.exports = {
     let ai = 0;
     const setActivity = () => { 
       try {
-        client.user.setActivity(activities[ai++ % activities.length]);
+        const activity = activities[ai++ % activities.length];
+        console.log(`🔧 Intentando establecer actividad: ${activity.name} (${activity.type})`);
+        client.user.setActivity(activity.name, { type: activity.type });
+        console.log(`✅ Actividad establecida exitosamente`);
       } catch (e) {
-        console.error("Error al establecer actividad:", e.message);
+        console.error("❌ Error al establecer actividad:", e.message);
+        console.error("Stack:", e.stack);
       }
     };
     setActivity();
