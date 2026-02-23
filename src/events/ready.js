@@ -35,8 +35,16 @@ module.exports = {
           const currentActivity = client.user.presence?.activities?.[0];
           if (currentActivity) {
             console.log(`👁️  Actividad actual: "${currentActivity.name}" (${currentActivity.type})`);
+            console.log(`📋 Detalles de presencia:`, {
+              status: client.user.presence?.status,
+              activities: client.user.presence?.activities?.map(a => ({ name: a.name, type: a.type }))
+            });
           } else {
             console.log(`⚠️  No se detecta actividad actual en el bot`);
+            console.log(`📋 Estado de presencia:`, {
+              status: client.user.presence?.status,
+              activities: client.user.presence?.activities
+            });
           }
         }, 2000);
         
