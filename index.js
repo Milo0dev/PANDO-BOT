@@ -65,9 +65,10 @@ async function startBot() {
   const levels  = require("./src/commands/levels");
   const modlogs = require("./src/commands/modlogs");
   const music = require("./src/commands/music");
+  const ping = require("./src/commands/ping");
 
   const allCommands = [
-    setup,
+    setup, ping,
  ticket.reopen, ticket.claim,    ticket.close, ticket.unclaim,
     ticket.assign, ticket.add, ticket.remove, ticket.rename,
     ticket.priority, ticket.move, ticket.note, ticket.transcript,
