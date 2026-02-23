@@ -12,11 +12,11 @@ module.exports = {
   async execute(member, client) {
     const guild = member.guild;
     try {
-      const ws = welcomeSettings.get(guild.id);
-      const vs = verifSettings.get(guild.id);
+      const ws = await welcomeSettings.get(guild.id);
+      const vs = await verifSettings.get(guild.id);
 
       // 1. ANTI-RAID
-      if (vs.enabled && vs.antiraid_enabled) {
+      if (vs && vs.enabled && vs.antiraid_enabled) {
         const now  = Date.now();
         const prev = (joinCache.get(guild.id) || []).filter(t => now - t < vs.antiraid_seconds * 1000);
         prev.push(now);
@@ -38,27 +38,27 @@ module.exports = {
       }
 
       // 2. ROL DE NO VERIFICADO
-      if (vs.enabled && vs.unverified_role) {
+      if (vs && vs.enabled && vs.unverified_role) {
         const role = guild.roles.cache.get(vs.unverified_role);
         if (role && guild.members.me?.permissions.has(PermissionFlagsBits.ManageRoles))
           await member.roles.add(role).catch(() => {});
       }
 
       // 3. AUTO-ROL (solo si verificación desactivada)
-      if (!vs.enabled && ws.welcome_autorole) {
+      if (vs && !vs.enabled && ws?.welcome_autorole) {
         const role = guild.roles.cache.get(ws.welcome_autorole);
         if (role && guild.members.me?.permissions.has(PermissionFlagsBits.ManageRoles))
           await member.roles.add(role).catch(() => {});
       }
 
       // 4. BIENVENIDA EN CANAL
-      if (ws.welcome_enabled && ws.welcome_channel) {
+      if (ws?.welcome_enabled && ws.welcome_channel) {
         const ch = guild.channels.cache.get(ws.welcome_channel);
         if (ch) await ch.send({ content: `<@${member.id}>`, embeds: [buildWelcomeEmbed(member, guild, ws)] }).catch(() => {});
       }
 
       // 5. DM DE BIENVENIDA
-      if (ws.welcome_enabled && ws.welcome_dm) {
+      if (ws?.welcome_enabled && ws.welcome_dm) {
         try {
           const dmEmbed = new EmbedBuilder()
             .setColor(parseInt(ws.welcome_color || "5865F2", 16))
@@ -66,15 +66,15 @@ module.exports = {
             .setDescription(fill(ws.welcome_dm_message, member, guild))
             .setThumbnail(guild.iconURL({ dynamic: true }))
             .setTimestamp();
-          if (vs.enabled && vs.channel)
+          if (vs?.enabled && vs.channel)
             dmEmbed.addFields({ name: "✅ Verificación requerida", value: `Ve a <#${vs.channel}> para verificarte y acceder al servidor.` });
           await member.send({ embeds: [dmEmbed] });
         } catch { /* DMs cerrados */ }
       }
 
     // ── 6. MOD LOG de JOIN
-    const ml = modlogSettings.get(guild.id);
-    if (ml.enabled && ml.log_joins && ml.channel) {
+    const ml = await modlogSettings.get(guild.id);
+    if (ml && ml.enabled && ml.log_joins && ml.channel) {
       const logCh = guild.channels.cache.get(ml.channel);
       if (logCh) {
         await logCh.send({

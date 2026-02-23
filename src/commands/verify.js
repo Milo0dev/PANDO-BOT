@@ -2,7 +2,7 @@ const {
   SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder,
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType,
 } = require("discord.js");
-const { verifSettings, verifLogs, verifCodes } = require("../utils/database");
+const { verifSettings, verifLogs, verifCodes, welcomeSettings } = require("../utils/database");
 const E = require("../utils/embeds");
 
 module.exports = {
@@ -89,7 +89,7 @@ module.exports = {
   async execute(interaction) {
     const sub  = interaction.options.getSubcommand();
     const gid  = interaction.guild.id;
-    const vs   = verifSettings.get(gid);
+    const vs   = await verifSettings.get(gid);
 
     const ok = msg => interaction.reply({ embeds: [E.successEmbed(msg)],  ephemeral: true });
     const er = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],    ephemeral: true });
@@ -103,7 +103,7 @@ module.exports = {
       const modo       = interaction.options.getString("modo");
       const rolNoVerif = interaction.options.getRole("rol_no_verificado");
 
-      verifSettings.update(gid, {
+      await verifSettings.update(gid, {
         enabled:         true,
         channel:         canal.id,
         verified_role:   rolVerif.id,
@@ -112,7 +112,7 @@ module.exports = {
       });
 
       // Enviar panel automáticamente
-      await sendVerifPanel(interaction.guild, verifSettings.get(gid), interaction.client);
+      await sendVerifPanel(interaction.guild, vs, interaction.client);
 
       const modeLabels = { button: "🖱️ Botón", code: "🔢 Código por DM", question: "❓ Pregunta" };
       return interaction.reply({
@@ -134,7 +134,7 @@ module.exports = {
     //   /verify panel
     // ──────────────────────────────────────────────
     if (sub === "panel") {
-      if (!vs.channel) return er("Configura primero el canal con `/verify setup`.");
+      if (!vs?.channel) return er("Configura primero el canal con `/verify setup`.");
       await interaction.deferReply({ ephemeral: true });
       await sendVerifPanel(interaction.guild, vs, interaction.client);
       return interaction.editReply({ embeds: [E.successEmbed("Panel de verificación enviado/actualizado.")] });
@@ -145,8 +145,8 @@ module.exports = {
     // ──────────────────────────────────────────────
     if (sub === "activar") {
       const estado = interaction.options.getBoolean("estado");
-      if (estado && !vs.channel) return er("Configura el canal primero con `/verify setup`.");
-      verifSettings.update(gid, { enabled: estado });
+      if (estado && !vs?.channel) return er("Configura el canal primero con `/verify setup`.");
+      await verifSettings.update(gid, { enabled: estado });
       return ok(`Sistema de verificación **${estado ? "✅ activado" : "❌ desactivado"}**.`);
     }
 
@@ -155,9 +155,10 @@ module.exports = {
     // ──────────────────────────────────────────────
     if (sub === "modo") {
       const tipo = interaction.options.getString("tipo");
-      verifSettings.update(gid, { mode: tipo });
+      await verifSettings.update(gid, { mode: tipo });
       const labels = { button: "🖱️ Botón", code: "🔢 Código por DM", question: "❓ Pregunta" };
-      await sendVerifPanel(interaction.guild, verifSettings.get(gid), interaction.client);
+      const vsNew = await verifSettings.get(gid);
+      await sendVerifPanel(interaction.guild, vsNew, interaction.client);
       return ok(`Modo cambiado a **${labels[tipo]}**. Panel actualizado automáticamente.`);
     }
 
@@ -167,7 +168,7 @@ module.exports = {
     if (sub === "pregunta") {
       const q = interaction.options.getString("pregunta");
       const a = interaction.options.getString("respuesta");
-      verifSettings.update(gid, { question: q, question_answer: a.toLowerCase().trim() });
+      await verifSettings.update(gid, { question: q, question_answer: a.toLowerCase().trim() });
       return ok(`Pregunta actualizada:\n**Pregunta:** ${q}\n**Respuesta correcta:** ${a}`);
     }
 
@@ -189,8 +190,9 @@ module.exports = {
       if (color)  update.panel_color       = color;
       if (img)    update.panel_image       = img;
 
-      verifSettings.update(gid, update);
-      await sendVerifPanel(interaction.guild, verifSettings.get(gid), interaction.client);
+      await verifSettings.update(gid, update);
+      const vsNew = await verifSettings.get(gid);
+      await sendVerifPanel(interaction.guild, vsNew, interaction.client);
       return ok("Panel de verificación actualizado.");
     }
 
@@ -199,7 +201,7 @@ module.exports = {
     // ──────────────────────────────────────────────
     if (sub === "dm") {
       const estado = interaction.options.getBoolean("estado");
-      verifSettings.update(gid, { dm_on_verify: estado });
+      await verifSettings.update(gid, { dm_on_verify: estado });
       return ok(`DM al verificarse: **${estado ? "✅ activado" : "❌ desactivado"}**`);
     }
 
@@ -208,7 +210,7 @@ module.exports = {
     // ──────────────────────────────────────────────
     if (sub === "autokick") {
       const horas = interaction.options.getInteger("horas");
-      verifSettings.update(gid, { kick_unverified_hours: horas });
+      await verifSettings.update(gid, { kick_unverified_hours: horas });
       return ok(horas === 0
         ? "Auto-kick de no verificados **desactivado**."
         : `Los usuarios no verificados serán expulsados tras **${horas} hora(s)**.`);
@@ -228,8 +230,8 @@ module.exports = {
       if (segundos) update.antiraid_seconds = segundos;
       if (accion)   update.antiraid_action  = accion;
 
-      verifSettings.update(gid, update);
-      const vsNew = verifSettings.get(gid);
+      await verifSettings.update(gid, update);
+      const vsNew = await verifSettings.get(gid);
       return ok(estado
         ? `Anti-raid **activado**.\nAlerta tras **${vsNew.antiraid_joins} joins** en **${vsNew.antiraid_seconds}s**.\nAcción: **${vsNew.antiraid_action === "kick" ? "🚫 Kickear" : "⚠️ Solo alertar"}**`
         : "Anti-raid **desactivado**.");
@@ -240,7 +242,7 @@ module.exports = {
     // ──────────────────────────────────────────────
     if (sub === "logs") {
       const canal = interaction.options.getChannel("canal");
-      verifSettings.update(gid, { log_channel: canal.id });
+      await verifSettings.update(gid, { log_channel: canal.id });
       return ok(`Logs de verificación → ${canal}`);
     }
 
@@ -253,7 +255,7 @@ module.exports = {
       if (!member) return er("No se encontró al usuario en el servidor.");
 
       await applyVerification(member, interaction.guild, vs, "Manual por staff");
-      verifLogs.add(gid, user.id, "verified", `Forzado por ${interaction.user.tag}`);
+      await verifLogs.add(gid, user.id, "verified", `Forzado por ${interaction.user.tag}`);
 
       return ok(`<@${user.id}> verificado manualmente.`);
     }
@@ -266,16 +268,16 @@ module.exports = {
       const member = await interaction.guild.members.fetch(user.id).catch(() => null);
       if (!member) return er("No se encontró al usuario en el servidor.");
 
-      if (vs.verified_role) {
+      if (vs?.verified_role) {
         const vr = interaction.guild.roles.cache.get(vs.verified_role);
         if (vr) await member.roles.remove(vr).catch(() => {});
       }
-      if (vs.unverified_role) {
+      if (vs?.unverified_role) {
         const ur = interaction.guild.roles.cache.get(vs.unverified_role);
         if (ur) await member.roles.add(ur).catch(() => {});
       }
 
-      verifLogs.add(gid, user.id, "unverified", `Por ${interaction.user.tag}`);
+      await verifLogs.add(gid, user.id, "unverified", `Por ${interaction.user.tag}`);
       return ok(`Verificación de <@${user.id}> removida.`);
     }
 
@@ -283,8 +285,8 @@ module.exports = {
     //   /verify stats
     // ──────────────────────────────────────────────
     if (sub === "stats") {
-      const stats   = verifLogs.getStats(gid);
-      const recents = verifLogs.getRecent(gid, 5);
+      const stats   = await verifLogs.getStats(gid);
+      const recents = await verifLogs.getRecent(gid, 5);
       const recentText = recents.length
         ? recents.map(l => {
             const icon = l.status === "verified" ? "✅" : l.status === "failed" ? "❌" : "🚫";
@@ -322,20 +324,20 @@ module.exports = {
           .setColor(0x57F287)
           .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
           .addFields(
-            { name: "⚙️ Estado",              value: yn(vs.enabled),                              inline: true },
-            { name: "📋 Modo",                value: modes[vs.mode] || vs.mode,                   inline: true },
-            { name: "📢 Canal",               value: ch(vs.channel),                              inline: true },
-            { name: "✅ Rol verificado",      value: rl(vs.verified_role),                        inline: true },
-            { name: "🔴 Rol no verificado",   value: rl(vs.unverified_role),                      inline: true },
-            { name: "📝 Logs",                value: ch(vs.log_channel),                          inline: true },
-            { name: "📩 DM al verificar",     value: yn(vs.dm_on_verify),                         inline: true },
-            { name: "⏰ Auto-kick",           value: vs.kick_unverified_hours > 0 ? `${vs.kick_unverified_hours}h` : "❌ Desactivado", inline: true },
-            { name: "🛡️ Anti-raid",           value: yn(vs.antiraid_enabled),                     inline: true },
-            ...(vs.antiraid_enabled ? [
+            { name: "⚙️ Estado",              value: yn(vs?.enabled),                              inline: true },
+            { name: "📋 Modo",                value: modes[vs?.mode] || vs?.mode || "No configurado",                   inline: true },
+            { name: "📢 Canal",               value: ch(vs?.channel),                              inline: true },
+            { name: "✅ Rol verificado",      value: rl(vs?.verified_role),                        inline: true },
+            { name: "🔴 Rol no verificado",   value: rl(vs?.unverified_role),                      inline: true },
+            { name: "📝 Logs",                value: ch(vs?.log_channel),                          inline: true },
+            { name: "📩 DM al verificar",     value: yn(vs?.dm_on_verify),                         inline: true },
+            { name: "⏰ Auto-kick",           value: vs?.kick_unverified_hours > 0 ? `${vs.kick_unverified_hours}h` : "❌ Desactivado", inline: true },
+            { name: "🛡️ Anti-raid",           value: yn(vs?.antiraid_enabled),                     inline: true },
+            ...(vs?.antiraid_enabled ? [
               { name: "🚨 Umbral",            value: `${vs.antiraid_joins} joins / ${vs.antiraid_seconds}s`, inline: true },
               { name: "⚡ Acción",            value: vs.antiraid_action === "kick" ? "🚫 Kickear" : "⚠️ Alertar", inline: true },
             ] : []),
-            ...(vs.mode === "question" ? [
+            ...(vs?.mode === "question" ? [
               { name: "❓ Pregunta",          value: vs.question || "No configurada",              inline: false },
               { name: "✔️ Respuesta",         value: `\`${vs.question_answer || "?"}\``,           inline: true },
             ] : []),
@@ -350,7 +352,7 @@ module.exports = {
 //   ENVIAR / ACTUALIZAR PANEL DE VERIFICACIÓN
 // ─────────────────────────────────────────────────────
 async function sendVerifPanel(guild, vs, client) {
-  if (!vs.channel) return;
+  if (!vs?.channel) return;
   const ch = guild.channels.cache.get(vs.channel);
   if (!ch) return;
 
@@ -391,25 +393,24 @@ async function sendVerifPanel(guild, vs, client) {
   }
 
   const msg = await ch.send({ embeds: [embed], components: [row] });
-  verifSettings.update(guild.id, { panel_message_id: msg.id });
+  await verifSettings.update(guild.id, { panel_message_id: msg.id });
 }
 
 // ─────────────────────────────────────────────────────
 //   APLICAR VERIFICACIÓN A UN MIEMBRO
 // ─────────────────────────────────────────────────────
 async function applyVerification(member, guild, vs, reason = "") {
-  if (vs.verified_role) {
+  if (vs?.verified_role) {
     const vr = guild.roles.cache.get(vs.verified_role);
     if (vr) await member.roles.add(vr).catch(() => {});
   }
-  if (vs.unverified_role) {
+  if (vs?.unverified_role) {
     const ur = guild.roles.cache.get(vs.unverified_role);
     if (ur) await member.roles.remove(ur).catch(() => {});
   }
   // Auto-rol de bienvenida al verificarse
-  const { welcomeSettings } = require("../utils/database");
-  const ws = welcomeSettings.get(guild.id);
-  if (ws.welcome_autorole) {
+  const ws = await welcomeSettings.get(guild.id);
+  if (ws?.welcome_autorole) {
     const ar = guild.roles.cache.get(ws.welcome_autorole);
     if (ar) await member.roles.add(ar).catch(() => {});
   }

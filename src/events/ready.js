@@ -40,14 +40,14 @@ module.exports = {
     // ── Auto-cierre y avisos (cada 10 minutos)
     cron.schedule("*/10 * * * *", async () => {
       for (const [, guild] of client.guilds.cache) {
-        const s = settings.get(guild.id);
-        if (!s.auto_close_minutes || s.auto_close_minutes <= 0) continue;
+        const s = await settings.get(guild.id);
+        if (!s || !s.auto_close_minutes || s.auto_close_minutes <= 0) continue;
 
-        const inactive = tickets.getInactive(guild.id, s.auto_close_minutes);
+        const inactive = await tickets.getInactive(guild.id, s.auto_close_minutes);
         for (const ticket of inactive) {
           try {
             const channel = guild.channels.cache.get(ticket.channel_id);
-            if (!channel) { tickets.close(ticket.channel_id, client.user.id, "Canal eliminado"); continue; }
+            if (!channel) { await tickets.close(ticket.channel_id, client.user.id, "Canal eliminado"); continue; }
 
             // Avisar 30 minutos antes
             const warnCutoff = new Date(Date.now() - (s.auto_close_minutes - 30) * 60000);
@@ -63,7 +63,7 @@ module.exports = {
             // Cerrar si ya pasó el tiempo
             const closeCutoff = new Date(Date.now() - s.auto_close_minutes * 60000);
             if (new Date(ticket.last_activity) < closeCutoff) {
-              tickets.close(ticket.channel_id, client.user.id, "Inactividad");
+              await tickets.close(ticket.channel_id, client.user.id, "Inactividad");
               await channel.send({
                 embeds: [new EmbedBuilder()
                   .setColor(0xED4245).setTitle("⏰ Ticket Cerrado Automáticamente")
@@ -79,10 +79,10 @@ module.exports = {
     // ── Alertas SLA (cada 5 minutos) — tickets sin respuesta del staff
     cron.schedule("*/5 * * * *", async () => {
       for (const [, guild] of client.guilds.cache) {
-        const s = settings.get(guild.id);
-        if (!s.sla_minutes || s.sla_minutes <= 0 || !s.log_channel) continue;
+        const s = await settings.get(guild.id);
+        if (!s || !s.sla_minutes || s.sla_minutes <= 0 || !s.log_channel) continue;
 
-        const waiting = tickets.getWithoutStaffResponse(guild.id, s.sla_minutes);
+        const waiting = await tickets.getWithoutStaffResponse(guild.id, s.sla_minutes);
         const logCh   = guild.channels.cache.get(s.log_channel);
         if (!logCh) continue;
 
@@ -104,10 +104,10 @@ module.exports = {
     // ── Smart ping — notificar si no hay respuesta del staff en X minutos
     cron.schedule("*/3 * * * *", async () => {
       for (const [, guild] of client.guilds.cache) {
-        const s = settings.get(guild.id);
-        if (!s.smart_ping_minutes || s.smart_ping_minutes <= 0) continue;
+        const s = await settings.get(guild.id);
+        if (!s || !s.smart_ping_minutes || s.smart_ping_minutes <= 0) continue;
 
-        const waiting = tickets.getWithoutStaffResponse(guild.id, s.smart_ping_minutes);
+        const waiting = await tickets.getWithoutStaffResponse(guild.id, s.smart_ping_minutes);
         for (const ticket of waiting) {
           try {
             const channel = guild.channels.cache.get(ticket.channel_id);
@@ -135,13 +135,13 @@ module.exports = {
     // ── Reporte semanal (lunes a las 9:00)
     cron.schedule("0 9 * * 1", async () => {
       for (const [, guild] of client.guilds.cache) {
-        const s = settings.get(guild.id);
-        if (!s.weekly_report_channel) continue;
+        const s = await settings.get(guild.id);
+        if (!s || !s.weekly_report_channel) continue;
         const ch = guild.channels.cache.get(s.weekly_report_channel);
         if (!ch) continue;
         try {
-          const stats = tickets.getStats(guild.id);
-          const lb    = staffStats.getLeaderboard(guild.id);
+          const stats = await tickets.getStats(guild.id);
+          const lb    = await staffStats.getLeaderboard(guild.id);
           await ch.send({ embeds: [weeklyReportEmbed(stats, guild, lb)] });
         } catch (e) { console.error("[WEEKLY REPORT]", e.message); }
       }
@@ -149,10 +149,10 @@ module.exports = {
 
     // ── Auto-kick de no verificados (cada 30 minutos)
     cron.schedule("*/30 * * * *", async () => {
-      verifCodes.cleanup(); // Limpiar códigos expirados
+      await verifCodes.cleanup(); // Limpiar códigos expirados
       for (const [, guild] of client.guilds.cache) {
-        const vs = verifSettings.get(guild.id);
-        if (!vs.enabled || !vs.kick_unverified_hours || !vs.unverified_role) continue;
+        const vs = await verifSettings.get(guild.id);
+        if (!vs || !vs.enabled || !vs.kick_unverified_hours || !vs.unverified_role) continue;
         const cutoff = Date.now() - vs.kick_unverified_hours * 3600000;
         try {
           const members = await guild.members.fetch();
@@ -161,7 +161,7 @@ module.exports = {
             if (member.joinedTimestamp && member.joinedTimestamp < cutoff) {
               await member.kick(`No verificado tras ${vs.kick_unverified_hours}h`).catch(() => {});
               const { verifLogs } = require("../utils/database");
-              verifLogs.add(guild.id, member.id, "kicked", `Auto-kick tras ${vs.kick_unverified_hours}h sin verificar`);
+              await verifLogs.add(guild.id, member.id, "kicked", `Auto-kick tras ${vs.kick_unverified_hours}h sin verificar`);
               if (vs.log_channel) {
                 const logCh = guild.channels.cache.get(vs.log_channel);
                 const { EmbedBuilder } = require("discord.js");
@@ -180,10 +180,10 @@ module.exports = {
     // ── Limpiar canales de tickets huérfanos (cada hora)
     cron.schedule("0 * * * *", async () => {
       for (const [, guild] of client.guilds.cache) {
-        const open = tickets.getAllOpen(guild.id);
+        const open = await tickets.getAllOpen(guild.id);
         for (const t of open) {
           if (!guild.channels.cache.get(t.channel_id)) {
-            tickets.close(t.channel_id, client.user.id, "Canal no encontrado");
+            await tickets.close(t.channel_id, client.user.id, "Canal no encontrado");
           }
         }
       }
@@ -191,11 +191,11 @@ module.exports = {
 
     // ── Disparar recordatorios (cada minuto)
     cron.schedule("* * * * *", async () => {
-      reminders.cleanup();
-      const pending = reminders.getPending();
+      await reminders.cleanup();
+      const pending = await reminders.getPending();
       for (const rem of pending) {
         try {
-          reminders.markFired(rem.id);
+          await reminders.markFired(rem.id);
           const user = await client.users.fetch(rem.user_id).catch(() => null);
           if (!user) continue;
 
@@ -228,10 +228,10 @@ module.exports = {
     cron.schedule("* * * * *", async () => {
       const { polls: pollsDb } = require("../utils/database");
       const { buildPollEmbed } = require("../handlers/pollHandler");
-      const expired = pollsDb.getActive();
+      const expired = await pollsDb.getActive();
       for (const poll of expired) {
         try {
-          pollsDb.end(poll.id);
+          await pollsDb.end(poll.id);
           const guild = client.guilds.cache.get(poll.guild_id);
           if (!guild) continue;
           const ch  = guild.channels.cache.get(poll.channel_id);

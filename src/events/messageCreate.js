@@ -10,16 +10,16 @@ module.exports = {
     if (message.author.bot || !message.guild) return;
 
     // ── 1. SISTEMA DE TICKETS (lógica original)
-    const ticket  = tickets.get(message.channel.id);
+    const ticket  = await tickets.get(message.channel.id);
     if (ticket && ticket.status === "open") {
-      const s      = settings.get(message.guild.id);
+      const s      = await settings.get(message.guild.id);
       const isStaff = isStaffMember(message.member, s);
-      tickets.incrementMessages(message.channel.id, isStaff);
+      await tickets.incrementMessages(message.channel.id, isStaff);
 
       if (!isStaff && message.content) {
-        const match = autoResponses.match(message.guild.id, message.content);
+        const match = await autoResponses.match(message.guild.id, message.content);
         if (match) {
-          autoResponses.use(message.guild.id, match.trigger);
+          await autoResponses.use(message.guild.id, match.trigger);
           await message.channel.send({
             content: `> 🤖 **Respuesta automática** — *"${match.trigger}"*\n\n${match.response}`,
           }).catch(() => {});
@@ -34,9 +34,9 @@ module.exports = {
 
 async function handleXP(message, client) {
   const guild = message.guild;
-  const ls    = levelSettings.get(guild.id);
+  const ls    = await levelSettings.get(guild.id);
 
-  if (!ls.enabled) return;
+  if (!ls || !ls.enabled) return;
   if (!message.content || message.content.startsWith("/")) return;
 
   // Ignorar canales excluidos
@@ -58,7 +58,7 @@ async function handleXP(message, client) {
   // XP doble si tiene rol especial
   if (ls.double_xp_roles.some(r => message.member?.roles.cache.has(r))) xpAmount *= 2;
 
-  const result = levels.addXp(guild.id, message.author.id, xpAmount);
+  const result = await levels.addXp(guild.id, message.author.id, xpAmount);
 
   // Si subió de nivel
   if (result.leveled) {
@@ -107,7 +107,7 @@ async function handleXP(message, client) {
 function isStaffMember(member, s) {
   if (!member) return false;
   if (member.permissions.has(PermissionFlagsBits.Administrator)) return true;
-  if (s.support_role && member.roles.cache.has(s.support_role)) return true;
-  if (s.admin_role   && member.roles.cache.has(s.admin_role))   return true;
+  if (s?.support_role && member.roles.cache.has(s.support_role)) return true;
+  if (s?.admin_role   && member.roles.cache.has(s.admin_role))   return true;
   return false;
 }

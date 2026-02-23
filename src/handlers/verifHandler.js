@@ -37,9 +37,9 @@ async function handleVerif(interaction) {
 async function handleVerifyStart(interaction) {
   const guild = interaction.guild;
   const user  = interaction.user;
-  const vs    = verifSettings.get(guild.id);
+  const vs    = await verifSettings.get(guild.id);
 
-  if (!vs.enabled) {
+  if (!vs || !vs.enabled) {
     return interaction.reply({ embeds: [E.errorEmbed("El sistema de verificación no está activo.")], ephemeral: true });
   }
 
@@ -62,8 +62,8 @@ async function handleVerifyStart(interaction) {
   // ── Modo CÓDIGO: enviar código por DM y mostrar modal
   if (vs.mode === "code") {
     // Generar código SOLO si no tiene uno activo todavía
-    const existing = verifCodes.getActive(user.id, guild.id);
-    const code     = existing || verifCodes.generate(user.id, guild.id);
+    const existing = await verifCodes.getActive(user.id, guild.id);
+    const code     = existing || await verifCodes.generate(user.id, guild.id);
 
     // Intentar enviar DM
     let dmOk = false;
@@ -93,7 +93,6 @@ async function handleVerifyStart(interaction) {
     }
 
     // Mostrar mensaje ephemeral con botón para abrir el modal
-    // Así el usuario puede ir al DM tranquilamente y volver a ingresar el código
     return interaction.reply({
       embeds: [new EmbedBuilder()
         .setColor(0x57F287)
@@ -146,7 +145,7 @@ async function handleVerifyStart(interaction) {
 //   BOTÓN: AYUDA
 // ─────────────────────────────────────────────────────
 async function handleVerifyHelp(interaction) {
-  const vs    = verifSettings.get(interaction.guild.id);
+  const vs    = await verifSettings.get(interaction.guild.id);
   const modes = {
     button:   "Haz clic en **✅ Verificarme** para verificarte automáticamente.",
     code:     "Haz clic en **✅ Verificarme**, recibirás un código por DM. Ingrésalo en el formulario que aparece.",
@@ -157,7 +156,7 @@ async function handleVerifyHelp(interaction) {
     embeds: [new EmbedBuilder()
       .setColor(0x5865F2)
       .setTitle("❓ ¿Cómo verificarme?")
-      .setDescription(modes[vs.mode] || "Sigue las instrucciones del panel.")
+      .setDescription(modes[vs?.mode] || "Sigue las instrucciones del panel.")
       .addFields(
         { name: "¿Problemas con el DM?",  value: "Asegúrate de tener los mensajes directos activados:\nConfiguración → Privacidad → Mensajes Directos ✅", inline: false },
         { name: "¿Código expirado?",      value: "El código dura 10 minutos. Haz clic en Verificarme de nuevo para recibir uno nuevo.", inline: false },
@@ -172,8 +171,8 @@ async function handleVerifyHelp(interaction) {
 //   BOTÓN: INGRESAR CÓDIGO (abre el modal sin regenerar código)
 // ─────────────────────────────────────────────────────
 async function handleEnterCode(interaction) {
-  const vs = verifSettings.get(interaction.guild.id);
-  if (!vs.enabled) return interaction.reply({ embeds: [E.errorEmbed("La verificación no está activa.")], ephemeral: true });
+  const vs = await verifSettings.get(interaction.guild.id);
+  if (!vs || !vs.enabled) return interaction.reply({ embeds: [E.errorEmbed("La verificación no está activa.")], ephemeral: true });
 
   const modal = new ModalBuilder()
     .setCustomId("verify_code_modal")
@@ -197,10 +196,10 @@ async function handleEnterCode(interaction) {
 async function handleCodeModal(interaction) {
   const guild = interaction.guild;
   const user  = interaction.user;
-  const vs    = verifSettings.get(guild.id);
+  const vs    = await verifSettings.get(guild.id);
   const input = interaction.fields.getTextInputValue("code_input").toUpperCase().trim();
 
-  const result = verifCodes.verify(user.id, guild.id, input);
+  const result = await verifCodes.verify(user.id, guild.id, input);
 
   if (!result.valid) {
     const msgs = {
@@ -208,7 +207,7 @@ async function handleCodeModal(interaction) {
       expired:  "Tu código ha **expirado**. Haz clic en **Verificarme** para generar uno nuevo.",
       wrong:    "Código **incorrecto**. Inténtalo de nuevo.",
     };
-    verifLogs.add(guild.id, user.id, "failed", `Código incorrecto: ${input}`);
+    await verifLogs.add(guild.id, user.id, "failed", `Código incorrecto: ${input}`);
     return interaction.reply({ embeds: [E.errorEmbed(msgs[result.reason] || "Código inválido.")], ephemeral: true });
   }
 
@@ -221,11 +220,11 @@ async function handleCodeModal(interaction) {
 async function handleQuestionModal(interaction) {
   const guild  = interaction.guild;
   const user   = interaction.user;
-  const vs     = verifSettings.get(guild.id);
+  const vs     = await verifSettings.get(guild.id);
   const answer = interaction.fields.getTextInputValue("answer_input").toLowerCase().trim();
 
   if (answer !== (vs.question_answer || "").toLowerCase().trim()) {
-    verifLogs.add(guild.id, user.id, "failed", `Respuesta incorrecta: ${answer}`);
+    await verifLogs.add(guild.id, user.id, "failed", `Respuesta incorrecta: ${answer}`);
     return interaction.reply({
       embeds: [new EmbedBuilder()
         .setColor(E.Colors.ERROR)
@@ -243,13 +242,13 @@ async function handleQuestionModal(interaction) {
 async function handleResendCode(interaction) {
   const guild = interaction.guild;
   const user  = interaction.user;
-  const vs    = verifSettings.get(guild.id);
+  const vs    = await verifSettings.get(guild.id);
 
-  if (vs.mode !== "code") {
+  if (!vs || vs.mode !== "code") {
     return interaction.reply({ embeds: [E.errorEmbed("Este modo no usa códigos.")], ephemeral: true });
   }
 
-  const code = verifCodes.generate(user.id, guild.id);
+  const code = await verifCodes.generate(user.id, guild.id);
   try {
     await user.send({
       embeds: [new EmbedBuilder()
@@ -273,7 +272,7 @@ async function completeVerification(interaction, guild, vs, user) {
 
   // Aplicar roles
   await applyVerification(member, guild, vs, "Verificación completada");
-  verifLogs.add(guild.id, user.id, "verified");
+  await verifLogs.add(guild.id, user.id, "verified");
 
   // Respuesta en el canal de verificación (ephemeral)
   await interaction.reply({

@@ -128,7 +128,7 @@ module.exports = {
     const group = interaction.options.getSubcommandGroup(false);
     const sub   = interaction.options.getSubcommand();
     const gid   = interaction.guild.id;
-    const ss    = suggestSettings.get(gid);
+    const ss    = await suggestSettings.get(gid);
     const isStaff = interaction.member.permissions.has(PermissionFlagsBits.ManageMessages);
     const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.ManageGuild);
     const ok    = msg => interaction.reply({ embeds: [E.successEmbed(msg)], flags: MessageFlags.Ephemeral });
@@ -140,7 +140,7 @@ module.exports = {
 
       if (sub === "setup") {
         const canal = interaction.options.getChannel("canal");
-        suggestSettings.update(gid, { enabled: true, channel: canal.id });
+        await suggestSettings.update(gid, { enabled: true, channel: canal.id });
         return interaction.reply({
           embeds: [new EmbedBuilder()
             .setColor(E.Colors.SUCCESS)
@@ -152,8 +152,8 @@ module.exports = {
       }
       if (sub === "activar") {
         const estado = interaction.options.getBoolean("estado");
-        if (estado && !ss.channel) return er("Configura primero el canal con `/suggest config setup`.");
-        suggestSettings.update(gid, { enabled: estado });
+        if (estado && !ss?.channel) return er("Configura primero el canal con `/suggest config setup`.");
+        await suggestSettings.update(gid, { enabled: estado });
         return ok(`Sistema de sugerencias **${estado ? "✅ activado" : "❌ desactivado"}**.`);
       }
       if (sub === "canales") {
@@ -162,7 +162,7 @@ module.exports = {
         const upd = {};
         if (aprobadas)  upd.approved_channel = aprobadas.id;
         if (rechazadas) upd.rejected_channel = rechazadas.id;
-        suggestSettings.update(gid, upd);
+        await suggestSettings.update(gid, upd);
         const parts = [];
         if (aprobadas)  parts.push(`Aprobadas → ${aprobadas}`);
         if (rechazadas) parts.push(`Rechazadas → ${rechazadas}`);
@@ -176,24 +176,24 @@ module.exports = {
         if (dm       !== null) upd.dm_on_result      = dm;
         if (anon     !== null) upd.anonymous          = anon;
         if (cooldown !== null) upd.cooldown_minutes   = cooldown;
-        suggestSettings.update(gid, upd);
+        await suggestSettings.update(gid, upd);
         return ok("Opciones actualizadas.");
       }
       if (sub === "info") {
-        const ssNow = suggestSettings.get(gid);
+        const ssNow = await suggestSettings.get(gid);
         const yn    = v => v ? "✅ Sí" : "❌ No";
         return interaction.reply({
           embeds: [new EmbedBuilder()
             .setColor(0x5865F2)
             .setTitle("💡 Configuración de Sugerencias")
             .addFields(
-              { name: "⚙️ Estado",      value: ssNow.enabled ? "✅ Activo" : "❌ Inactivo",   inline: true },
-              { name: "📢 Canal",       value: ssNow.channel ? `<#${ssNow.channel}>` : "No configurado", inline: true },
-              { name: "📩 DM al revisar", value: yn(ssNow.dm_on_result), inline: true },
-              { name: "🕵️ Anónimo",    value: yn(ssNow.anonymous),     inline: true },
-              { name: "⏱️ Cooldown",    value: `${ssNow.cooldown_minutes}min`, inline: true },
-              { name: "✅ Canal aprobadas",  value: ssNow.approved_channel ? `<#${ssNow.approved_channel}>` : "No configurado", inline: true },
-              { name: "❌ Canal rechazadas", value: ssNow.rejected_channel ? `<#${ssNow.rejected_channel}>` : "No configurado", inline: true },
+              { name: "⚙️ Estado",      value: ssNow?.enabled ? "✅ Activo" : "❌ Inactivo",   inline: true },
+              { name: "📢 Canal",       value: ssNow?.channel ? `<#${ssNow.channel}>` : "No configurado", inline: true },
+              { name: "📩 DM al revisar", value: yn(ssNow?.dm_on_result), inline: true },
+              { name: "🕵️ Anónimo",    value: yn(ssNow?.anonymous),     inline: true },
+              { name: "⏱️ Cooldown",    value: `${ssNow?.cooldown_minutes || 0}min`, inline: true },
+              { name: "✅ Canal aprobadas",  value: ssNow?.approved_channel ? `<#${ssNow.approved_channel}>` : "No configurado", inline: true },
+              { name: "❌ Canal rechazadas", value: ssNow?.rejected_channel ? `<#${ssNow.rejected_channel}>` : "No configurado", inline: true },
             ).setTimestamp()],
           flags: MessageFlags.Ephemeral,
         });
@@ -202,8 +202,8 @@ module.exports = {
 
     // ─────────────────── ENVIAR ───────────────────
     if (sub === "enviar") {
-      if (!ss.enabled)  return er("El sistema de sugerencias no está activado.");
-      if (!ss.channel)  return er("No hay canal configurado para sugerencias.");
+      if (!ss?.enabled)  return er("El sistema de sugerencias no está activado.");
+      if (!ss?.channel)  return er("No hay canal configurado para sugerencias.");
 
       const texto = interaction.options.getString("texto");
       const ch    = interaction.guild.channels.cache.get(ss.channel);
@@ -212,7 +212,7 @@ module.exports = {
       // Placeholder msg para obtener ID
       const placeholder = await ch.send({ content: "⏳ Cargando sugerencia..." });
 
-      const sug = suggestions.create(gid, interaction.user.id, texto, placeholder.id, ch.id);
+      const sug = await suggestions.create(gid, interaction.user.id, texto, placeholder.id, ch.id);
       const embed = buildSuggestEmbed(sug, interaction.guild, ss.anonymous);
       const row   = buildVoteButtons(sug.id);
 
@@ -231,9 +231,9 @@ module.exports = {
     // ─────────────────── VER ───────────────────
     if (sub === "ver") {
       const num = interaction.options.getInteger("numero");
-      const sug = suggestions.getByNum(gid, num);
+      const sug = await suggestions.getByNum(gid, num);
       if (!sug) return er(`No existe la sugerencia #${num}.`);
-      return interaction.reply({ embeds: [buildSuggestEmbed(sug, interaction.guild, ss.anonymous)], flags: MessageFlags.Ephemeral });
+      return interaction.reply({ embeds: [buildSuggestEmbed(sug, interaction.guild, ss?.anonymous)], flags: MessageFlags.Ephemeral });
     }
 
     // ─────────────────── STAFF: APROBAR / RECHAZAR / CONSIDERAR ───────────────────
@@ -242,7 +242,7 @@ module.exports = {
 
       const num       = interaction.options.getInteger("numero");
       const comentario = interaction.options.getString("comentario") || interaction.options.getString("razon") || null;
-      const sug       = suggestions.getByNum(gid, num);
+      const sug       = await suggestions.getByNum(gid, num);
       if (!sug) return er(`No existe la sugerencia #${num}.`);
       if (sug.status !== "pending" && sub !== "considerar") {
         return er(`Esta sugerencia ya fue revisada (${STATUS_LABEL[sug.status]}).`);
@@ -250,14 +250,14 @@ module.exports = {
 
       const statusMap  = { aprobar: "approved", rechazar: "rejected", considerar: "considering" };
       const newStatus  = statusMap[sub];
-      const updated    = suggestions.setStatus(sug.id, newStatus, interaction.user.tag, comentario);
+      const updated    = await suggestions.setStatus(sug.id, newStatus, interaction.user.tag, comentario);
 
       // Actualizar el mensaje original en el canal de sugerencias
-      const sugCh = interaction.guild.channels.cache.get(ss.channel);
+      const sugCh = interaction.guild.channels.cache.get(ss?.channel);
       if (sugCh && updated.message_id) {
         const msg = await sugCh.messages.fetch(updated.message_id).catch(() => null);
         if (msg) {
-          const newEmbed = buildSuggestEmbed(updated, interaction.guild, ss.anonymous);
+          const newEmbed = buildSuggestEmbed(updated, interaction.guild, ss?.anonymous);
           // Deshabilitar botones si está aprobada o rechazada
           const disableVotes = newStatus !== "considering";
           await msg.edit({
@@ -268,16 +268,16 @@ module.exports = {
       }
 
       // Mover al canal correspondiente si está configurado
-      const targetChId = newStatus === "approved" ? ss.approved_channel : newStatus === "rejected" ? ss.rejected_channel : null;
+      const targetChId = newStatus === "approved" ? ss?.approved_channel : newStatus === "rejected" ? ss?.rejected_channel : null;
       if (targetChId) {
         const targetCh = interaction.guild.channels.cache.get(targetChId);
         if (targetCh) {
-          await targetCh.send({ embeds: [buildSuggestEmbed(updated, interaction.guild, ss.anonymous)] }).catch(() => {});
+          await targetCh.send({ embeds: [buildSuggestEmbed(updated, interaction.guild, ss?.anonymous)] }).catch(() => {});
         }
       }
 
       // DM al autor
-      if (ss.dm_on_result && updated.user_id) {
+      if (ss?.dm_on_result && updated.user_id) {
         const author = await interaction.client.users.fetch(updated.user_id).catch(() => null);
         if (author) {
           const dmColor = newStatus === "approved" ? 0x57F287 : newStatus === "rejected" ? 0xED4245 : 0xFEE75C;
@@ -303,7 +303,7 @@ module.exports = {
 
     // ─────────────────── STATS ───────────────────
     if (sub === "stats") {
-      const stat = suggestions.getStats(gid);
+      const stat = await suggestions.getStats(gid);
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(0x5865F2)
