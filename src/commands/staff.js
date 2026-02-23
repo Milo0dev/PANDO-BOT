@@ -16,13 +16,13 @@ module.exports.away = {
     .addSubcommand(s => s.setName("on").setDescription("Marcarme como ausente").addStringOption(o => o.setName("razon").setDescription("Razón de ausencia").setRequired(false)))
     .addSubcommand(s => s.setName("off").setDescription("Volver a estar disponible")),
   async execute(interaction) {
-    const s = settings.get(interaction.guild.id);
+    const s = await settings.get(interaction.guild.id);
     if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede usar este comando.")], ephemeral: true });
 
     const sub = interaction.options.getSubcommand();
     if (sub === "on") {
       const razon = interaction.options.getString("razon") || null;
-      staffStatus.setAway(interaction.guild.id, interaction.user.id, razon);
+      await staffStatus.setAway(interaction.guild.id, interaction.user.id, razon);
       await updateDashboard(interaction.guild);
       return interaction.reply({
         embeds: [new EmbedBuilder()
@@ -35,7 +35,7 @@ module.exports.away = {
       });
     }
     if (sub === "off") {
-      staffStatus.setOnline(interaction.guild.id, interaction.user.id);
+      await staffStatus.setOnline(interaction.guild.id, interaction.user.id);
       await updateDashboard(interaction.guild);
       return interaction.reply({
         embeds: [new EmbedBuilder()
@@ -52,11 +52,11 @@ module.exports.away = {
 module.exports.staffList = {
   data: new SlashCommandBuilder().setName("stafflist").setDescription("👥 Ver el estado actual del equipo de staff"),
   async execute(interaction) {
-    const s     = settings.get(interaction.guild.id);
+    const s     = await settings.get(interaction.guild.id);
     if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede ver este comando.")], ephemeral: true });
 
-    const away  = staffStatus.getAway(interaction.guild.id);
-    const total = tickets.getAllOpen(interaction.guild.id);
+    const away  = await staffStatus.getAway(interaction.guild.id);
+    const total = await tickets.getAllOpen(interaction.guild.id);
 
     const awayText = away.length
       ? away.map(a => `😴 <@${a.staff_id}> — ${a.away_reason || "Sin razón"}`).join("\n")
@@ -90,7 +90,7 @@ module.exports.refreshDashboard = {
 module.exports.myTickets = {
   data: new SlashCommandBuilder().setName("mytickets").setDescription("🎫 Ver mis tickets abiertos"),
   async execute(interaction) {
-    const open = tickets.getByUser(interaction.user.id, interaction.guild.id, "open");
+    const open = await tickets.getByUser(interaction.user.id, interaction.guild.id, "open");
     if (!open.length) return interaction.reply({ embeds: [E.infoEmbed("🎫 Mis Tickets", "No tienes tickets abiertos.")], ephemeral: true });
     const list = open.map(t => `▸ **#${t.ticket_id}** <#${t.channel_id}> — ${t.category} — ${E.priorityLabel(t.priority)}`).join("\n");
     return interaction.reply({

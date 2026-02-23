@@ -8,10 +8,17 @@ async function updateDashboard(guild) {
   try {
     // Las funciones de base de datos son asíncronas
     const s = await settings.get(guild.id);
-    if (!s.dashboard_channel) return;
+    if (!s || !s.dashboard_channel) return;
 
-    const channel = guild.channels.cache.get(s.dashboard_channel);
-    if (!channel) return;
+    let channel = guild.channels.cache.get(s.dashboard_channel);
+    if (!channel) {
+      // Intentar obtener el canal desde la API
+      channel = await guild.channels.fetch(s.dashboard_channel);
+      if (!channel) {
+        console.log("[DASHBOARD] Canal no encontrado:", s.dashboard_channel);
+        return;
+      }
+    }
 
     const stats     = await tickets.getStats(guild.id);
     const awayStaff = await staffStatus.getAway(guild.id);
