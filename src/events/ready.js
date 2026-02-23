@@ -24,34 +24,15 @@ module.exports = {
     ];
     let ai = 0;
     const setActivity = () => { 
-      try {
-        const activity = activities[ai++ % activities.length];
-        console.log(`🔧 Intentando establecer actividad: "${activity.name}" (${activity.type})`);
-        client.user.setActivity(activity.name, { type: activity.type });
-        console.log(`✅ Actividad establecida exitosamente: "${activity.name}"`);
-        
-        // Verificar que la actividad se estableció correctamente
-        setTimeout(() => {
-          const currentActivity = client.user.presence?.activities?.[0];
-          if (currentActivity) {
-            console.log(`👁️  Actividad actual: "${currentActivity.name}" (${currentActivity.type})`);
-            console.log(`📋 Detalles de presencia:`, {
-              status: client.user.presence?.status,
-              activities: client.user.presence?.activities?.map(a => ({ name: a.name, type: a.type }))
-            });
-          } else {
-            console.log(`⚠️  No se detecta actividad actual en el bot`);
-            console.log(`📋 Estado de presencia:`, {
-              status: client.user.presence?.status,
-              activities: client.user.presence?.activities
-            });
-          }
-        }, 2000);
-        
-      } catch (e) {
-        console.error("❌ Error al establecer actividad:", e.message);
-        console.error("Stack:", e.stack);
-      }
+      const activity = activities[ai++ % activities.length];
+      client.user.setPresence({
+        activities: [{
+          name: activity.name,
+          type: activity.type,
+          status: 'online'
+        }],
+        status: 'online'
+      });
     };
     setActivity();
     setInterval(setActivity, 5 * 60 * 1000);
