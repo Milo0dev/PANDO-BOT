@@ -163,7 +163,7 @@ const tickets = {
       validateInput(data.category, "string", { maxLength: 100 });
       
       const ticket = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         ticket_id:            data.ticket_id,
         channel_id:           data.channel_id,
         guild_id:             data.guild_id,
@@ -410,7 +410,7 @@ const notes = {
       validateInput(note, "string", { required: true, maxLength: 500 });
       
       const entry = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         ticket_id: ticketId,
         staff_id: staffId,
         note: sanitizeString(note, 500),
@@ -462,7 +462,7 @@ const blacklist = {
       if (existing) return;
       
       const entry = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         user_id: userId,
         guild_id: guildId,
         reason: sanitizeString(reason, 500),
@@ -712,7 +712,7 @@ const staffRatings = {
       validateInput(rating, "number", { required: true, minLength: 1, maxLength: 5 });
       
       const entry = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         guild_id: guildId,
         staff_id: staffId,
         rating,
@@ -982,7 +982,7 @@ const reminders = {
       validateInput(text, "string", { required: true, maxLength: 1000 });
       
       const entry = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         user_id: userId,
         guild_id: guildId,
         channel_id: channelId,
@@ -1071,7 +1071,7 @@ const polls = {
       validateInput(question, "string", { required: true, maxLength: 500 });
       
       const poll = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         guild_id: guildId,
         channel_id: channelId,
         message_id: messageId,

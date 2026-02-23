@@ -49,13 +49,13 @@ module.exports = {
           const category = config.categories.find(c => c.id === catId);
           if (!category) return interaction.reply({ embeds: [E.errorEmbed("Categoría no encontrada.")], flags: MessageFlags.Ephemeral });
 
-          const s      = settings.get(interaction.guild.id);
+          const s      = await settings.get(interaction.guild.id);
           if (s.maintenance_mode) return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], flags: MessageFlags.Ephemeral });
 
-          const banned = blacklist.check(interaction.user.id, interaction.guild.id);
+          const banned = await blacklist.check(interaction.user.id, interaction.guild.id);
           if (banned) return interaction.reply({ embeds: [E.errorEmbed("Estás en la lista negra.\n**Razón:** " + (banned.reason || "Sin razón"))], flags: MessageFlags.Ephemeral });
 
-          const open = tickets.getByUser(interaction.user.id, interaction.guild.id);
+          const open = await tickets.getByUser(interaction.user.id, interaction.guild.id);
           if (open.length >= (s.max_tickets || 3)) {
             return interaction.reply({ embeds: [E.errorEmbed("Ya tienes **" + open.length + "/" + (s.max_tickets || 3) + "** tickets abiertos.")], flags: MessageFlags.Ephemeral });
           }
@@ -71,8 +71,8 @@ module.exports = {
           const ticketId  = parts[parts.length - 3];
           const rating    = parseInt(interaction.values[0]);
 
-          tickets.setRating(channelId, rating);
-          staffRatings.add(interaction.guildId || "dm", staffId, rating, ticketId, interaction.user.id);
+          await tickets.setRating(channelId, rating);
+          await staffRatings.add(interaction.guildId || "dm", staffId, rating, ticketId, interaction.user.id);
 
           const starsMap = ["","⭐","⭐⭐","⭐⭐⭐","⭐⭐⭐⭐","⭐⭐⭐⭐⭐"];
           const labelMap = ["","Muy malo 😞","Malo 😐","Regular 🙂","Bueno 😊","Excelente 🤩"];
@@ -115,7 +115,7 @@ module.exports = {
 
         // ── Modal de cierre de ticket
         if (interaction.customId === "ticket_close_modal") {
-          const s = settings.get(interaction.guild.id);
+          const s = await settings.get(interaction.guild.id);
           if (!checkStaff(interaction.member, s)) {
             return interaction.reply({ embeds: [E.errorEmbed("Solo el **staff** puede cerrar tickets.")], flags: MessageFlags.Ephemeral });
           }
@@ -126,9 +126,9 @@ module.exports = {
         // ── Modal de nota de ticket
         if (interaction.customId === "ticket_note_modal") {
           const content = interaction.fields.getTextInputValue("note_content");
-          const ticket  = tickets.get(interaction.channel && interaction.channel.id);
+          const ticket  = await tickets.get(interaction.channel.id);
           if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], flags: MessageFlags.Ephemeral });
-          notes.add(ticket.ticket_id, interaction.user.id, content);
+          await notes.add(ticket.ticket_id, interaction.user.id, content);
           return interaction.reply({
             embeds: [new EmbedBuilder()
               .setColor(E.Colors.WARNING)
@@ -152,7 +152,7 @@ module.exports = {
           const trigger  = interaction.fields.getTextInputValue("trigger");
           const response = interaction.fields.getTextInputValue("response");
           try {
-            autoResponses.create(interaction.guild.id, trigger, response, interaction.user.id);
+            await autoResponses.create(interaction.guild.id, trigger, response, interaction.user.id);
             return interaction.reply({ embeds: [E.successEmbed("Auto-respuesta para **\"" + trigger + "\"** creada.")], flags: MessageFlags.Ephemeral });
           } catch {
             return interaction.reply({ embeds: [E.errorEmbed("Ya existe una auto-respuesta para **\"" + trigger + "\"**.")], flags: MessageFlags.Ephemeral });
@@ -194,16 +194,16 @@ module.exports = {
           const parts  = customId.split("_");
           const pollId = parts[2];
           const optId  = parseInt(parts[3]);
-          const poll   = polls.getById(pollId);
+          const poll   = await polls.getByMessage(pollId);
 
           if (!poll)      return interaction.reply({ embeds: [E.errorEmbed("Esta encuesta ya no existe.")], flags: MessageFlags.Ephemeral });
           if (poll.ended) return interaction.reply({ embeds: [E.errorEmbed("Esta encuesta ya ha finalizado.")], flags: MessageFlags.Ephemeral });
           if (new Date(poll.ends_at) <= new Date()) {
-            polls.end(pollId);
+            await polls.end(pollId);
             return interaction.reply({ embeds: [E.errorEmbed("Esta encuesta ha expirado.")], flags: MessageFlags.Ephemeral });
           }
 
-          const updated = polls.vote(pollId, interaction.user.id, [optId]);
+          const updated = await polls.vote(pollId, interaction.user.id, [optId]);
           if (!updated) return interaction.reply({ embeds: [E.errorEmbed("Error al registrar el voto.")], flags: MessageFlags.Ephemeral });
 
           await interaction.update({ embeds: [buildPollEmbed(updated)], components: buildPollButtons(updated) });
@@ -214,15 +214,15 @@ module.exports = {
         if (customId.startsWith("suggest_upvote_") || customId.startsWith("suggest_downvote_")) {
           const type  = customId.startsWith("suggest_upvote_") ? "up" : "down";
           const sugId = customId.replace("suggest_upvote_", "").replace("suggest_downvote_", "");
-          const sug   = suggestions.getById(sugId);
+          const sug   = await suggestions.getById(sugId);
 
           if (!sug)                   return interaction.reply({ embeds: [E.errorEmbed("Esta sugerencia ya no existe.")], flags: MessageFlags.Ephemeral });
           if (sug.status !== "pending") return interaction.reply({ embeds: [E.errorEmbed("Esta sugerencia ya fue revisada y no acepta más votos.")], flags: MessageFlags.Ephemeral });
 
-          const updated  = suggestions.vote(sugId, interaction.user.id, type);
+          const updated  = await suggestions.vote(sugId, interaction.user.id, type);
           if (!updated)  return interaction.reply({ embeds: [E.errorEmbed("Error al registrar el voto.")], flags: MessageFlags.Ephemeral });
 
-          const ss       = suggestSettings.get(interaction.guild.id);
+          const ss       = await suggestSettings.get(interaction.guild.id);
           const sugMod   = require("../commands/suggest");
           const newEmbed = sugMod.buildSuggestEmbed(updated, interaction.guild, ss.anonymous);
           const newRow   = sugMod.buildVoteButtons(sugId);
@@ -232,7 +232,7 @@ module.exports = {
         }
 
         // ── Botones de TICKET (requieren staff)
-        const s = settings.get(interaction.guild.id);
+        const s = await settings.get(interaction.guild.id);
         const staffOnlyButtons = ["ticket_close", "ticket_claim", "ticket_reopen", "ticket_transcript"];
         if (staffOnlyButtons.includes(customId) && !checkStaff(interaction.member, s)) {
           return interaction.reply({
@@ -242,7 +242,7 @@ module.exports = {
         }
 
         if (customId === "ticket_close") {
-          const ticket = tickets.get(interaction.channel.id);
+          const ticket = await tickets.get(interaction.channel.id);
           if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], flags: MessageFlags.Ephemeral });
           if (ticket.status === "closed") return interaction.reply({ embeds: [E.errorEmbed("Ya está cerrado.")], flags: MessageFlags.Ephemeral });
 
@@ -262,7 +262,7 @@ module.exports = {
         if (customId === "ticket_reopen") return TH.reopenTicket(interaction);
 
         if (customId === "ticket_transcript") {
-          const ticket = tickets.get(interaction.channel.id);
+          const ticket = await tickets.get(interaction.channel.id);
           if (!ticket) return interaction.reply({ embeds: [E.errorEmbed("No es un canal de ticket.")], flags: MessageFlags.Ephemeral });
           await interaction.deferReply({ flags: MessageFlags.Ephemeral });
           try {

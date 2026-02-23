@@ -3,6 +3,17 @@ const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js"
 const chalk = require("chalk");
 const fs    = require("fs");
 const path  = require("path");
+const http = require('http');
+
+// Holy.gg usa variables de entorno para el puerto, o usamos el 19318 que vimos en tu panel
+const port = process.env.PORT || process.env.SERVER_PORT || 19318;
+
+http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Pando Bot esta en linea y funcionando!\n');
+}).listen(port, '0.0.0.0', () => {
+    console.log(`🟢 Servidor fantasma encendido en el puerto ${port} para engañar a Holy.gg`);
+});
 
 // Debug: Mostrar variables de entorno
 console.log("🔍 Debug - MONGO_URI:", process.env.MONGO_URI ? "✓ Configurada" : "✗ No encontrada");

@@ -23,8 +23,8 @@ async function sendPanel(channel, guild) {
     .setFooter({ text: p.footer, iconURL: guild.iconURL({ dynamic: true }) })
     .setTimestamp();
 
-  const openCount = tickets.getAllOpen(guild.id).length;
-  if (openCount > 0) embed.addFields({ name: "🎫 Tickets activos", value: `\`${openCount}\``, inline: true });
+  const openCount = await tickets.getAllOpen(guild.id);
+  if (openCount.length > 0) embed.addFields({ name: "🎫 Tickets activos", value: `\`${openCount.length}\``, inline: true });
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId("ticket_category_select")
@@ -65,7 +65,7 @@ function buildModal(category) {
 async function createTicket(interaction, categoryId, answers = []) {
   const guild    = interaction.guild;
   const user     = interaction.user;
-  const s        = settings.get(guild.id);
+  const s        = await settings.get(guild.id);
   const category = config.categories.find(c => c.id === categoryId);
   if (!category) return replyError(interaction, "Categoría no encontrada.");
 
@@ -75,12 +75,12 @@ async function createTicket(interaction, categoryId, answers = []) {
   }
 
   // Blacklist
-  const banned = blacklist.check(user.id, guild.id);
+  const banned = await blacklist.check(user.id, guild.id);
   if (banned) return replyError(interaction, `Estás en la lista negra.\n**Razón:** ${banned.reason || "Sin razón"}`);
 
   // Cooldown
   if (s.cooldown_minutes > 0) {
-    const remaining = cooldowns.check(user.id, guild.id, s.cooldown_minutes);
+    const remaining = await cooldowns.check(user.id, guild.id, s.cooldown_minutes);
     if (remaining) return replyError(interaction, `Debes esperar **${remaining} minuto(s)** antes de abrir otro ticket.`);
   }
 
@@ -104,15 +104,15 @@ async function createTicket(interaction, categoryId, answers = []) {
   }
 
   // Límite por usuario
-  const openTickets = tickets.getByUser(user.id, guild.id);
+  const openTickets = await tickets.getByUser(user.id, guild.id);
   if (openTickets.length >= (s.max_tickets || 3)) {
-    return replyError(interaction, `Ya tienes **${openTickets.length}/${s.max_tickets}** tickets abiertos: ${openTickets.map(t => `<#${t.channel_id}>`).join(", ")}`);
+    return replyError(interaction, `Ya tienes **${openTickets.length}/${s.max_tickets || 3}** tickets abiertos: ${openTickets.map(t => `<#${t.channel_id}>`).join(", ")}`);
   }
 
   // Límite global
   if (s.global_ticket_limit > 0) {
-    const totalOpen = tickets.getAllOpen(guild.id).length;
-    if (totalOpen >= s.global_ticket_limit) {
+    const totalOpen = await tickets.getAllOpen(guild.id);
+    if (totalOpen.length >= s.global_ticket_limit) {
       return replyError(interaction, `El servidor ha alcanzado el límite global de **${s.global_ticket_limit}** tickets abiertos. Por favor espera a que se libere espacio.`);
     }
   }
@@ -120,7 +120,7 @@ async function createTicket(interaction, categoryId, answers = []) {
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    const ticketNumber = settings.incrementCounter(guild.id);
+    const ticketNumber = await settings.incrementCounter(guild.id);
     const ticketId     = String(ticketNumber).padStart(4, "0");
     const channelName  = `${process.env.TICKET_PREFIX || "ticket"}-${ticketId}`;
 
@@ -147,7 +147,7 @@ async function createTicket(interaction, categoryId, answers = []) {
 
     const channel = await guild.channels.create(chOpts);
 
-    const ticket = tickets.create({
+    const ticket = await tickets.create({
       ticket_id:   ticketId,
       channel_id:  channel.id,
       guild_id:    guild.id,
@@ -159,15 +159,20 @@ async function createTicket(interaction, categoryId, answers = []) {
       answers:     answers.length ? JSON.stringify(answers) : null,
     });
 
-    cooldowns.set(user.id, guild.id);
+    await cooldowns.set(user.id, guild.id);
 
-    // Pings de roles
+    // Pings de roles para notificar al staff
     const pings = [];
     if (s.support_role) pings.push(`<@&${s.support_role}>`);
     category.pingRoles?.forEach(r => { if (!pings.includes(`<@&${r}>`)) pings.push(`<@&${r}>`); });
 
+    // Enviar ping primero (fuera del embed)
+    if (pings.length > 0) {
+      await channel.send({ content: pings.join(" ") });
+    }
+
+    // Luego enviar el embed del ticket
     await channel.send({
-      content: pings.join(" ") || undefined,
       embeds:  [E.ticketOpen(ticket, user, category, answers)],
       components: [buildTicketButtons()],
     });
@@ -195,20 +200,20 @@ async function createTicket(interaction, categoryId, answers = []) {
 // ─────────────────────────────────────────────────────
 async function closeTicket(interaction, reason = null) {
   const channel = interaction.channel;
-  const ticket  = tickets.get(channel.id);
+  const ticket  = await tickets.get(channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   if (ticket.status === "closed") return replyError(interaction, "Este ticket ya está cerrado.");
 
   const guild = interaction.guild;
-  const s     = settings.get(guild.id);
+  const s     = await settings.get(guild.id);
   const user  = await interaction.client.users.fetch(ticket.user_id).catch(() => null);
 
   await interaction.deferReply();
 
-  tickets.close(channel.id, interaction.user.id, reason);
-  staffStats.incrementClosed(guild.id, interaction.user.id);
+  await tickets.close(channel.id, interaction.user.id, reason);
+  await staffStats.incrementClosed(guild.id, interaction.user.id);
 
-  const closed = tickets.get(channel.id);
+  const closed = await tickets.get(channel.id);
 
   await disableButtons(channel);
 
@@ -220,7 +225,7 @@ async function closeTicket(interaction, reason = null) {
       const tCh = guild.channels.cache.get(s.transcript_channel);
       if (tCh) {
         transcriptMsg = await tCh.send({ embeds: [transcriptEmbed(closed)], files: [attachment] });
-        tickets.update(channel.id, { transcript_url: transcriptMsg.url });
+        await tickets.update(channel.id, { transcript_url: transcriptMsg.url });
       }
     }
   } catch (e) { console.error("[TRANSCRIPT]", e.message); }
@@ -237,7 +242,6 @@ async function closeTicket(interaction, reason = null) {
 
   // Rating por DM
   if (config.ratings.enabled && user) {
-    // Determinar quién atendió el ticket (reclamado > asignado > cerrado por)
     const staffWhoHandled = closed.claimed_by || closed.assigned_to || interaction.user.id;
     await sendRating(user, ticket, channel, staffWhoHandled);
   }
@@ -257,23 +261,21 @@ async function closeTicket(interaction, reason = null) {
 // ─────────────────────────────────────────────────────
 async function reopenTicket(interaction) {
   const channel = interaction.channel;
-  const ticket  = tickets.get(channel.id);
+  const ticket  = await tickets.get(channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   if (ticket.status === "open") return replyError(interaction, "Este ticket ya está abierto.");
 
   const guild = interaction.guild;
-  const s     = settings.get(guild.id);
+  const s     = await settings.get(guild.id);
   const user  = await interaction.client.users.fetch(ticket.user_id).catch(() => null);
 
-  // Restaurar permisos del usuario
   await channel.permissionOverwrites.edit(ticket.user_id, {
     ViewChannel: true, SendMessages: true, ReadMessageHistory: true,
   }).catch(() => {});
 
-  tickets.reopen(channel.id, interaction.user.id);
-  const reopened = tickets.get(channel.id);
+  await tickets.reopen(channel.id, interaction.user.id);
+  const reopened = await tickets.get(channel.id);
 
-  // Re-habilitar botones
   await channel.send({
     embeds:     [E.ticketReopened(reopened, interaction.user.id)],
     components: [buildTicketButtons()],
@@ -292,20 +294,19 @@ async function reopenTicket(interaction) {
 //   RECLAMAR / LIBERAR
 // ─────────────────────────────────────────────────────
 async function claimTicket(interaction) {
-  const ticket = tickets.get(interaction.channel.id);
+  const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   if (ticket.claimed_by) return replyError(interaction, `Ya reclamado por <@${ticket.claimed_by}>.`);
 
-  tickets.update(interaction.channel.id, { claimed_by: interaction.user.id });
-  staffStats.incrementClaimed(interaction.guild.id, interaction.user.id);
+  const guild = interaction.guild;
+  
+  await tickets.update(interaction.channel.id, { claimed_by: interaction.user.id });
+  await staffStats.incrementClaimed(guild.id, interaction.user.id);
   await interaction.channel.setTopic(`${interaction.channel.topic || ""} | Staff: ${interaction.user.tag}`).catch(() => {});
 
-  // ── DM al usuario avisando que el staff ya está atendiendo
   let dmEnviado = false;
   try {
     const user = await interaction.client.users.fetch(ticket.user_id);
-
-    // Link directo al canal del ticket (clickeable en Discord)
     const channelLink = `https://discord.com/channels/${interaction.guild.id}/${interaction.channel.id}`;
 
     const dmEmbed = new EmbedBuilder()
@@ -324,15 +325,13 @@ async function claimTicket(interaction) {
 
     await user.send({ embeds: [dmEmbed] });
     dmEnviado = true;
-  } catch {
-    // Usuario con DMs desactivados — se ignora silenciosamente
-  }
+  } catch {}
 
   return interaction.reply({
     embeds: [new EmbedBuilder()
       .setColor(E.Colors.PRIMARY)
       .setDescription(
-        `👋 Has reclamado el ticket **#${ticket.ticket_id}** correctamente.\n` +
+        `👋 Has rechazado el ticket **#${ticket.ticket_id}** correctamente.\n` +
         (dmEnviado ? "📩 Se notificó al usuario por DM." : "📩 No se pudo notificar al usuario (DMs desactivados).")
       )
       .setTimestamp()],
@@ -341,11 +340,11 @@ async function claimTicket(interaction) {
 }
 
 async function unclaimTicket(interaction) {
-  const ticket = tickets.get(interaction.channel.id);
+  const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
-  if (!ticket.claimed_by) return replyError(interaction, "Este ticket no está reclamado.");
+  if (!ticket.claimed_by) return replyError(interaction, "Este ticket no está reclamanado.");
 
-  tickets.update(interaction.channel.id, { claimed_by: null });
+  await tickets.update(interaction.channel.id, { claimed_by: null });
   return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.WARNING).setDescription("↩️ Ticket liberado. Cualquier staff puede reclamarlo.").setTimestamp()] });
 }
 
@@ -353,19 +352,18 @@ async function unclaimTicket(interaction) {
 //   ASIGNAR STAFF
 // ─────────────────────────────────────────────────────
 async function assignTicket(interaction, staffUser) {
-  const ticket = tickets.get(interaction.channel.id);
+  const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
 
   const guild = interaction.guild;
-  const s     = settings.get(guild.id);
+  const s     = await settings.get(guild.id);
 
-  // Dar acceso al canal si no lo tiene
   await interaction.channel.permissionOverwrites.edit(staffUser, {
     ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true,
   }).catch(() => {});
 
-  tickets.update(interaction.channel.id, { assigned_to: staffUser.id });
-  staffStats.incrementAssigned(guild.id, staffUser.id);
+  await tickets.update(interaction.channel.id, { assigned_to: staffUser.id });
+  await staffStats.incrementAssigned(guild.id, staffUser.id);
 
   await sendLog(guild, s, "assign", interaction.user, ticket, { "📌 Asignado a": `<@${staffUser.id}>` });
 
@@ -379,7 +377,7 @@ async function assignTicket(interaction, staffUser) {
 //   AÑADIR / QUITAR USUARIO
 // ─────────────────────────────────────────────────────
 async function addUser(interaction, user) {
-  const ticket = tickets.get(interaction.channel.id);
+  const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   await interaction.channel.permissionOverwrites.edit(user, {
     ViewChannel: true, SendMessages: true, ReadMessageHistory: true, AttachFiles: true,
@@ -388,7 +386,7 @@ async function addUser(interaction, user) {
 }
 
 async function removeUser(interaction, user) {
-  const ticket = tickets.get(interaction.channel.id);
+  const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   if (user.id === ticket.user_id) return replyError(interaction, "No puedes quitar al creador del ticket.");
   await interaction.channel.permissionOverwrites.delete(user).catch(() => {});
@@ -399,22 +397,23 @@ async function removeUser(interaction, user) {
 //   MOVER CATEGORÍA
 // ─────────────────────────────────────────────────────
 async function moveTicket(interaction, newCategoryId) {
-  const ticket      = tickets.get(interaction.channel.id);
+  const ticket      = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   const newCategory = config.categories.find(c => c.id === newCategoryId);
   if (!newCategory) return replyError(interaction, "Categoría no encontrada.");
 
   const oldCategory = ticket.category;
-  tickets.update(interaction.channel.id, { category: newCategory.label, category_id: newCategory.id, priority: newCategory.priority || "normal" });
+  await tickets.update(interaction.channel.id, { category: newCategory.label, category_id: newCategory.id, priority: newCategory.priority || "normal" });
 
   const guild = interaction.guild;
-  const s     = settings.get(guild.id);
+  const s     = await settings.get(guild.id);
 
   if (newCategory.categoryId) {
     await interaction.channel.setParent(newCategory.categoryId, { lockPermissions: false }).catch(() => {});
   }
 
-  await sendLog(guild, s, "move", interaction.user, tickets.get(interaction.channel.id), {
+  const updatedTicket = await tickets.get(interaction.channel.id);
+  await sendLog(guild, s, "move", interaction.user, updatedTicket, {
     "📂 Anterior": oldCategory, "📂 Nueva": newCategory.label,
   });
 
@@ -437,13 +436,12 @@ async function sendRating(user, ticket, channel, staffId) {
     }));
     const row = new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
-        // customId: ticket_rating_TICKETID_CHANNELID_STAFFID
         .setCustomId(`ticket_rating_${ticket.ticket_id}_${channel.id}_${staffId}`)
         .setPlaceholder("⭐ ¿Cómo calificarías la atención?")
         .addOptions(options)
     );
     await user.send({ embeds: [embed], components: [row] });
-  } catch { /* DMs desactivados */ }
+  } catch {}
 }
 
 // ─────────────────────────────────────────────────────
