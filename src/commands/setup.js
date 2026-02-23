@@ -40,7 +40,7 @@ module.exports = {
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
     const gid = interaction.guild.id;
-    const s   = settings.get(gid);
+    const s   = await settings.get(gid);
 
     const ok  = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
 
