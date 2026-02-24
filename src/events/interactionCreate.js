@@ -225,10 +225,17 @@ module.exports = {
       // ══════════════════════════════════════════════════════════════
       if (interaction.isButton()) {
         const { customId } = interaction;
-      if (interaction.customId.startsWith('music_')) {
+        if (interaction.customId.startsWith('music_')) {
           await handleMusicButtons(interaction);
           return;
-    }  
+        }
+        
+        // Botones de Giveaway
+        if (customId === "giveaway_join") {
+          const giveaway = require("../commands/giveaway");
+          await giveaway.handleGiveawayJoin(interaction, client);
+          return;
+        }
 
         // ── Verificación
         const verifIds = ["verify_start", "verify_help", "verify_enter_code", "verify_resend_code"];

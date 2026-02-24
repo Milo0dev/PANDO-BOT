@@ -67,6 +67,11 @@ async function startBot() {
   const music   = require("./src/commands/music");
   const ping    = require("./src/commands/ping");
   const debug   = require("./src/commands/debug");
+  
+  // Entretenimiento
+  const economy = require("./src/commands/economy");
+  const games   = require("./src/commands/games");
+  const giveaway = require("./src/commands/giveaway");
 
   const allCommands = [
     setup, ping, debug,
@@ -81,7 +86,14 @@ async function startBot() {
     poll, embed, suggest, remind, rank, levels, modlogs,
     music.play, music.skip, music.stop, music.pause, music.resume, 
     music.queue, music.nowplaying, music.shuffle, music.remove, 
-    music.clear, music.volume, music.loop
+    music.clear, music.volume, music.loop,
+    // Economia
+    economy.balance, economy.daily, economy.pay, economy.deposit, economy.withdraw,
+    economy.shop, economy.buy, economy.work, economy.gamble, economy.leaderboard,
+    // Juegos
+    games.ahorcado, games.ttt, games.trivia,
+    // Giveaway
+    giveaway.create
   ];
 
   for (const cmd of allCommands) {
