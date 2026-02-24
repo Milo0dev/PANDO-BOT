@@ -3,7 +3,9 @@ const {
   EmbedBuilder, 
   ActionRowBuilder, 
   ButtonBuilder, 
-  ButtonStyle 
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder
 } = require("discord.js");
 
 const PALABRAS_AHORCADO = [
@@ -73,30 +75,74 @@ module.exports.ahorcado = {
         .setDescription("Intentos: " + estado.intentos + "\n\n**Palabra:** " + estado.progreso.join(" ") + "\n\nLetras usadas: " + (Array.from(estado.letrasUsadas).join(", ") || "Ninguna"));
     };
 
-    const crearBotones = () => {
-      const letras = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ".split("");
-      const filas = [];
-      for (let i = 0; i < letras.length; i += 7) {
-        const fila = new ActionRowBuilder();
-        for (const letra of letras.slice(i, i + 7)) {
-          fila.addComponents(new ButtonBuilder()
-            .setCustomId("ahorcado_" + letra)
-            .setLabel(letra)
-            .setStyle(estado.letrasUsadas.has(letra) ? ButtonStyle.Secondary : ButtonStyle.Primary)
-            .setDisabled(estado.letrasUsadas.has(letra) || estado.intentos <= 0));
-        }
-        filas.push(fila);
-      }
-      return filas;
+    const crearComponentes = () => {
+      const letras1 = "ABCDEFGHIJKLMNOÑ".split("");
+      const letras2 = "PQRSTUVWXYZ".split("");
+      
+      // Crear opciones del primer menú (A-Ñ) - 14 letras
+      const opciones1 = letras1.map(letra => 
+        new StringSelectMenuOptionBuilder()
+          .setLabel(letra)
+          .setValue(letra)
+      );
+
+      // Crear opciones del segundo menú (P-Z) - 13 letras
+      const opciones2 = letras2.map(letra => 
+        new StringSelectMenuOptionBuilder()
+          .setLabel(letra)
+          .setValue(letra)
+      );
+
+      // Crear el primer menú desplegable
+      const menu1 = new StringSelectMenuBuilder()
+        .setCustomId("ahorcado_letra_1")
+        .setPlaceholder("Selecciona una letra (A-Ñ)")
+        .addOptions(opciones1)
+        .setMinValues(1)
+        .setMaxValues(1);
+
+      // Crear el segundo menú desplegable
+      const menu2 = new StringSelectMenuBuilder()
+        .setCustomId("ahorcado_letra_2")
+        .setPlaceholder("Selecciona una letra (P-Z)")
+        .addOptions(opciones2)
+        .setMinValues(1)
+        .setMaxValues(1);
+
+      // Crear botón de rendirse
+      const btnRendirse = new ButtonBuilder()
+        .setCustomId("ahorcado_rendirse")
+        .setLabel("Rendirse")
+        .setStyle(ButtonStyle.Danger)
+        .setDisabled(estado.intentos <= 0);
+
+      const fila1 = new ActionRowBuilder().addComponents(menu1);
+      const fila2 = new ActionRowBuilder().addComponents(menu2);
+      const fila3 = new ActionRowBuilder().addComponents(btnRendirse);
+
+      return [fila1, fila2, fila3];
     };
 
-    await interaction.reply({ embeds: [crearEmbed()], components: crearBotones() });
+    await interaction.reply({ embeds: [crearEmbed()], components: crearComponentes() });
 
     const filter = i => i.user.id === interaction.user.id;
     const collector = interaction.channel.createMessageComponentCollector({ filter, time: 300000 });
 
     collector.on("collect", async i => {
-      const letra = i.customId.replace("ahorcado_", "");
+      // Manejar botón de rendirse
+      if (i.customId === "ahorcado_rendirse") {
+        await i.update({ 
+          embeds: [new EmbedBuilder()
+            .setColor(0xED4245)
+            .setTitle("TE RENDISTE")
+            .setDescription("La palabra era: **" + estado.palabra + "**")], 
+          components: [] 
+        });
+        return collector.stop();
+      }
+
+      // Manejar selección del menú (cualquiera de los dos menús)
+      const letra = i.values[0];
       if (estado.letrasUsadas.has(letra)) return;
       estado.letrasUsadas.add(letra);
 
@@ -111,11 +157,17 @@ module.exports.ahorcado = {
       } else {
         estado.intentos--;
         if (estado.intentos <= 0) {
-          await i.update({ embeds: [new EmbedBuilder().setColor(0xED4245).setTitle("PERDISTE").setDescription("La palabra era: **" + estado.palabra + "**")], components: [] });
+          await i.update({ 
+            embeds: [new EmbedBuilder()
+              .setColor(0xED4245)
+              .setTitle("PERDISTE")
+              .setDescription("La palabra era: **" + estado.palabra + "**")], 
+            components: [] 
+          });
           return collector.stop();
         }
       }
-      await i.update({ embeds: [crearEmbed()], components: crearBotones() });
+      await i.update({ embeds: [crearEmbed()], components: crearComponentes() });
     });
   }
 };
