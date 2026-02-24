@@ -141,8 +141,7 @@ module.exports.ahorcado = {
         const estaUsada = estado.letrasUsadas.has(letra);
         const option = new StringSelectMenuOptionBuilder()
           .setLabel(letra)
-          .setValue(letra)
-          .setDefault(estaUsada);
+          .setValue(letra);
         if (estaUsada) {
           option.setEmoji("❌");
         }
@@ -153,8 +152,7 @@ module.exports.ahorcado = {
         const estaUsada = estado.letrasUsadas.has(letra);
         const option = new StringSelectMenuOptionBuilder()
           .setLabel(letra)
-          .setValue(letra)
-          .setDefault(estaUsada);
+          .setValue(letra);
         if (estaUsada) {
           option.setEmoji("❌");
         }
