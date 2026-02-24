@@ -206,9 +206,7 @@ module.exports.ttt = {
         return collector.stop();
       }
 
-      if (esVsBot) {
-        await i.update({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar() + "\nBot pensando...")], components: crearBotones() }).catch(() => {});
-        await new Promise(r => setTimeout(r, 500));
+    if (esVsBot) {
         const mov = botMove();
         if (mov !== undefined) estado.tablero[mov] = "O";
         winner = verificar();
