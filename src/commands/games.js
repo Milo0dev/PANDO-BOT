@@ -182,7 +182,13 @@ module.exports.ttt = {
 
     const msg = await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones(), fetchReply: true });
 
-    const filter = i => i.user.id === interaction.user.id;
+    const filter = i => {
+      if (estado.esVsBot) {
+        return i.user.id === interaction.user.id;
+      } else {
+        return i.user.id === estado.jugadorX || i.user.id === estado.jugadorO;
+      }
+    };
     const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
     collector.on("collect", async i => {
