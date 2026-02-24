@@ -41,7 +41,6 @@
             overflow-x: hidden;
         }
 
-        /* Animated Background */
         .bg-animation {
             position: fixed;
             top: 0;
@@ -72,7 +71,6 @@
             66% { transform: translate(-1%, 1%) rotate(-1deg); }
         }
 
-        /* Floating Particles */
         .particles {
             position: fixed;
             top: 0;
@@ -105,7 +103,6 @@
             }
         }
 
-        /* Navbar */
         .navbar {
             position: fixed;
             top: 0;
@@ -198,7 +195,6 @@
             50% { opacity: 0.6; transform: scale(0.9); }
         }
 
-        /* Main Content */
         .main-content {
             padding-top: 70px;
         }
@@ -209,7 +205,6 @@
             padding: 40px 5%;
         }
 
-        /* Hero Section */
         .hero {
             text-align: center;
             padding: 80px 0 60px;
@@ -312,7 +307,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Stats Section */
         .stats-section {
             margin: 50px 0;
         }
@@ -414,7 +408,6 @@
             letter-spacing: 1px;
         }
 
-        /* Features Section */
         .features-section {
             margin: 80px 0;
         }
@@ -470,7 +463,6 @@
             font-size: 0.95em;
         }
 
-        /* Commands Section */
         .commands-section {
             margin: 80px 0;
         }
@@ -506,7 +498,6 @@
             width: 20px;
         }
 
-        /* About Section */
         .about-section {
             margin: 80px 0;
             padding: 60px;
@@ -554,7 +545,6 @@
             font-size: 0.9em;
         }
 
-        /* Footer */
         .footer {
             margin-top: 80px;
             padding: 40px 5%;
@@ -631,7 +621,6 @@
             border-color: var(--primary);
         }
 
-        /* User Panel */
         .user-panel {
             display: flex;
             align-items: center;
@@ -668,6 +657,497 @@
 
         .user-panel-logout:hover {
             color: #ff6b6b;
+        }
+
+        /* Server Selector */
+        .server-selector {
+            position: relative;
+            display: inline-block;
+        }
+
+        .server-selector-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+            min-width: 200px;
+        }
+
+        .server-selector-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        .server-selector-btn img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        .server-selector-btn .server-name {
+            flex: 1;
+            text-align: left;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+
+        .server-selector-btn .dropdown-arrow {
+            font-size: 0.8em;
+            transition: transform 0.3s ease;
+        }
+
+        .server-selector.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .server-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1001;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .server-selector.open .server-dropdown {
+            display: block;
+        }
+
+        .server-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .server-option:hover {
+            background: rgba(114, 137, 218, 0.15);
+        }
+
+        .server-option.active {
+            background: rgba(114, 137, 218, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+
+        .server-option img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+
+        .server-option-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .server-option-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .server-option-members {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        /* Configuration Panel */
+        .config-panel {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .config-panel.active {
+            display: block;
+        }
+
+        .config-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+        }
+
+        .config-header img {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+        }
+
+        .config-header-info h2 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .config-header-info p {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        /* Tabs */
+        .config-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 10px;
+            overflow-x: auto;
+        }
+
+        .config-tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .config-tab:hover {
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .config-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .config-content {
+            display: none;
+        }
+
+        .config-content.active {
+            display: block;
+        }
+
+        /* Form Groups */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-label small {
+            display: block;
+            font-weight: 400;
+            color: var(--text-secondary);
+            font-size: 0.85em;
+            margin-top: 3px;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(114, 137, 218, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        /* Toggle Switch */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        .toggle-info h4 {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .toggle-info p {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--text-muted);
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--secondary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Save Button */
+        .save-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 32px;
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(114, 137, 218, 0.4);
+        }
+
+        .save-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .save-btn .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .save-btn.loading .spinner {
+            display: block;
+        }
+
+        .save-btn.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success {
+            background: var(--secondary);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.warning {
+            background: var(--warning);
+            color: #000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 15, 26, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-overlay .spinner-large {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--card-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Section Cards */
+        .config-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .config-section-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-section-title i {
+            color: var(--primary);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--card-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
 
         /* Responsive */
@@ -720,31 +1200,18 @@
                 justify-content: center;
             }
         }
-
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--card-border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body>
-    <!-- Animated Background -->
     <div class="bg-animation"></div>
-    
-    <!-- Floating Particles -->
     <div class="particles" id="particles"></div>
+    
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-large"></div>
+    </div>
 
-    <!-- Navbar -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <nav class="navbar">
         <a href="/" class="navbar-brand">
             <img src="<%= botAvatar %>" alt="<%= botName %>">
@@ -752,10 +1219,10 @@
         </a>
         
         <div class="navbar-links">
-            <a href="/" class="active"><i class="fas fa-home"></i> Inicio</a>
+            <a href="#" class="active" onclick="showHome()"><i class="fas fa-home"></i> Inicio</a>
+            <a href="#" onclick="showConfig()"><i class="fas fa-cog"></i> Configuración</a>
             <a href="#features"><i class="fas fa-star"></i> Características</a>
             <a href="#commands"><i class="fas fa-terminal"></i> Comandos</a>
-            <a href="#about"><i class="fas fa-info-circle"></i> Acerca de</a>
         </div>
         
         <div class="navbar-user">
@@ -775,231 +1242,493 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
-            <!-- Hero Section -->
-            <section class="hero">
-                <div class="hero-badge">
-                    <i class="fas fa-check-circle"></i>
-                    Bot de Discord Premium
-                </div>
-                
-                <img src="<%= botAvatar %>" alt="<%= botName %>" class="hero-avatar">
-                
-                <h1 class="hero-title"><%= botName %></h1>
-                <p class="hero-tagline">🤖 Potencia tu servidor con funciones avanzadas de moderación, economía, entretenimiento y más</p>
-                
-                <div class="hero-actions">
-                    <a href="#" class="btn btn-primary">
-                        <i class="fas fa-plus"></i>
-                        Añadir al Servidor
-                    </a>
-                    <a href="#features" class="btn btn-secondary">
-                        <i class="fas fa-arrow-right"></i>
-                        Ver Características
-                    </a>
-                </div>
-            </section>
+            <!-- Home Section -->
+            <div id="homeSection">
+                <section class="hero">
+                    <div class="hero-badge">
+                        <i class="fas fa-check-circle"></i>
+                        Bot de Discord Premium
+                    </div>
+                    
+                    <img src="<%= botAvatar %>" alt="<%= botName %>" class="hero-avatar">
+                    
+                    <h1 class="hero-title"><%= botName %></h1>
+                    <p class="hero-tagline">🤖 Potencia tu servidor con funciones avanzadas de moderación, economía, entretenimiento y más</p>
+                    
+                    <div class="hero-actions">
+                        <a href="#" class="btn btn-primary" onclick="showConfig()">
+                            <i class="fas fa-cog"></i>
+                            Configurar Servidor
+                        </a>
+                        <a href="#features" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right"></i>
+                            Ver Características
+                        </a>
+                    </div>
+                </section>
 
-            <!-- Stats Section -->
-            <section class="stats-section">
-                <h2 class="section-title">📊 Estadísticas en Tiempo Real</h2>
-                <p class="section-subtitle">Monitorea el rendimiento y actividad del bot</p>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-server"></i>
-                        </div>
-                        <div class="stat-value"><%= serverCount %></div>
-                        <div class="stat-label">Servidores</div>
-                    </div>
+                <section class="stats-section">
+                    <h2 class="section-title">📊 Estadísticas en Tiempo Real</h2>
+                    <p class="section-subtitle">Monitorea el rendimiento y actividad del bot</p>
                     
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="stat-value"><%= serverCount %></div>
+                            <div class="stat-label">Servidores</div>
                         </div>
-                        <div class="stat-value"><%= userCount.toLocaleString() %></div>
-                        <div class="stat-label">Usuarios Totales</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-bolt"></i>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-value"><%= userCount.toLocaleString() %></div>
+                            <div class="stat-label">Usuarios Totales</div>
                         </div>
-                        <div class="stat-value"><%= ping %>ms</div>
-                        <div class="stat-label">Latencia</div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-clock"></i>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div class="stat-value"><%= ping %>ms</div>
+                            <div class="stat-label">Latencia</div>
                         </div>
-                        <div class="stat-value"><%= uptime %></div>
-                        <div class="stat-label">Tiempo Activo</div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-value"><%= uptime %></div>
+                            <div class="stat-label">Tiempo Activo</div>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Features Section -->
-            <section class="features-section" id="features">
-                <h2 class="section-title">⭐ Características Destacadas</h2>
-                <p class="section-subtitle">Descubre todo lo que <%= botName %> puede hacer por tu servidor</p>
-                
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-ticket-alt"></i>
-                        </div>
-                        <h3 class="feature-title">🎫 Sistema de Tickets</h3>
-                        <p class="feature-desc">Sistema completo de tickets con categorías, paneles personalizados y transcripciones automáticas.</p>
-                    </div>
+                <section class="features-section" id="features">
+                    <h2 class="section-title">⭐ Características Destacadas</h2>
+                    <p class="section-subtitle">Descubre todo lo que <%= botName %> puede hacer por tu servidor</p>
                     
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-coins"></i>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                            <h3 class="feature-title">🎫 Sistema de Tickets</h3>
+                            <p class="feature-desc">Sistema completo de tickets con categorías, paneles personalizados y transcripciones automáticas.</p>
                         </div>
-                        <h3 class="feature-title">💰 Economía</h3>
-                        <p class="feature-desc">Sistema de economía con diarios, trabajo, casino, tienda y economía global entre servidores.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-music"></i>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <h3 class="feature-title">💰 Economía</h3>
+                            <p class="feature-desc">Sistema de economía con diarios, trabajo, casino, tienda y economía global entre servidores.</p>
                         </div>
-                        <h3 class="feature-title">🎵 Música</h3>
-                        <p class="feature-desc">Reprodutor de música con colas, playlists, efectos de audio y soporte para múltiples plataformas.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-shield-alt"></i>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-music"></i>
+                            </div>
+                            <h3 class="feature-title">🎵 Música</h3>
+                            <p class="feature-desc">Reprodutor de música con colas, playlists, efectos de audio y soporte para múltiples plataformas.</p>
                         </div>
-                        <h3 class="feature-title">🛡️ Moderación</h3>
-                        <p class="feature-desc">Herramientas avanzadas de moderación: logs, mute, ban, warn, anti-spam y anti-raid.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-chart-line"></i>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3 class="feature-title">🛡️ Moderación</h3>
+                            <p class="feature-desc">Herramientas avanzadas de moderación: logs, mute, ban, warn, anti-spam y anti-raid.</p>
                         </div>
-                        <h3 class="feature-title">📈 Niveles</h3>
-                        <p class="feature-desc">Sistema de XP y niveles con rangos personalizados, recompensas y leaderboards.</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <i class="fas fa-gift"></i>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3 class="feature-title">📈 Niveles</h3>
+                            <p class="feature-desc">Sistema de XP y niveles con rangos personalizados, recompensas y leaderboards.</p>
                         </div>
-                        <h3 class="feature-title">🎁 Sorteos</h3>
-                        <p class="feature-desc">Crea sorteos personalizados con múltiples ganadores, roles requeridos y mensajes automatizados.</p>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-gift"></i>
+                            </div>
+                            <h3 class="feature-title">🎁 Sorteos</h3>
+                            <p class="feature-desc">Crea sorteos personalizados con múltiples ganadores, roles requeridos y mensajes automatizados.</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- Commands Section -->
-            <section class="commands-section" id="commands">
-                <h2 class="section-title">⌨️ Comandos Disponibles</h2>
-                <p class="section-subtitle">Explora todos los comandos disponibles para usar en tu servidor</p>
-                
-                <div class="commands-grid">
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-ticket-simple"></i>
-                        /ticket
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-chart-bar"></i>
-                        /economy
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-play"></i>
-                        /play
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-gavel"></i>
-                        /modlogs
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-user-plus"></i>
-                        /verify
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-poll"></i>
-                        /poll
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-lightbulb"></i>
-                        /suggest
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-level-up-alt"></i>
-                        /rank
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-bell"></i>
-                        /remind
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-crown"></i>
-                        /staff
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-palette"></i>
-                        /embed
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-dice"></i>
-                        /games
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-hand-sparkles"></i>
-                        /giveaway
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-sliders-h"></i>
-                        /setup
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-robot"></i>
-                        /help
-                    </a>
-                    <a href="#" class="command-chip">
-                        <i class="fas fa-wifi"></i>
-                        /ping
-                    </a>
-                </div>
-            </section>
+                <section class="commands-section" id="commands">
+                    <h2 class="section-title">⌨️ Comandos Disponibles</h2>
+                    <p class="section-subtitle">Explora todos los comandos disponibles para usar en tu servidor</p>
+                    
+                    <div class="commands-grid">
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-ticket-simple"></i>
+                            /ticket
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-chart-bar"></i>
+                            /economy
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-play"></i>
+                            /play
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-gavel"></i>
+                            /modlogs
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-user-plus"></i>
+                            /verify
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-poll"></i>
+                            /poll
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-lightbulb"></i>
+                            /suggest
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-level-up-alt"></i>
+                            /rank
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-bell"></i>
+                            /remind
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-crown"></i>
+                            /staff
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-palette"></i>
+                            /embed
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-dice"></i>
+                            /games
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-hand-sparkles"></i>
+                            /giveaway
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-sliders-h"></i>
+                            /setup
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-robot"></i>
+                            /help
+                        </a>
+                        <a href="#" class="command-chip">
+                            <i class="fas fa-wifi"></i>
+                            /ping
+                        </a>
+                    </div>
+                </section>
 
-            <!-- About Section -->
-            <section class="about-section" id="about">
-                <h2 class="about-title">🤖 Acerca de <%= botName %></h2>
-                <p class="about-text">
-                    <%= botName %> es un bot de Discord multifuncional diseñado para mejorar la experiencia de tu servidor. 
-                    Con más de 50 comandos disponibles, incluyendo moderación, economía, música, entretenimiento y más. 
-                    Nuestro objetivo es proporcionar herramientas potentes y fáciles de usar para administradores de servidores.
-                </p>
+                <section class="about-section" id="about">
+                    <h2 class="about-title">🤖 Acerca de <%= botName %></h2>
+                    <p class="about-text">
+                        <%= botName %> es un bot de Discord multifuncional diseñado para mejorar la experiencia de tu servidor. 
+                        Con más de 50 comandos disponibles, incluyendo moderación, economía, música, entretenimiento y más. 
+                        Nuestro objetivo es proporcionar herramientas potentes y fáciles de usar para administradores de servidores.
+                    </p>
+                    
+                    <div class="badges">
+                        <span class="badge"><i class="fas fa-shield-alt"></i> Seguridad Avanzada</span>
+                        <span class="badge"><i class="fas fa-bolt"></i> Alta Velocidad</span>
+                        <span class="badge"><i class="fas fa-sync"></i> Actualizaciones Constantes</span>
+                        <span class="badge"><i class="fas fa-headset"></i> Soporte 24/7</span>
+                        <span class="badge"><i class="fas fa-globe"></i> Multi-idioma</span>
+                        <span class="badge"><i class="fas fa-heart"></i> Communidad Activa</span>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Configuration Section -->
+            <div id="configSection" style="display: none;">
+                <h2 class="section-title">⚙️ Configuración del Servidor</h2>
+                <p class="section-subtitle">Selecciona un servidor para configurar sus opciones</p>
                 
-                <div class="badges">
-                    <span class="badge"><i class="fas fa-shield-alt"></i> Seguridad Avanzada</span>
-                    <span class="badge"><i class="fas fa-bolt"></i> Alta Velocidad</span>
-                    <span class="badge"><i class="fas fa-sync"></i> Actualizaciones Constantes</span>
-                    <span class="badge"><i class="fas fa-headset"></i> Soporte 24/7</span>
-                    <span class="badge"><i class="fas fa-globe"></i> Multi-idioma</span>
-                    <span class="badge"><i class="fas fa-heart"></i> Communidad Activa</span>
+                <!-- Server Selector -->
+                <div class="server-selector" id="serverSelector">
+                    <button class="server-selector-btn" onclick="toggleServerDropdown()">
+                        <img src="<%= botAvatar %>" alt="Server" id="selectedServerIcon">
+                        <span class="server-name" id="selectedServerName">Seleccionar servidor...</span>
+                        <span class="dropdown-arrow"><i class="fas fa-chevron-down"></i></span>
+                    </button>
+                    <div class="server-dropdown" id="serverDropdown">
+                        <!-- Servers will be loaded here -->
+                    </div>
                 </div>
-            </section>
+
+                <!-- Config Panel -->
+                <div class="config-panel" id="configPanel">
+                    <div class="config-header">
+                        <img src="<%= botAvatar %>" alt="Server" id="configServerIcon">
+                        <div class="config-header-info">
+                            <h2 id="configServerName">Servidor</h2>
+                            <p id="configServerId">ID: -</p>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="config-tabs">
+                        <button class="config-tab active" onclick="switchTab('channels')">
+                            <i class="fas fa-hashtag"></i> Canales
+                        </button>
+                        <button class="config-tab" onclick="switchTab('roles')">
+                            <i class="fas fa-user-tag"></i> Roles
+                        </button>
+                        <button class="config-tab" onclick="switchTab('tickets')">
+                            <i class="fas fa-ticket-alt"></i> Tickets
+                        </button>
+                        <button class="config-tab" onclick="switchTab('automation')">
+                            <i class="fas fa-robot"></i> Automatización
+                        </button>
+                        <button class="config-tab" onclick="switchTab('dm')">
+                            <i class="fas fa-envelope"></i> DM
+                        </button>
+                        <button class="config-tab" onclick="switchTab('maintenance')">
+                            <i class="fas fa-tools"></i> Mantenimiento
+                        </button>
+                    </div>
+
+                    <!-- Channels Tab -->
+                    <div class="config-content active" id="tab-channels">
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-book"></i> Canales del Sistema</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Canal de Logs</label>
+                                    <small>Canal donde se registrarán los logs de tickets</small>
+                                    <input type="text" class="form-input" id="log_channel" placeholder="ID del canal o #nombre">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Canal de Transcripciones</label>
+                                    <small>Canal donde se guardarán las transcripciones</small>
+                                    <input type="text" class="form-input" id="transcript_channel" placeholder="ID del canal o #nombre">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Canal del Dashboard</label>
+                                    <small>Canal para el dashboard en tiempo real</small>
+                                    <input type="text" class="form-input" id="dashboard_channel" placeholder="ID del canal o #nombre">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Canal de Reporte Semanal</label>
+                                    <small>Canal para reportes automáticos semanales</small>
+                                    <input type="text" class="form-input" id="weekly_report_channel" placeholder="ID del canal o #nombre">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Canal del Panel de Tickets</label>
+                                <small>Canal donde está el panel de tickets</small>
+                                <input type="text" class="form-input" id="panel_channel_id" placeholder="ID del canal o #nombre">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Roles Tab -->
+                    <div class="config-content" id="tab-roles">
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-user-shield"></i> Roles de Personal</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Rol de Soporte</label>
+                                    <small>Rol del equipo de soporte</small>
+                                    <input type="text" class="form-input" id="support_role" placeholder="ID del rol o @nombre">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rol de Administrador</label>
+                                    <small>Rol de administrador del bot</small>
+                                    <input type="text" class="form-input" id="admin_role" placeholder="ID del rol o @nombre">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Rol de Verificación</label>
+                                <small>Rol mínimo para abrir tickets (0 para desactivar)</small>
+                                <input type="text" class="form-input" id="verify_role" placeholder="ID del rol o @nombre">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tickets Tab -->
+                    <div class="config-content" id="tab-tickets">
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-ticket-alt"></i> Límites de Tickets</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Máximo de Tickets por Usuario</label>
+                                    <small>Número de tickets que un usuario puede tener abiertos</small>
+                                    <input type="number" class="form-input" id="max_tickets" min="1" max="10" value="3">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Límite Global de Tickets</label>
+                                    <small>Límite total de tickets abiertos (0 = sin límite)</small>
+                                    <input type="number" class="form-input" id="global_ticket_limit" min="0" max="500" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Cooldown (minutos)</label>
+                                    <small>Tiempo de espera entre tickets (0 = desactivado)</small>
+                                    <input type="number" class="form-input" id="cooldown_minutes" min="0" max="1440" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Días Mínimos en el Servidor</label>
+                                    <small>Días mínimos para abrir tickets (0 = desactivado)</small>
+                                    <input type="number" class="form-input" id="min_days" min="0" max="365" value="0">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-clock"></i> Auto-cierre y SLA</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Auto-cierre por Inactividad (minutos)</label>
+                                    <small>Cierra tickets automáticamente por inactividad (0 = desactivado)</small>
+                                    <input type="number" class="form-input" id="auto_close_minutes" min="0" max="10080" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Alerta SLA (minutos)</label>
+                                    <small>Alerta si no hay respuesta en X minutos (0 = desactivado)</small>
+                                    <input type="number" class="form-input" id="sla_minutes" min="0" max="1440" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Smart Ping (minutos)</label>
+                                <small>Ping al staff si no responde en X minutos (0 = desactivado)</small>
+                                <input type="number" class="form-input" id="smart_ping_minutes" min="0" max="1440" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Automation Tab -->
+                    <div class="config-content" id="tab-automation">
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-history"></i> Registros de Mensajes</h3>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Registrar Mensajes Editados</h4>
+                                    <p>Guarda un log cuando alguien edita un mensaje en un ticket</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="log_edits">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Registrar Mensajes Eliminados</h4>
+                                    <p>Guarda un log cuando alguien elimina un mensaje en un ticket</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="log_deletes">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DM Tab -->
+                    <div class="config-content" id="tab-dm">
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-envelope-open"></i> Mensajes Directos</h3>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>DM al Abrir Ticket</h4>
+                                    <p>Enviar confirmación por DM al abrir un ticket</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="dm_on_open">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>DM al Cerrar Ticket</h4>
+                                    <p>Enviar notificación por DM al cerrar un ticket</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="dm_on_close">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Maintenance Tab -->
+                    <div class="config-content" id="tab-maintenance">
+                        <div class="config-section">
+                            <h3 class="config-section-title"><i class="fas fa-tools"></i> Modo Mantenimiento</h3>
+                            
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Activar Modo Mantenimiento</h4>
+                                    <p>Desactiva el sistema de tickets temporalmente</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="maintenance_mode">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="form-group" id="maintenanceReasonGroup" style="display: none;">
+                                <label class="form-label">Razón del Mantenimiento</label>
+                                <small>Mensaje que verán los usuarios</small>
+                                <input type="text" class="form-input" id="maintenance_reason" placeholder="El sistema está en mantenimiento...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="save-btn" onclick="saveSettings()">
+                        <span class="btn-text"><i class="fas fa-save"></i> Guardar Configuración</span>
+                        <span class="spinner"></span>
+                    </button>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="configEmptyState">
+                    <i class="fas fa-server"></i>
+                    <h3>Selecciona un Servidor</h3>
+                    <p>Elige un servidor de la lista para configurar sus opciones</p>
+                </div>
+            </div>
         </div>
 
-        <!-- Footer -->
         <footer class="footer">
             <div class="footer-content">
                 <div class="footer-section">
                     <h4>Enlaces Rápidos</h4>
-                    <a href="#"><i class="fas fa-home"></i> Inicio</a>
+                    <a href="#" onclick="showHome()"><i class="fas fa-home"></i> Inicio</a>
+                    <a href="#" onclick="showConfig()"><i class="fas fa-cog"></i> Configuración</a>
                     <a href="#features"><i class="fas fa-star"></i> Características</a>
                     <a href="#commands"><i class="fas fa-terminal"></i> Comandos</a>
-                    <a href="#about"><i class="fas fa-info-circle"></i> Acerca de</a>
                 </div>
                 
                 <div class="footer-section">
@@ -1032,16 +1761,268 @@
     </main>
 
     <script>
-        // Smooth scroll for navigation
+        let currentGuildId = null;
+        let servers = [];
+
+        // Generate floating particles
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 20;
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 15 + 's';
+            particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Navigation functions
+        function showHome() {
+            document.getElementById('homeSection').style.display = 'block';
+            document.getElementById('configSection').style.display = 'none';
+            document.querySelectorAll('.navbar-links a').forEach(a => a.classList.remove('active'));
+            document.querySelector('.navbar-links a:first-child').classList.add('active');
+        }
+
+        function showConfig() {
+            document.getElementById('homeSection').style.display = 'none';
+            document.getElementById('configSection').style.display = 'block';
+            document.querySelectorAll('.navbar-links a').forEach(a => a.classList.remove('active'));
+            document.querySelectorAll('.navbar-links a')[1].classList.add('active');
+            loadServers();
+        }
+
+        // Server selector
+        function toggleServerDropdown() {
+            document.getElementById('serverSelector').classList.toggle('open');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.server-selector')) {
+                document.getElementById('serverSelector').classList.remove('open');
+            }
+        });
+
+        // Load servers
+        async function loadServers() {
+            try {
+                const response = await fetch('/api/servers');
+                servers = await response.json();
+                
+                const dropdown = document.getElementById('serverDropdown');
+                dropdown.innerHTML = '';
+                
+                servers.forEach(server => {
+                    const option = document.createElement('div');
+                    option.className = 'server-option';
+                    option.onclick = () => selectServer(server);
+                    option.innerHTML = `
+                        <img src="${server.icon || '<%= botAvatar %>'}" alt="${server.name}">
+                        <div class="server-option-info">
+                            <div class="server-option-name">${server.name}</div>
+                            <div class="server-option-members">${server.memberCount.toLocaleString()} miembros</div>
+                        </div>
+                    `;
+                    dropdown.appendChild(option);
+                });
+            } catch (error) {
+                showToast('Error al cargar servidores', 'error');
+            }
+        }
+
+        // Select server
+        async function selectServer(server) {
+            currentGuildId = server.id;
+            
+            document.getElementById('selectedServerIcon').src = server.icon || '<%= botAvatar %>';
+            document.getElementById('selectedServerName').textContent = server.name;
+            document.getElementById('serverSelector').classList.remove('open');
+            
+            document.getElementById('configEmptyState').style.display = 'none';
+            document.getElementById('configPanel').classList.add('active');
+            
+            document.getElementById('configServerIcon').src = server.icon || '<%= botAvatar %>';
+            document.getElementById('configServerName').textContent = server.name;
+            document.getElementById('configServerId').textContent = 'ID: ' + server.id;
+            
+            await loadSettings(server.id);
+        }
+
+        // Load settings for a server
+        async function loadSettings(guildId) {
+            showLoading(true);
+            try {
+                const response = await fetch(`/api/settings/${guildId}`);
+                const data = await response.json();
+                
+                if (data.settings) {
+                    const s = data.settings;
+                    
+                    // Channels
+                    document.getElementById('log_channel').value = s.log_channel || '';
+                    document.getElementById('transcript_channel').value = s.transcript_channel || '';
+                    document.getElementById('dashboard_channel').value = s.dashboard_channel || '';
+                    document.getElementById('weekly_report_channel').value = s.weekly_report_channel || '';
+                    document.getElementById('panel_channel_id').value = s.panel_channel_id || '';
+                    
+                    // Roles
+                    document.getElementById('support_role').value = s.support_role || '';
+                    document.getElementById('admin_role').value = s.admin_role || '';
+                    document.getElementById('verify_role').value = s.verify_role || '';
+                    
+                    // Tickets
+                    document.getElementById('max_tickets').value = s.max_tickets || 3;
+                    document.getElementById('global_ticket_limit').value = s.global_ticket_limit || 0;
+                    document.getElementById('cooldown_minutes').value = s.cooldown_minutes || 0;
+                    document.getElementById('min_days').value = s.min_days || 0;
+                    document.getElementById('auto_close_minutes').value = s.auto_close_minutes || 0;
+                    document.getElementById('sla_minutes').value = s.sla_minutes || 0;
+                    document.getElementById('smart_ping_minutes').value = s.smart_ping_minutes || 0;
+                    
+                    // Automation
+                    document.getElementById('log_edits').checked = s.log_edits !== false;
+                    document.getElementById('log_deletes').checked = s.log_deletes !== false;
+                    
+                    // DM
+                    document.getElementById('dm_on_open').checked = s.dm_on_open !== false;
+                    document.getElementById('dm_on_close').checked = s.dm_on_close !== false;
+                    
+                    // Maintenance
+                    document.getElementById('maintenance_mode').checked = s.maintenance_mode || false;
+                    document.getElementById('maintenance_reason').value = s.maintenance_reason || '';
+                    document.getElementById('maintenanceReasonGroup').style.display = s.maintenance_mode ? 'block' : 'none';
+                }
+            } catch (error) {
+                showToast('Error al cargar configuración', 'error');
+            }
+            showLoading(false);
+        }
+
+        // Save settings
+        async function saveSettings() {
+            if (!currentGuildId) {
+                showToast('Selecciona un servidor primero', 'warning');
+                return;
+            }
+            
+            const btn = document.querySelector('.save-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            
+            const updates = {
+                log_channel: parseId(document.getElementById('log_channel').value),
+                transcript_channel: parseId(document.getElementById('transcript_channel').value),
+                dashboard_channel: parseId(document.getElementById('dashboard_channel').value),
+                weekly_report_channel: parseId(document.getElementById('weekly_report_channel').value),
+                panel_channel_id: parseId(document.getElementById('panel_channel_id').value),
+                support_role: parseId(document.getElementById('support_role').value),
+                admin_role: parseId(document.getElementById('admin_role').value),
+                verify_role: parseId(document.getElementById('verify_role').value),
+                max_tickets: parseInt(document.getElementById('max_tickets').value) || 3,
+                global_ticket_limit: parseInt(document.getElementById('global_ticket_limit').value) || 0,
+                cooldown_minutes: parseInt(document.getElementById('cooldown_minutes').value) || 0,
+                min_days: parseInt(document.getElementById('min_days').value) || 0,
+                auto_close_minutes: parseInt(document.getElementById('auto_close_minutes').value) || 0,
+                sla_minutes: parseInt(document.getElementById('sla_minutes').value) || 0,
+                smart_ping_minutes: parseInt(document.getElementById('smart_ping_minutes').value) || 0,
+                log_edits: document.getElementById('log_edits').checked,
+                log_deletes: document.getElementById('log_deletes').checked,
+                dm_on_open: document.getElementById('dm_on_open').checked,
+                dm_on_close: document.getElementById('dm_on_close').checked,
+                maintenance_mode: document.getElementById('maintenance_mode').checked,
+                maintenance_reason: document.getElementById('maintenance_reason').value || null
+            };
+            
+            try {
+                const response = await fetch(`/api/settings/${currentGuildId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Configuración guardada correctamente', 'success');
+                } else {
+                    showToast(result.error || 'Error al guardar', 'error');
+                }
+            } catch (error) {
+                showToast('Error al guardar configuración', 'error');
+            }
+            
+            btn.classList.remove('loading');
+            btn.disabled = false;
+        }
+
+        // Parse ID from input (supports #channel, @role, or raw ID)
+        function parseId(value) {
+            if (!value) return null;
+            value = value.trim();
+            // If it's a mention format
+            if (value.startsWith('<#') && value.endsWith('>')) {
+                return value.slice(2, -1);
+            }
+            if (value.startsWith('<@&') && value.endsWith('>')) {
+                return value.slice(3, -1);
+            }
+            if (value.startsWith('#')) {
+                return value.slice(1);
+            }
+            if (value.startsWith('@')) {
+                return value.slice(1);
+            }
+            // If it's a numeric ID
+            if (/^\d+$/.test(value)) {
+                return value;
+            }
+            return null;
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.config-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.config-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`.config-tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // Maintenance mode toggle visibility
+        document.getElementById('maintenance_mode').addEventListener('change', function() {
+            document.getElementById('maintenanceReasonGroup').style.display = this.checked ? 'block' : 'none';
+        });
+
+        // Loading overlay
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+        }
+
+        // Toast notifications
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle'}"></i>
+                ${message}
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
         });
@@ -1055,62 +2036,6 @@
                 navbar.style.background = 'rgba(15, 15, 26, 0.8)';
             }
         });
-
-        // Intersection Observer for animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe stat cards
-        document.querySelectorAll('.stat-card, .feature-card, .command-chip').forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(20px)';
-            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(el);
-        });
-
-        // Update stats periodically (optional enhancement)
-        async function refreshStats() {
-            try {
-                const response = await fetch(window.location.href);
-                // Could add live stats update here
-            } catch (e) {
-                console.log('Stats refresh not available');
-            }
-        }
-
-        // Auto-refresh every 30 seconds
-        setInterval(refreshStats, 30000);
-
-        // Generate floating particles dynamically
-        const particlesContainer = document.getElementById('particles');
-        const particleCount = 20;
-
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            
-            // Random values for each particle
-            const left = Math.random() * 100;
-            const animationDelay = Math.random() * 15;
-            const animationDuration = 10 + Math.random() * 10;
-            
-            particle.style.left = left + '%';
-            particle.style.animationDelay = animationDelay + 's';
-            particle.style.animationDuration = animationDuration + 's';
-            
-            particlesContainer.appendChild(particle);
-        }
     </script>
 </body>
 </html>

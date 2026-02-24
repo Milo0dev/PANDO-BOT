@@ -288,6 +288,86 @@ function iniciarServidorExpress(client) {
     });
   });
   
+// ==================== API ROUTES ====================
+  
+  // Get list of servers the bot is in
+  app.get("/api/servers", checkAuth, checkOwner, (req, res) => {
+    const servers = client.guilds.cache.map(guild => ({
+      id: guild.id,
+      name: guild.name,
+      icon: guild.iconURL({ format: "png", size: 64 }),
+      memberCount: guild.memberCount
+    }));
+    res.json(servers);
+  });
+  
+  // Get settings for a specific server
+  app.get("/api/settings/:guildId", checkAuth, checkOwner, async (req, res) => {
+    const { guildId } = req.params;
+    
+    // Verify bot is in this guild
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ error: "Servidor no encontrado" });
+    }
+    
+    try {
+      const { settings } = require("./src/utils/database");
+      const s = await settings.get(guildId);
+      res.json({
+        guild: {
+          id: guild.id,
+          name: guild.name,
+          icon: guild.iconURL({ format: "png", size: 64 })
+        },
+        settings: s
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Update settings for a specific server
+  app.post("/api/settings/:guildId", checkAuth, checkOwner, async (req, res) => {
+    const { guildId } = req.params;
+    const updates = req.body;
+    
+    // Verify bot is in this guild
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ error: "Servidor no encontrado" });
+    }
+    
+    try {
+      const { settings } = require("./src/utils/database");
+      
+      // Validate and sanitize updates
+      const allowedFields = [
+        "log_channel", "transcript_channel", "dashboard_channel", 
+        "weekly_report_channel", "support_role", "admin_role", "verify_role",
+        "max_tickets", "global_ticket_limit", "cooldown_minutes", "min_days",
+        "auto_close_minutes", "sla_minutes", "smart_ping_minutes",
+        "dm_on_open", "dm_on_close", "log_edits", "log_deletes",
+        "maintenance_mode", "maintenance_reason"
+      ];
+      
+      const sanitizedUpdates = {};
+      for (const key of allowedFields) {
+        if (updates[key] !== undefined) {
+          sanitizedUpdates[key] = updates[key];
+        }
+      }
+      
+      await settings.update(guildId, sanitizedUpdates);
+      
+      res.json({ success: true, message: "Configuración guardada" });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // ==================== END API ROUTES ====================
+  
   // Iniciar el servidor - Escuchar en 0.0.0.0 para Pterodactyl
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(chalk.green(`🌐 Servidor web iniciado en puerto ${PORT}`));
