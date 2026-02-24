@@ -180,10 +180,10 @@ module.exports.ttt = {
       return disponibles[Math.floor(Math.random() * disponibles.length)];
     };
 
-    await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones() });
+    const msg = await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones(), fetchReply: true });
 
-    const filter = i => i.message.interaction.id === interaction.id;
-    const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
+    const filter = i => i.user.id === interaction.user.id;
+    const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
     collector.on("collect", async i => {
       const idx = parseInt(i.customId.replace("ttt_", ""));

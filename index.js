@@ -82,7 +82,7 @@ async function startBot() {
     admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
     admin.maintenance, admin.closeAll, admin.lockdown,
     staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
-    welcome, verify, help, debug,
+    welcome, verify, help,
     poll, embed, suggest, remind, rank, levels, modlogs,
     music.play, music.skip, music.stop, music.pause, music.resume, 
     music.queue, music.nowplaying, music.shuffle, music.remove, 
@@ -159,27 +159,82 @@ async function startBot() {
   });
 }
 
-// Función para registrar comandos de slash
+// Función para registrar comandos de slash (solo nuevos o modificados)
 async function registrarComandos(client) {
   try {
-    console.log(chalk.yellow("📝 Registrando comandos de slash..."));
+    console.log(chalk.yellow("📝 Verificando comandos de slash..."));
     
     const commands = [];
     
-    // Recoger todos los comandos
+    // Recoger todos los comandos del código local
     for (const [name, cmd] of client.commands) {
       if (cmd.data) {
         commands.push(cmd.data);
       }
     }
     
-    // Registrar solo globalmente (evita duplicados)
-    if (commands.length > 0) {
-      await client.application.commands.set(commands);
-      console.log(chalk.green(`✅ ${commands.length} comandos de slash registrados globalmente`));
+    // Obtener comandos ya registrados en Discord
+    const comandosRegistrados = await client.application.commands.fetch();
+    
+    // Crear mapas para comparar
+    const comandosLocales = new Map(commands.map(c => [c.name, c]));
+    const comandosExistentes = new Map(comandosRegistrados.map(c => [c.name, c]));
+    
+    // Comandos a registrar (nuevos o modificados)
+    const comandosParaRegistrar = [];
+    const comandosEliminados = [];
+    
+    // Verificar comandos locales
+    for (const [nombre, cmdLocal] of comandosLocales) {
+      const cmdExistente = comandosExistentes.get(nombre);
+      
+      if (!cmdExistente) {
+        // Comando nuevo - registrar
+        comandosParaRegistrar.push(cmdLocal);
+        console.log(chalk.gray(`   + Nuevo: /${nombre}`));
+      } else {
+        // Verificar si fue modificado (comparar description y options)
+        const localStr = JSON.stringify(cmdLocal);
+        const existenteStr = JSON.stringify({
+          name: cmdExistente.name,
+          description: cmdExistente.description,
+          options: cmdExistente.options
+        });
+        
+        if (localStr !== existenteStr) {
+          // Comando modificado - actualizar
+          comandosParaRegistrar.push(cmdLocal);
+          console.log(chalk.cyan(`   ~ Modificado: /${nombre}`));
+        }
+      }
     }
     
-    console.log(chalk.blue("🎉 Registro de comandos completado!\n"));
+    // Verificar comandos eliminados (existen en Discord pero no en código)
+    for (const [nombre] of comandosExistentes) {
+      if (!comandosLocales.has(nombre)) {
+        comandosEliminados.push(nombre);
+        console.log(chalk.red(`   - Eliminado: /${nombre}`));
+      }
+    }
+    
+    // Registrar comandos nuevos/modificados
+    if (comandosParaRegistrar.length > 0) {
+      // Usar set para comandos nuevos (mantiene los existentes)
+      for (const cmd of comandosParaRegistrar) {
+        await client.application.commands.create(cmd);
+      }
+      console.log(chalk.green(`✅ ${comandosParaRegistrar.length} comandos actualizados`));
+    }
+    
+    if (comandosEliminados.length > 0) {
+      console.log(chalk.yellow(`⚠️ ${comandosEliminados.length} comandos eliminados del código (no se eliminan de Discord automáticamente)`));
+    }
+    
+    if (comandosParaRegistrar.length === 0 && comandosEliminados.length === 0) {
+      console.log(chalk.blue("   ✓ No hay cambios en los comandos"));
+    }
+    
+    console.log(chalk.blue("🎉 Verificación de comandos completada!\n"));
     
   } catch (error) {
     console.error(chalk.red("❌ Error al registrar comandos:"), error.message);
