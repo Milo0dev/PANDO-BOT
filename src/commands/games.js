@@ -19,6 +19,22 @@ const PALABRAS_AHORCADO = [
   "react", "vue", "angular", "node", "express", "mongo"
 ];
 
+const CATEGORIAS = {
+  programacion: "💻 Programación", computadora: "💻 Programación", desarrollador: "💻 Programación",
+  javascript: "💻 Programación", variable: "💻 Programación", funcion: "💻 Programación",
+  objeto: "💻 Programación", array: "💻 Programación", string: "💻 Programación",
+  numero: "💻 Programación", algoritmo: "💻 Programación", framework: "💻 Programación",
+  frontend: "💻 Programación", backend: "💻 Programación", fullstack: "💻 Programación",
+  discord: "🔧 Tecnologia", servidor: "🔧 Tecnologia", aplicacion: "🔧 Tecnologia",
+  interfaz: "🔧 Tecnologia", basededatos: "🔧 Tecnologia", hosting: "🌐 Internet",
+  dominio: "🌐 Internet", https: "🌐 Internet", http: "🌐 Internet", navegador: "🌐 Internet",
+  internet: "🌐 Internet", json: "🔧 Tecnologia", html: "🔧 Tecnologia", css: "🔧 Tecnologia",
+  python: "🐍 Lenguajes", java: "🐍 Lenguajes", rust: "🐍 Lenguajes",
+  react: "🔧 Tecnologia", vue: "🔧 Tecnologia", angular: "🔧 Tecnologia",
+  node: "🔧 Tecnologia", express: "🔧 Tecnologia", mongo: "🔧 Tecnologia",
+  windows: "🖥️ Sistemas", linux: "🖥️ Sistemas", macos: "🖥️ Sistemas"
+};
+
 const TRIVIA_PREGUNTAS = [
   { pregunta: "¿Cuántos bits tiene un byte?", respuesta: "8", opciones: ["4", "8", "16", "32"] },
   { pregunta: "¿Qué significa HTML?", respuesta: "HyperText Markup Language", opciones: ["Hyper Text", "HyperText Markup Language", "High Tech"] },
@@ -34,6 +50,49 @@ const TRIVIA_PREGUNTAS = [
 
 const ahorcadoActivos = new Map();
 
+const obtenerCategoria = (palabra) => {
+  return CATEGORIAS[palabra.toLowerCase()] || "📝 General";
+};
+
+const crearBarraProgreso = (intentos, maxIntentos) => {
+  const total = 10;
+  const filled = Math.round((intentos / maxIntentos) * total);
+  const empty = total - filled;
+  let barra = "▰".repeat(filled) + "▱".repeat(empty);
+  if (intentos >= 5) barra += " ✅";
+  else if (intentos >= 3) barra += " ⚠️";
+  else if (intentos >= 1) barra += " 🔥";
+  else barra += " 💀";
+  return barra;
+};
+
+const dibujarAhorcado = (intentos) => {
+  const etapas = [
+    "  ┌───────────┐\n  │           │\n            │\n            │\n            │\n            │\n═════════════",
+    "  ┌───────────┐\n  │           │\n  ●           │\n            │\n            │\n            │\n═════════════",
+    "  ┌───────────┐\n  │           │\n  ●           │\n  │           │\n            │\n            │\n═════════════",
+    "  ┌───────────┐\n  │           │\n  ●           │\n /│           │\n            │\n            │\n═════════════",
+    "  ┌───────────┐\n  │           │\n  ●           │\n /│\\          │\n            │\n            │\n═════════════",
+    "  ┌───────────┐\n  │           │\n  ●           │\n /│\\          │\n /            │\n            │\n═════════════",
+    "  ┌───────────┐\n  │           │\n  ●           │\n /│\\          │\n / \\          │\n            │\n═════════════"
+  ];
+  // Construction du bloc de code pour Discord
+  var debut = String.fromCharCode(96,96,96) + "\n";
+  var fin = "\n" + String.fromCharCode(96,96,96);
+  return debut + etapas[6 - intentos] + fin;
+};
+
+const formatearPalabra = (progreso) => {
+  return progreso.map(letra => letra === "_" ? "⬛" : "`" + letra + "`").join(" ");
+};
+
+const obtenerColor = (intentos) => {
+  if (intentos >= 5) return 0x57F287;
+  if (intentos >= 3) return 0xFEE75C;
+  if (intentos >= 1) return 0xFAA61A;
+  return 0xED4245;
+};
+
 module.exports.ahorcado = {
   data: new SlashCommandBuilder()
     .setName("ahorcado")
@@ -42,58 +101,60 @@ module.exports.ahorcado = {
 
   async execute(interaction) {
     const palabraInput = interaction.options.getString("palabra");
-    const palabra = palabraInput ? palabraInput.toLowerCase() : 
-                   PALABRAS_AHORCADO[Math.floor(Math.random() * PALABRAS_AHORCADO.length)];
+    const palabra = palabraInput ? palabraInput.toLowerCase() : PALABRAS_AHORCADO[Math.floor(Math.random() * PALABRAS_AHORCADO.length)];
     
+    const maxIntentos = 6;
     const estado = {
       palabra: palabra.toUpperCase(),
-      intentos: 6,
+      intentos: maxIntentos,
       letrasUsadas: new Set(),
       progreso: "_".repeat(palabra.length).split(""),
-      usuario: interaction.user.id
+      usuario: interaction.user.id,
+      categoria: obtenerCategoria(palabra)
     };
     
     ahorcadoActivos.set(interaction.user.id, estado);
 
-    const dibujar = (intentos) => {
-      const stages = [
-        "  +---+\n  |   |\n      |\n      |\n      |\n      |\n=========",
-        "  +---+\n  |   |\n  O   |\n      |\n      |\n      |\n=========",
-        "  +---+\n  |   |\n  O   |\n  |   |\n      |\n      |\n=========",
-        "  +---+\n  |   |\n  O   |\n /|   |\n      |\n      |\n=========",
-        "  +---+\n  |   |\n  O   |\n /|\\  |\n      |\n      |\n=========",
-        "  +---+\n  |   |\n  O   |\n /|\\  |\n /    |\n      |\n=========",
-        "  +---+\n  |   |\n  O   |\n /|\\  |\n / \\  |\n      |\n========="
-      ];
-      return stages[6 - intentos];
-    };
-
     const crearEmbed = () => {
+      const color = obtenerColor(estado.intentos);
+      const letrasOrdenadas = Array.from(estado.letrasUsadas).sort();
+      
       return new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle("AHORCADO")
-        .setDescription("Intentos: " + estado.intentos + "\n\n**Palabra:** " + estado.progreso.join(" ") + "\n\nLetras usadas: " + (Array.from(estado.letrasUsadas).join(", ") || "Ninguna"));
+        .setColor(color)
+        .setTitle("🎯 AHORCADO")
+        .setDescription(estado.categoria + " • " + palabra.length + " letras")
+        .addFields(
+          { name: "📊 Progreso", value: "`" + crearBarraProgreso(estado.intentos, maxIntentos) + "`\n" + estado.intentos + "/" + maxIntentos + " intentos", inline: false },
+          { name: "🔤 Palabra", value: formatearPalabra(estado.progreso), inline: false },
+          { name: "📝 Letras usadas", value: letrasOrdenadas.length > 0 ? letrasOrdenadas.map(l => "`" + l + "`").join(" ") : "*Ninguna*", inline: false },
+          { name: "🎮 Dibujo", value: dibujarAhorcado(estado.intentos), inline: false }
+        )
+        .setFooter({ text: "Jugador: " + interaction.user.username + " | Adivina la palabra!" })
+        .setTimestamp();
     };
 
     const crearComponentes = () => {
       const letras1 = "ABCDEFGHIJKLMNOÑ".split("");
       const letras2 = "PQRSTUVWXYZ".split("");
       
-      // Crear opciones del primer menú (A-Ñ) - 14 letras
-      const opciones1 = letras1.map(letra => 
-        new StringSelectMenuOptionBuilder()
+      const opciones1 = letras1.map(letra => {
+        const estaUsada = estado.letrasUsadas.has(letra);
+        return new StringSelectMenuOptionBuilder()
           .setLabel(letra)
           .setValue(letra)
-      );
+          .setEmoji(estaUsada ? "❌" : null)
+          .setDefault(estaUsada);
+      });
 
-      // Crear opciones del segundo menú (P-Z) - 13 letras
-      const opciones2 = letras2.map(letra => 
-        new StringSelectMenuOptionBuilder()
+      const opciones2 = letras2.map(letra => {
+        const estaUsada = estado.letrasUsadas.has(letra);
+        return new StringSelectMenuOptionBuilder()
           .setLabel(letra)
           .setValue(letra)
-      );
+          .setEmoji(estaUsada ? "❌" : null)
+          .setDefault(estaUsada);
+      });
 
-      // Crear el primer menú desplegable
       const menu1 = new StringSelectMenuBuilder()
         .setCustomId("ahorcado_letra_1")
         .setPlaceholder("Selecciona una letra (A-Ñ)")
@@ -101,7 +162,6 @@ module.exports.ahorcado = {
         .setMinValues(1)
         .setMaxValues(1);
 
-      // Crear el segundo menú desplegable
       const menu2 = new StringSelectMenuBuilder()
         .setCustomId("ahorcado_letra_2")
         .setPlaceholder("Selecciona una letra (P-Z)")
@@ -109,18 +169,18 @@ module.exports.ahorcado = {
         .setMinValues(1)
         .setMaxValues(1);
 
-      // Crear botón de rendirse
       const btnRendirse = new ButtonBuilder()
         .setCustomId("ahorcado_rendirse")
-        .setLabel("Rendirse")
+        .setLabel("💀 Rendirse")
         .setStyle(ButtonStyle.Danger)
         .setDisabled(estado.intentos <= 0);
 
-      const fila1 = new ActionRowBuilder().addComponents(menu1);
-      const fila2 = new ActionRowBuilder().addComponents(menu2);
-      const fila3 = new ActionRowBuilder().addComponents(btnRendirse);
+      const btnNuevaPartida = new ButtonBuilder()
+        .setCustomId("ahorcado_nueva")
+        .setLabel("🔄 Nueva Partida")
+        .setStyle(ButtonStyle.Success);
 
-      return [fila1, fila2, fila3];
+      return [new ActionRowBuilder().addComponents(menu1), new ActionRowBuilder().addComponents(menu2), new ActionRowBuilder().addComponents(btnRendirse, btnNuevaPartida)];
     };
 
     await interaction.reply({ embeds: [crearEmbed()], components: crearComponentes() });
@@ -129,44 +189,94 @@ module.exports.ahorcado = {
     const collector = interaction.channel.createMessageComponentCollector({ filter, time: 300000 });
 
     collector.on("collect", async i => {
-      // Manejar botón de rendirse
       if (i.customId === "ahorcado_rendirse") {
         await i.update({ 
           embeds: [new EmbedBuilder()
             .setColor(0xED4245)
-            .setTitle("TE RENDISTE")
-            .setDescription("La palabra era: **" + estado.palabra + "**")], 
+            .setTitle("💀 TE RENDISTE")
+            .setDescription("La palabra era: **`" + estado.palabra + "`**\n\n" + dibujarAhorcado(0))
+            .addFields(
+              { name: "Estadísticas", value: "Letras adivinadas: " + estado.progreso.filter(l => l !== "_").length + "/" + estado.palabra.length, inline: true },
+              { name: "Letras usadas", value: Array.from(estado.letrasUsadas).map(l => "`" + l + "`").join(" "), inline: false }
+            )
+            .setFooter({ text: "Partida terminada" })
+            .setTimestamp()], 
           components: [] 
         });
         return collector.stop();
       }
 
-      // Manejar selección del menú (cualquiera de los dos menús)
+      if (i.customId === "ahorcado_nueva") {
+        await i.update({ 
+          embeds: [new EmbedBuilder()
+            .setColor(0x57F287)
+            .setTitle("🔄 NUEVA PARTIDA")
+            .setDescription("¡Iniciando una nueva partida!")
+            .setFooter({ text: "Cargando..." })
+            .setTimestamp()], 
+          components: [] 
+        });
+        const nuevaPalabra = PALABRAS_AHORCADO[Math.floor(Math.random() * PALABRAS_AHORCADO.length)];
+        estado.palabra = nuevaPalabra.toUpperCase();
+        estado.intentos = maxIntentos;
+        estado.letrasUsadas = new Set();
+        estado.progreso = "_".repeat(nuevaPalabra.length).split("");
+        estado.categoria = obtenerCategoria(nuevaPalabra);
+        
+        await interaction.editReply({ embeds: [crearEmbed()], components: crearComponentes() });
+        return;
+      }
+
       const letra = i.values[0];
-      if (estado.letrasUsadas.has(letra)) return;
+      if (estado.letrasUsadas.has(letra)) {
+        await i.reply({ content: "¡Ya usaste esa letra! 🔄", ephemeral: true });
+        return;
+      }
       estado.letrasUsadas.add(letra);
 
       if (estado.palabra.includes(letra)) {
         for (let idx = 0; idx < estado.palabra.length; idx++) {
           if (estado.palabra[idx] === letra) estado.progreso[idx] = letra;
         }
+        
         if (!estado.progreso.includes("_")) {
-          await i.update({ embeds: [new EmbedBuilder().setColor(0x57F287).setTitle("GANASTE!").setDescription("La palabra era: **" + estado.palabra + "**")], components: [] });
+          await i.update({ 
+            embeds: [new EmbedBuilder()
+              .setColor(0x57F287)
+              .setTitle("🎉 ¡GANASTE!")
+              .setDescription("¡Felicidades! Has adivinado la palabra: **`" + estado.palabra + "`**")
+              .addFields(
+                { name: "📊 Estadísticas", value: "Letras adivinadas: " + estado.palabra.length + "/" + estado.palabra.length, inline: true },
+                { name: "💪 Intentos restantes: ", value: "" + estado.intentos + "/" + maxIntentos, inline: true },
+                { name: "🔤 Letras usadas", value: Array.from(estado.letrasUsadas).sort().map(l => "`" + l + "`").join(" "), inline: false }
+              )
+              .setFooter({ text: "¡Victoria!" })
+              .setTimestamp()], 
+            components: [] 
+          });
           return collector.stop();
         }
       } else {
         estado.intentos--;
+        
         if (estado.intentos <= 0) {
           await i.update({ 
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
-              .setTitle("PERDISTE")
-              .setDescription("La palabra era: **" + estado.palabra + "**")], 
+              .setTitle("💀 PERDISTE")
+              .setDescription("La palabra era: **`" + estado.palabra + "`**\n\n" + dibujarAhorcado(0))
+              .addFields(
+                { name: "Letras correctas", value: estado.progreso.filter(l => l !== "_").length > 0 ? estado.progreso.filter(l => l !== "_").map(l => "`" + l + "`").join(" ") : "Ninguna", inline: false },
+                { name: "Letras usadas", value: Array.from(estado.letrasUsadas).sort().map(l => "`" + l + "`").join(" "), inline: false }
+              )
+              .setFooter({ text: "Game Over" })
+              .setTimestamp()], 
             components: [] 
           });
           return collector.stop();
         }
       }
+      
       await i.update({ embeds: [crearEmbed()], components: crearComponentes() });
     });
   }
@@ -190,25 +300,21 @@ module.exports.ttt = {
       esVsBot
     };
 
-    // Función para dibujar el tablero con emojis nice
     const dibujar = () => {
       let msg = "";
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           const idx = i * 3 + j;
           const cell = estado.tablero[idx];
-          // Usamos emojis más atractivos
           msg += cell ? (cell === "X" ? "🔴" : "🔵") : "⬜";
           if (j < 2) msg += "│";
         }
         msg += "\n";
         if (i < 2) msg += "─────┬─────┬─────\n";
       }
-      // Usar >>> para formato de bloque en Discord
       return ">>> " + msg;
     };
 
-    // Función para crear botones mejorados
     const crearBotones = () => {
       const botones = [];
       let fila = new ActionRowBuilder();
@@ -225,7 +331,6 @@ module.exports.ttt = {
       return botones;
     };
 
-    // Función para verificar ganador
     const verificar = () => {
       const lineas = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
       for (const [a,b,c] of lineas) {
@@ -234,82 +339,60 @@ module.exports.ttt = {
       return !estado.tablero.includes(null) ? "empate" : null;
     };
 
-    // Movimiento del bot
     const botMove = () => {
       const disponibles = estado.tablero.map((v, i) => v === null ? i : -1).filter(i => i >= 0);
       return disponibles[Math.floor(Math.random() * disponibles.length)];
     };
 
-    // Función para crear el embed con diseño mejorado
-    const crearEmbed = (turnoActual = null) => {
+    const crearEmbed = () => {
       const esTurnoX = estado.turno === estado.jugadorX;
-      const nombreTurno = esTurnoX ? `<@${estado.jugadorX}>` : (estado.esVsBot ? "🤖 Bot" : `<@${estado.turno}>`);
-      
-      // Color según el turno
+      const nombreTurno = esTurnoX ? "<@" + estado.jugadorX + ">" : (estado.esVsBot ? "🤖 Bot" : "<@" + estado.turno + ">");
       const colorTurno = esTurnoX ? 0xED4245 : 0x5865F2;
-      
-      // Info de jugadores
-      const infoJugadores = esVsBot 
-        ? `🔴 **X:** ${interaction.user}\n🔵 **O:** 🤖 Bot`
-        : `🔴 **X:** <@${estado.jugadorX}>\n🔵 **O:** <@${estado.jugadorO}>`;
+      const infoJugadores = esVsBot ? "🔴 **X:** " + interaction.user + "\n🔵 **O:** 🤖 Bot" : "🔴 **X:** <@" + estado.jugadorX + ">\n🔵 **O:** <@" + estado.jugadorO + ">";
 
-      const embed = new EmbedBuilder()
+      return new EmbedBuilder()
         .setColor(colorTurno)
         .setTitle("🎮 Tic Tac Toe - 3 en Raya")
         .setDescription("¡Partido en progreso!")
         .addFields(
           { name: "👥 Jugadores", value: infoJugadores, inline: false },
           { name: "🎯 Turno de", value: nombreTurno, inline: true },
-          { name: "🔢 Ronda", value: `${estado.tablero.filter(c => c !== null).length + 1}/9`, inline: true },
+          { name: "🔢 Ronda", value: (estado.tablero.filter(c => c !== null).length + 1) + "/9", inline: true },
           { name: "📊 Tablero", value: dibujar(), inline: false }
         )
         .setFooter({ text: esVsBot ? "Jugando contra el Bot" : "PvP" })
         .setTimestamp();
-
-      return embed;
     };
 
     const msg = await interaction.reply({ embeds: [crearEmbed()], components: crearBotones(), fetchReply: true });
 
     const filter = i => {
-      if (estado.esVsBot) {
-        return i.user.id === interaction.user.id;
-      } else {
-        return i.user.id === estado.jugadorX || i.user.id === estado.jugadorO;
-      }
+      if (estado.esVsBot) return i.user.id === interaction.user.id;
+      return i.user.id === estado.jugadorX || i.user.id === estado.jugadorO;
     };
     const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
     collector.on("collect", async i => {
-      // Verificar si la interacción ya fue procesada
       if (i.replied || i.deferred) return;
       
       const idx = parseInt(i.customId.replace("ttt_", ""));
       if (estado.tablero[idx] !== null) return;
       
-      // Movimiento del jugador
       estado.tablero[idx] = estado.turno === estado.jugadorX ? "X" : "O";
       let winner = verificar();
       
       if (winner) {
         const colorFinal = winner === "empate" ? 0xFEE75C : (winner === "X" ? 0xED4245 : 0x5865F2);
         const tituloFinal = winner === "empate" ? "🤝 ¡EMPATE!" : (winner === "X" ? "🔴 ¡X GANA!" : "🔵 ¡O GANA!");
-        const descFinal = winner === "empate" ? "¡El tablero está lleno!" : `¡Felicidades <@${winner === "X" ? estado.jugadorX : estado.jugadorO}>!`;
+        const descFinal = winner === "empate" ? "¡El tablero está lleno!" : "¡Felicidades <@" + (winner === "X" ? estado.jugadorX : estado.jugadorO) + ">!";
         
         await i.update({ 
-          embeds: [new EmbedBuilder()
-            .setColor(colorFinal)
-            .setTitle(tituloFinal)
-            .setDescription(descFinal)
-            .addFields({ name: "📊 Tablero final", value: dibujar(), inline: false })
-            .setFooter({ text: "Partida terminada" })
-            .setTimestamp()], 
+          embeds: [new EmbedBuilder().setColor(colorFinal).setTitle(tituloFinal).setDescription(descFinal).addFields({ name: "📊 Tablero final", value: dibujar(), inline: false }).setFooter({ text: "Partida terminada" }).setTimestamp()], 
           components: [] 
         }).catch(() => {});
         return collector.stop();
       }
 
-      // Turno del bot
       if (esVsBot) {
         const mov = botMove();
         if (mov !== undefined) estado.tablero[mov] = "O";
@@ -320,20 +403,13 @@ module.exports.ttt = {
           const descFinal = winner === "X" ? "¡Felicidades! Has ganado." : "¡El bot ha ganado!";
           
           await i.update({ 
-            embeds: [new EmbedBuilder()
-              .setColor(colorFinal)
-              .setTitle(tituloFinal)
-              .setDescription(descFinal)
-              .addFields({ name: "📊 Tablero final", value: dibujar(), inline: false })
-              .setFooter({ text: "Partida terminada" })
-              .setTimestamp()], 
+            embeds: [new EmbedBuilder().setColor(colorFinal).setTitle(tituloFinal).setDescription(descFinal).addFields({ name: "📊 Tablero final", value: dibujar(), inline: false }).setFooter({ text: "Partida terminada" }).setTimestamp()], 
             components: [] 
           }).catch(() => {});
           return collector.stop();
         }
       }
 
-      // Cambiar turno
       estado.turno = esVsBot ? interaction.user.id : (estado.turno === estado.jugadorX ? estado.jugadorO : estado.jugadorX);
       await i.update({ embeds: [crearEmbed()], components: crearBotones() }).catch(() => {});
     });

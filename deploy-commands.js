@@ -17,13 +17,15 @@ const rank    = require("./src/commands/rank");
 const levels  = require("./src/commands/levels");
 const modlogs = require("./src/commands/modlogs");
 const music   = require("./src/commands/music");
+const ping    = require("./src/commands/ping");
+const debug   = require("./src/commands/debug");
 const economy = require("./src/commands/economy");
 const games   = require("./src/commands/games");
 const giveaway = require("./src/commands/giveaway");
 
 // Recoger todos los comandos igual que en index.js
 const allCommands = [
-  setup, 
+  setup, ping, debug,
   ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
   ticket.assign, ticket.add, ticket.remove, ticket.rename,
   ticket.priority, ticket.move, ticket.note, ticket.transcript,
