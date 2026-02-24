@@ -226,8 +226,8 @@ async function registrarComandos(client) {
 function iniciarServidorExpress(client) {
   const app = express();
   
-  // Puerto dinámico (process.env.PORT para Pterodactyl, o 3000 por defecto)
-  const PORT = process.env.PORT || process.env.SERVER_PORT || 3000;
+  // Puerto dinámico (process.env.PORT para Pterodactyl, fallback 3000)
+  const PORT = process.env.PORT || 3000;
   
   // Configurar EJS como motor de plantillas
   app.set("view engine", "ejs");
@@ -288,11 +288,15 @@ function iniciarServidorExpress(client) {
     });
   });
   
-  // Iniciar el servidor
-  app.listen(PORT, "0.0.0.0", () => {
+  // Iniciar el servidor - Escuchar en 0.0.0.0 para Pterodactyl
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(chalk.green(`🌐 Servidor web iniciado en puerto ${PORT}`));
     console.log(chalk.blue(`   📊 Dashboard: http://localhost:${PORT}`));
+    console.log(chalk.gray(`   🔗 Escuchando en: 0.0.0.0:${PORT}`));
   });
+  
+  // Guardar referencia del servidor para uso futuro
+  client.httpServer = server;
 }
 
 // Iniciar el bot
