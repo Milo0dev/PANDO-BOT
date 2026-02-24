@@ -193,6 +193,12 @@ function setupAuthRoutes(app) {
 
 // Verificar si el usuario ha iniciado sesión
 function checkAuth(req, res, next) {
+  // Ignorar rutas de autenticación
+  const publicPaths = ["/login", "/callback", "/logout", "/health"];
+  if (publicPaths.includes(req.path)) {
+    return next();
+  }
+  
   if (req.session && req.session.user) {
     return next();
   }
