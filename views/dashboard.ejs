@@ -3,219 +3,1114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - <%= botName %></title>
+    <title><%= botName %> - Dashboard Profesional</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
+        :root {
+            --primary: #7289da;
+            --primary-dark: #5b6eae;
+            --secondary: #43b581;
+            --danger: #ed4245;
+            --warning: #faa61a;
+            --dark-bg: #0f0f1a;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #99aab5;
+            --text-muted: #72767d;
+            --gradient-1: linear-gradient(135deg, #7289da 0%, #5865f2 100%);
+            --gradient-2: linear-gradient(135deg, #43b581 0%, #3ba55c 100%);
+            --gradient-3: linear-gradient(135deg, #faa61a 0%, #f0b232 100%);
+            --gradient-4: linear-gradient(135deg, #ed4245 0%, #eb0400 100%);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--dark-bg);
             min-height: 100vh;
-            color: #fff;
-            padding: 20px;
+            color: var(--text-primary);
+            overflow-x: hidden;
         }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
         }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse at 20% 20%, rgba(114, 137, 218, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(67, 181, 129, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 40% 60%, rgba(250, 166, 26, 0.08) 0%, transparent 40%);
+            animation: bgMove 20s ease-in-out infinite;
         }
-        
-        .bot-avatar {
-            width: 100px;
-            height: 100px;
+
+        @keyframes bgMove {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 2%) rotate(1deg); }
+            66% { transform: translate(-1%, 1%) rotate(-1deg); }
+        }
+
+        /* Floating Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(114, 137, 218, 0.5);
             border-radius: 50%;
-            border: 4px solid #7289da;
-            margin-bottom: 15px;
+            animation: float 15s infinite;
         }
-        
-        .bot-name {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            color: #7289da;
+
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(100vh) rotate(0deg); 
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { 
+                transform: translateY(-100vh) rotate(720deg); 
+                opacity: 0;
+            }
         }
-        
-        .tagline {
-            color: #99aab5;
-            font-size: 1.1em;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 25px;
-            border-radius: 12px;
-            text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(114, 137, 218, 0.3);
-        }
-        
-        .stat-icon {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #7289da;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            color: #99aab5;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-            animation: pulse 2s infinite;
-        }
-        
-        .online {
-            background: #43b581;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .footer {
-            text-align: center;
-            color: #72767d;
-            margin-top: 40px;
-            padding: 20px;
-        }
-        
-.refresh-info {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 0.9em;
-            color: #72767d;
-        }
-        
-        /* Estilos para usuario logueado */
-        .user-info {
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(15, 15, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--card-border);
+            z-index: 1000;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 15px;
-            padding: 15px 25px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            justify-content: space-between;
+            padding: 0 5%;
         }
-        
-        .user-avatar {
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .navbar-brand img {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 2px solid #43b581;
+            border: 2px solid var(--primary);
         }
-        
-        .user-name {
+
+        .navbar-brand span {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .navbar-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .navbar-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-links a:hover {
+            color: var(--text-primary);
+            background: var(--card-bg);
+        }
+
+        .navbar-links a.active {
+            color: var(--primary);
+            background: rgba(114, 137, 218, 0.15);
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(67, 181, 129, 0.15);
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--secondary);
+        }
+
+        .nav-status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--secondary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.9); }
+        }
+
+        /* Main Content */
+        .main-content {
+            padding-top: 70px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 5%;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            background: rgba(114, 137, 218, 0.15);
+            border: 1px solid rgba(114, 137, 218, 0.3);
+            border-radius: 30px;
+            font-size: 0.9em;
+            color: var(--primary);
+            margin-bottom: 30px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .hero-avatar {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 60px rgba(114, 137, 218, 0.4);
+            margin-bottom: 25px;
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .hero-title {
+            font-size: 3.5em;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #fff 0%, #99aab5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .hero-tagline {
+            font-size: 1.3em;
+            color: var(--text-secondary);
+            margin-bottom: 35px;
+            animation: fadeInUp 0.6s ease 0.3s both;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            animation: fadeInUp 0.6s ease 0.4s both;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1em;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            box-shadow: 0 4px 20px rgba(114, 137, 218, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(114, 137, 218, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--card-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Section */
+        .stats-section {
+            margin: 50px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+        }
+
+        .stat-card:nth-child(2)::before { background: var(--gradient-2); }
+        .stat-card:nth-child(3)::before { background: var(--gradient-3); }
+        .stat-card:nth-child(4)::before { background: var(--gradient-4); }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(114, 137, 218, 0.3);
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            background: rgba(114, 137, 218, 0.15);
+            border-radius: 50%;
+            color: var(--primary);
+        }
+
+        .stat-card:nth-child(2) .stat-icon { 
+            background: rgba(67, 181, 129, 0.15); 
+            color: var(--secondary);
+        }
+        .stat-card:nth-child(3) .stat-icon { 
+            background: rgba(250, 166, 26, 0.15); 
+            color: var(--warning);
+        }
+        .stat-card:nth-child(4) .stat-icon { 
+            background: rgba(237, 66, 69, 0.15); 
+            color: var(--danger);
+        }
+
+        .stat-value {
+            font-size: 2.8em;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 1em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Features Section */
+        .features-section {
+            margin: 80px 0;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.4s ease;
+            position: relative;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 15px 40px rgba(114, 137, 218, 0.15);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            background: var(--gradient-1);
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card:nth-child(2) .feature-icon { background: var(--gradient-2); }
+        .feature-card:nth-child(3) .feature-icon { background: var(--gradient-3); }
+        .feature-card:nth-child(4) .feature-icon { background: var(--gradient-4); }
+        .feature-card:nth-child(5) .feature-icon { background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); }
+        .feature-card:nth-child(6) .feature-icon { background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); }
+
+        .feature-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+
+        /* Commands Section */
+        .commands-section {
+            margin: 80px 0;
+        }
+
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .command-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .command-chip:hover {
+            background: rgba(114, 137, 218, 0.15);
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+
+        .command-chip i {
+            color: var(--primary);
+            width: 20px;
+        }
+
+        /* About Section */
+        .about-section {
+            margin: 80px 0;
+            padding: 60px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            text-align: center;
+        }
+
+        .about-title {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .about-text {
+            color: var(--text-secondary);
+            font-size: 1.1em;
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto 30px;
+        }
+
+        .badges {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(114, 137, 218, 0.15);
+            border: 1px solid rgba(114, 137, 218, 0.3);
+            border-radius: 30px;
+            font-size: 0.9em;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .badge i {
+            font-size: 0.9em;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 80px;
+            padding: 40px 5%;
+            border-top: 1px solid var(--card-border);
+            text-align: center;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            text-align: left;
+        }
+
+        .footer-section h4 {
             font-size: 1.1em;
             font-weight: 600;
-            color: #fff;
+            margin-bottom: 20px;
+            color: var(--text-primary);
         }
-        
-        .logout-btn {
-            padding: 8px 16px;
-            background: rgba(237, 66, 69, 0.2);
-            color: #ed4245;
-            border-radius: 6px;
+
+        .footer-section a {
+            display: block;
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.9em;
-            transition: background 0.3s;
+            padding: 6px 0;
+            transition: color 0.3s ease;
+            font-size: 0.95em;
         }
-        
-        .logout-btn:hover {
-            background: rgba(237, 66, 69, 0.4);
+
+        .footer-section a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-copyright {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-social a {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .footer-social a:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* User Panel */
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+        }
+
+        .user-panel img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+        }
+
+        .user-panel-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-panel-name {
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .user-panel-logout {
+            font-size: 0.8em;
+            color: var(--danger);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .user-panel-logout:hover {
+            color: #ff6b6b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 20px;
+            }
+
+            .navbar-links {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2.2em;
+            }
+
+            .hero-tagline {
+                font-size: 1.1em;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                text-align: center;
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--card-border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <% if (user) { %>
-        <!-- Usuario logueado - mostrar info -->
-        <div class="user-info">
-            <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=64" alt="<%= user.username %>" class="user-avatar">
-            <span class="user-name">Bienvenido, <%= user.global_name || user.username %></span>
-            <a href="/logout" class="logout-btn">Cerrar Sesión</a>
-        </div>
-        <% } %>
+    <!-- Animated Background -->
+    <div class="bg-animation"></div>
+    
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <img src="<%= botAvatar %>" alt="<%= botName %>">
+            <span><%= botName %></span>
+        </a>
         
-        <div class="header">
-            <img src="<%= botAvatar %>" alt="<%= botName %>" class="bot-avatar">
-            <h1 class="bot-name"><%= botName %></h1>
-            <p class="tagline">🤖 Panel de Control del Bot</p>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">🏠</div>
-                <div class="stat-value"><%= serverCount %></div>
-                <div class="stat-label">Servidores</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-value"><%= userCount.toLocaleString() %></div>
-                <div class="stat-label">Usuarios Totales</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon">📡</div>
-                <div class="stat-value"><%= ping %>ms</div>
-                <div class="stat-label">Latencia</div>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-icon">⏱️</div>
-                <div class="stat-value"><%= uptime %></div>
-                <div class="stat-label">Tiempo Activo</div>
-            </div>
+        <div class="navbar-links">
+            <a href="/" class="active"><i class="fas fa-home"></i> Inicio</a>
+            <a href="#features"><i class="fas fa-star"></i> Características</a>
+            <a href="#commands"><i class="fas fa-terminal"></i> Comandos</a>
+            <a href="#about"><i class="fas fa-info-circle"></i> Acerca de</a>
         </div>
         
-        <div class="footer">
-            <p><span class="status-indicator online"></span> Bot en línea y funcionando</p>
-            <div class="refresh-info">
-                📊 Los datos se actualizan en tiempo real | Página generada automáticamente
+        <div class="navbar-user">
+            <% if (user) { %>
+            <div class="user-panel">
+                <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=64" alt="<%= user.username %>">
+                <div class="user-panel-info">
+                    <span class="user-panel-name"><%= user.global_name || user.username %></span>
+                    <a href="/logout" class="user-panel-logout">Cerrar Sesión</a>
+                </div>
+            </div>
+            <% } %>
+            <div class="nav-status">
+                <span class="nav-status-dot"></span>
+                <span>En línea</span>
             </div>
         </div>
-    </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-badge">
+                    <i class="fas fa-check-circle"></i>
+                    Bot de Discord Premium
+                </div>
+                
+                <img src="<%= botAvatar %>" alt="<%= botName %>" class="hero-avatar">
+                
+                <h1 class="hero-title"><%= botName %></h1>
+                <p class="hero-tagline">🤖 Potencia tu servidor con funciones avanzadas de moderación, economía, entretenimiento y más</p>
+                
+                <div class="hero-actions">
+                    <a href="#" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Añadir al Servidor
+                    </a>
+                    <a href="#features" class="btn btn-secondary">
+                        <i class="fas fa-arrow-right"></i>
+                        Ver Características
+                    </a>
+                </div>
+            </section>
+
+            <!-- Stats Section -->
+            <section class="stats-section">
+                <h2 class="section-title">📊 Estadísticas en Tiempo Real</h2>
+                <p class="section-subtitle">Monitorea el rendimiento y actividad del bot</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stat-value"><%= serverCount %></div>
+                        <div class="stat-label">Servidores</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-value"><%= userCount.toLocaleString() %></div>
+                        <div class="stat-label">Usuarios Totales</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="stat-value"><%= ping %>ms</div>
+                        <div class="stat-label">Latencia</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-value"><%= uptime %></div>
+                        <div class="stat-label">Tiempo Activo</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="features-section" id="features">
+                <h2 class="section-title">⭐ Características Destacadas</h2>
+                <p class="section-subtitle">Descubre todo lo que <%= botName %> puede hacer por tu servidor</p>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <h3 class="feature-title">🎫 Sistema de Tickets</h3>
+                        <p class="feature-desc">Sistema completo de tickets con categorías, paneles personalizados y transcripciones automáticas.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <h3 class="feature-title">💰 Economía</h3>
+                        <p class="feature-desc">Sistema de economía con diarios, trabajo, casino, tienda y economía global entre servidores.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <h3 class="feature-title">🎵 Música</h3>
+                        <p class="feature-desc">Reprodutor de música con colas, playlists, efectos de audio y soporte para múltiples plataformas.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="feature-title">🛡️ Moderación</h3>
+                        <p class="feature-desc">Herramientas avanzadas de moderación: logs, mute, ban, warn, anti-spam y anti-raid.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="feature-title">📈 Niveles</h3>
+                        <p class="feature-desc">Sistema de XP y niveles con rangos personalizados, recompensas y leaderboards.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <h3 class="feature-title">🎁 Sorteos</h3>
+                        <p class="feature-desc">Crea sorteos personalizados con múltiples ganadores, roles requeridos y mensajes automatizados.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Commands Section -->
+            <section class="commands-section" id="commands">
+                <h2 class="section-title">⌨️ Comandos Disponibles</h2>
+                <p class="section-subtitle">Explora todos los comandos disponibles para usar en tu servidor</p>
+                
+                <div class="commands-grid">
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-ticket-simple"></i>
+                        /ticket
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-chart-bar"></i>
+                        /economy
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-play"></i>
+                        /play
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-gavel"></i>
+                        /modlogs
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-user-plus"></i>
+                        /verify
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-poll"></i>
+                        /poll
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-lightbulb"></i>
+                        /suggest
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-level-up-alt"></i>
+                        /rank
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-bell"></i>
+                        /remind
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-crown"></i>
+                        /staff
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-palette"></i>
+                        /embed
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-dice"></i>
+                        /games
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-hand-sparkles"></i>
+                        /giveaway
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-sliders-h"></i>
+                        /setup
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-robot"></i>
+                        /help
+                    </a>
+                    <a href="#" class="command-chip">
+                        <i class="fas fa-wifi"></i>
+                        /ping
+                    </a>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section class="about-section" id="about">
+                <h2 class="about-title">🤖 Acerca de <%= botName %></h2>
+                <p class="about-text">
+                    <%= botName %> es un bot de Discord multifuncional diseñado para mejorar la experiencia de tu servidor. 
+                    Con más de 50 comandos disponibles, incluyendo moderación, economía, música, entretenimiento y más. 
+                    Nuestro objetivo es proporcionar herramientas potentes y fáciles de usar para administradores de servidores.
+                </p>
+                
+                <div class="badges">
+                    <span class="badge"><i class="fas fa-shield-alt"></i> Seguridad Avanzada</span>
+                    <span class="badge"><i class="fas fa-bolt"></i> Alta Velocidad</span>
+                    <span class="badge"><i class="fas fa-sync"></i> Actualizaciones Constantes</span>
+                    <span class="badge"><i class="fas fa-headset"></i> Soporte 24/7</span>
+                    <span class="badge"><i class="fas fa-globe"></i> Multi-idioma</span>
+                    <span class="badge"><i class="fas fa-heart"></i> Communidad Activa</span>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Enlaces Rápidos</h4>
+                    <a href="#"><i class="fas fa-home"></i> Inicio</a>
+                    <a href="#features"><i class="fas fa-star"></i> Características</a>
+                    <a href="#commands"><i class="fas fa-terminal"></i> Comandos</a>
+                    <a href="#about"><i class="fas fa-info-circle"></i> Acerca de</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Recursos</h4>
+                    <a href="#"><i class="fas fa-book"></i> Documentación</a>
+                    <a href="#"><i class="fas fa-code"></i> API</a>
+                    <a href="#"><i class="fas fa-users"></i> Servidor de Soporte</a>
+                    <a href="#"><i class="fab fa-discord"></i> Únete a nuestra comunidad</a>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <a href="#"><i class="fas fa-file-alt"></i> Términos de Servicio</a>
+                    <a href="#"><i class="fas fa-lock"></i> Política de Privacidad</a>
+                    <a href="#"><i class="fas fa-cookie"></i> Política de Cookies</a>
+                    <a href="#"><i class="fas fa-gavel"></i> DMCA</a>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">© 2024 <%= botName %>. Todos los derechos reservados.</p>
+                <div class="footer-social">
+                    <a href="#" title="Discord"><i class="fab fa-discord"></i></a>
+                    <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(15, 15, 26, 0.95)';
+            } else {
+                navbar.style.background = 'rgba(15, 15, 26, 0.8)';
+            }
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe stat cards
+        document.querySelectorAll('.stat-card, .feature-card, .command-chip').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+
+        // Update stats periodically (optional enhancement)
+        async function refreshStats() {
+            try {
+                const response = await fetch(window.location.href);
+                // Could add live stats update here
+            } catch (e) {
+                console.log('Stats refresh not available');
+            }
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshStats, 30000);
+
+        // Generate floating particles dynamically
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 20;
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            // Random values for each particle
+            const left = Math.random() * 100;
+            const animationDelay = Math.random() * 15;
+            const animationDuration = 10 + Math.random() * 10;
+            
+            particle.style.left = left + '%';
+            particle.style.animationDelay = animationDelay + 's';
+            particle.style.animationDuration = animationDuration + 's';
+            
+            particlesContainer.appendChild(particle);
+        }
+    </script>
 </body>
 </html>
