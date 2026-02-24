@@ -6,6 +6,12 @@
 module.exports = {
 
   // ────────────────────────────────────────────
+  //   PROPIETARIO (Para OAuth)
+  // ────────────────────────────────────────────
+  // Tu ID de Discord - se usa para proteger la dashboard
+  ownerId: process.env.DISCORD_OWNER_ID || null,
+
+  // ────────────────────────────────────────────
   //   CATEGORÍAS DE TICKETS
   // ────────────────────────────────────────────
   categories: [

@@ -117,7 +117,7 @@
             padding: 20px;
         }
         
-        .refresh-info {
+.refresh-info {
             background: rgba(255, 255, 255, 0.03);
             padding: 15px;
             border-radius: 8px;
@@ -125,10 +125,59 @@
             font-size: 0.9em;
             color: #72767d;
         }
+        
+        /* Estilos para usuario logueado */
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #43b581;
+        }
+        
+        .user-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(237, 66, 69, 0.2);
+            color: #ed4245;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(237, 66, 69, 0.4);
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <% if (user) { %>
+        <!-- Usuario logueado - mostrar info -->
+        <div class="user-info">
+            <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=64" alt="<%= user.username %>" class="user-avatar">
+            <span class="user-name">Bienvenido, <%= user.global_name || user.username %></span>
+            <a href="/logout" class="logout-btn">Cerrar Sesión</a>
+        </div>
+        <% } %>
+        
         <div class="header">
             <img src="<%= botAvatar %>" alt="<%= botName %>" class="bot-avatar">
             <h1 class="bot-name"><%= botName %></h1>

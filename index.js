@@ -5,6 +5,9 @@ const fs    = require("fs");
 const path  = require("path");
 const express = require("express");
 
+// Middleware de autenticación
+const { setupSession, setupAuthRoutes, checkAuth, checkOwner, injectUser } = require("./src/middleware/auth");
+
 // Variable para almacenar el cliente de Discord
 let discordClient = null;
 
@@ -230,8 +233,23 @@ function iniciarServidorExpress(client) {
   app.set("view engine", "ejs");
   app.set("views", path.join(__dirname, "views"));
   
-  // Ruta principal - Dashboard
-  app.get("/", (req, res) => {
+  // Middleware para parsing JSON y URL encoded
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  
+  // Configurar sesiones
+  setupSession(app);
+  
+  // Injectar usuario en todas las vistas
+  app.use(injectUser);
+  
+// Rutas de autenticación (públicas)
+  // IMPORTANTE: No añadir /login aquí o causará bucle infinito
+  // setupAuthRoutes ya define /login, /callback, /logout
+  setupAuthRoutes(app);
+  
+  // Ruta principal - Dashboard (PROTEGIDA)
+  app.get("/", checkAuth, checkOwner, (req, res) => {
     // Calcular tiempo activo
     const uptimeSeconds = Math.floor(process.uptime());
     const hours = Math.floor(uptimeSeconds / 3600);
@@ -244,20 +262,22 @@ function iniciarServidorExpress(client) {
       totalUsers += guild.memberCount;
     });
     
-    // Datos para la vista
+    // Datos para la vista (ahora incluye datos del usuario logueado)
     const datos = {
       botName: client.user.username,
       botAvatar: client.user.displayAvatarURL({ format: "png", size: 256 }),
       serverCount: client.guilds.cache.size,
       userCount: totalUsers,
       ping: client.ws.ping,
-      uptime: uptime
+      uptime: uptime,
+      // Datos del usuario desde la sesión
+      user: req.session.user
     };
     
     res.render("dashboard", datos);
   });
   
-  // Ruta de health check (para Pterodactyl)
+  // Ruta de health check (para Pterodactyl) - PÚBLICA
   app.get("/health", (req, res) => {
     res.json({ 
       status: "ok", 
