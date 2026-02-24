@@ -301,7 +301,7 @@ function iniciarServidorExpress(client) {
     res.json(servers);
   });
   
-  // Get settings for a specific server
+// Get settings for a specific server
   app.get("/api/settings/:guildId", checkAuth, checkOwner, async (req, res) => {
     const { guildId } = req.params;
     
@@ -322,6 +322,68 @@ function iniciarServidorExpress(client) {
         },
         settings: s
       });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get channels for a specific server
+  app.get("/api/channels/:guildId", checkAuth, checkOwner, async (req, res) => {
+    const { guildId } = req.params;
+    
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ error: "Servidor no encontrado" });
+    }
+    
+    try {
+      // Fetch all channels to ensure we have the latest data
+      await guild.channels.fetch();
+      
+      // Get text channels and categories
+      const channels = guild.channels.cache
+        .filter(c => c.type === 0 || c.type === 4) // text channels and categories
+        .map(c => ({
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          parentId: c.parentId,
+          position: c.position
+        }))
+        .sort((a, b) => {
+          // Sort by type (categories first) then by position
+          if (a.type !== b.type) return b.type - a.type;
+          return a.position - b.position;
+        });
+      
+      res.json({ channels });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Get roles for a specific server
+  app.get("/api/roles/:guildId", checkAuth, checkOwner, async (req, res) => {
+    const { guildId } = req.params;
+    
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ error: "Servidor no encontrado" });
+    }
+    
+    try {
+      const roles = guild.roles.cache
+        .filter(r => r.id !== guild.id) // Exclude @everyone
+        .map(r => ({
+          id: r.id,
+          name: r.name,
+          color: r.color.hexString ? '#' + r.color.hexString : '#ffffff',
+          position: r.position,
+          managed: r.managed
+        }))
+        .sort((a, b) => b.position - a.position); // Sort by position (highest first)
+      
+      res.json({ roles });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

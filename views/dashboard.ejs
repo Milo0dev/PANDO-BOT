@@ -1249,6 +1249,12 @@
             border: 1px solid var(--card-border);
             border-radius: 12px;
             transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .channel-input-wrapper:hover {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .channel-input-wrapper:focus-within {
@@ -1268,10 +1274,150 @@
             background: transparent;
             border: none;
             padding: 8px 0;
+            cursor: pointer;
         }
 
         .channel-input-wrapper .form-input:focus {
             box-shadow: none;
+        }
+
+        /* Dropdown de Canal */
+        .channel-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 8px;
+            background: #1a1a2e;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .channel-dropdown.open {
+            display: block;
+        }
+
+        .channel-dropdown-header {
+            padding: 10px 16px;
+            font-size: 0.8em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .channel-dropdown-header i {
+            width: auto;
+        }
+
+        .channel-category {
+            padding: 8px 16px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: rgba(114, 137, 218, 0.1);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .channel-option {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .channel-option:last-child {
+            border-bottom: none;
+        }
+
+        .channel-option:hover {
+            background: rgba(114, 137, 218, 0.15);
+        }
+
+        .channel-option.selected {
+            background: rgba(114, 137, 218, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+
+        .channel-option .channel-icon {
+            width: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .channel-option .channel-name {
+            flex: 1;
+            font-size: 0.95em;
+        }
+
+        .channel-option.selected .channel-name {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .channel-option.none {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Selector de Rol */
+        .role-option {
+            padding: 10px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .role-option:last-child {
+            border-bottom: none;
+        }
+
+        .role-option:hover {
+            background: rgba(114, 137, 218, 0.15);
+        }
+
+        .role-option.selected {
+            background: rgba(114, 137, 218, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+
+        .role-option .role-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .role-option .role-name {
+            flex: 1;
+            font-size: 0.95em;
+        }
+
+        .role-option.selected .role-name {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .role-option.none {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .channel-input-relative {
+            position: relative;
         }
 
         /* Pestañas mejoradas */
@@ -2990,6 +3136,126 @@
                 navbar.style.background = 'rgba(15, 15, 26, 0.8)';
             }
         });
+
+        // CANALES Y ROLES INTERACTIVOS
+        let serverChannels = [];
+        let serverRoles = [];
+
+        async function loadServerChannels(guildId) {
+            try {
+                const response = await fetch('/api/channels/' + guildId);
+                const data = await response.json();
+                serverChannels = data.channels || [];
+                const channelDropdowns = ['log_channel_dropdown', 'transcript_channel_dropdown', 'dashboard_channel_dropdown', 'weekly_report_channel_dropdown', 'panel_channel_id_dropdown'];
+                channelDropdowns.forEach(function(dropdownId) {
+                    const dropdown = document.getElementById(dropdownId);
+                    if (!dropdown) return;
+                    const noneOption = dropdown.querySelector('.none');
+                    dropdown.innerHTML = '';
+                    if (noneOption) dropdown.appendChild(noneOption.cloneNode(true));
+                    const categories = {};
+                    const noCategory = [];
+                    serverChannels.forEach(function(channel) {
+                        if (channel.type === 4) categories[channel.id] = { name: channel.name, channels: [] };
+                        else if (channel.parentId && categories[channel.parentId]) categories[channel.parentId].channels.push(channel);
+                        else noCategory.push(channel);
+                    });
+                    Object.values(categories).forEach(function(cat) {
+                        if (cat.channels.length > 0) {
+                            const catHeader = document.createElement('div');
+                            catHeader.className = 'channel-category';
+                            catHeader.innerHTML = '<i class="fas fa-folder"></i> ' + cat.name;
+                            dropdown.appendChild(catHeader);
+                            cat.channels.forEach(function(channel) {
+                                const option = document.createElement('div');
+                                option.className = 'channel-option';
+                                option.dataset.id = channel.id;
+                                option.innerHTML = '<span class="channel-icon"><i class="fas fa-hashtag"></i></span><span class="channel-name">' + channel.name + '</span>';
+                                option.onclick = function() { selectChannel(dropdownId.replace('_dropdown', ''), channel.id, '#' + channel.name); };
+                                dropdown.appendChild(option);
+                            });
+                        }
+                    });
+                    noCategory.forEach(function(channel) {
+                        const option = document.createElement('div');
+                        option.className = 'channel-option';
+                        option.dataset.id = channel.id;
+                        option.innerHTML = '<span class="channel-icon"><i class="fas fa-hashtag"></i></span><span class="channel-name">' + channel.name + '</span>';
+                        option.onclick = function() { selectChannel(dropdownId.replace('_dropdown', ''), channel.id, '#' + channel.name); };
+                        dropdown.appendChild(option);
+                    });
+                });
+            } catch (error) { console.error('Error loading channels:', error); }
+        }
+
+        async function loadServerRoles(guildId) {
+            try {
+                const response = await fetch('/api/roles/' + guildId);
+                const data = await response.json();
+                serverRoles = data.roles || [];
+                const roleDropdowns = ['support_role_dropdown', 'admin_role_dropdown', 'verify_role_dropdown'];
+                roleDropdowns.forEach(function(dropdownId) {
+                    const dropdown = document.getElementById(dropdownId);
+                    if (!dropdown) return;
+                    const noneOption = dropdown.querySelector('.none');
+                    dropdown.innerHTML = '';
+                    if (noneOption) dropdown.appendChild(noneOption.cloneNode(true));
+                    serverRoles.forEach(function(role) {
+                        const option = document.createElement('div');
+                        option.className = 'role-option';
+                        option.dataset.id = role.id;
+                        option.innerHTML = '<span class="role-color" style="background:' + role.color + '"></span><span class="role-name">' + role.name + '</span>';
+                        option.onclick = function() { selectRole(dropdownId.replace('_dropdown', ''), role.id, '@' + role.name); };
+                        dropdown.appendChild(option);
+                    });
+                });
+            } catch (error) { console.error('Error loading roles:', error); }
+        }
+
+        function toggleChannelDropdown(dropdownId) {
+            document.querySelectorAll('.channel-dropdown.open').forEach(function(d) { if (d.id !== dropdownId) d.classList.remove('open'); });
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) dropdown.classList.toggle('open');
+        }
+
+        function toggleRoleDropdown(dropdownId) {
+            document.querySelectorAll('.channel-dropdown.open').forEach(function(d) { if (d.id !== dropdownId) d.classList.remove('open'); });
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) dropdown.classList.toggle('open');
+        }
+
+        function selectChannel(inputId, channelId, channelName) {
+            const input = document.getElementById(inputId);
+            if (input) { input.value = channelId || ''; input.placeholder = channelName || 'Seleccionar canal...'; }
+            const dropdown = document.getElementById(inputId + '_dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('open');
+                dropdown.querySelectorAll('.channel-option').forEach(function(opt) { opt.classList.toggle('selected', opt.dataset.id === channelId); });
+            }
+        }
+
+        function selectRole(inputId, roleId, roleName) {
+            const input = document.getElementById(inputId);
+            if (input) { input.value = roleId || ''; input.placeholder = roleName || 'Seleccionar rol...'; }
+            const dropdown = document.getElementById(inputId + '_dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('open');
+                dropdown.querySelectorAll('.role-option').forEach(function(opt) { opt.classList.toggle('selected', opt.dataset.id === roleId); });
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.channel-input-relative')) {
+                document.querySelectorAll('.channel-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+            }
+        });
+
+        var originalSelectServer = selectServer;
+        selectServer = async function(server) {
+            await originalSelectServer(server);
+            await loadServerChannels(server.id);
+            await loadServerRoles(server.id);
+        };
     </script>
 </body>
 </html>
