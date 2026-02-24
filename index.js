@@ -240,13 +240,15 @@ function iniciarServidorExpress(client) {
   // Configurar sesiones
   setupSession(app);
   
+// Rutas de autenticación (públicas) - DEFINIR ANTES del middleware
+  setupAuthRoutes(app);
+  
   // Injectar usuario en todas las vistas
   app.use(injectUser);
   
-// Rutas de autenticación (públicas)
-  // IMPORTANTE: No añadir /login aquí o causará bucle infinito
-  // setupAuthRoutes ya define /login, /callback, /logout
-  setupAuthRoutes(app);
+  // Middleware de autenticación - se aplica a todas las rutas definidas después
+  // IMPORTANTE: Las rutas /login, /callback, /logout ya están definidas arriba
+  // Por eso funciona correctamente
   
   // Ruta principal - Dashboard (PROTEGIDA)
   app.get("/", checkAuth, checkOwner, (req, res) => {
