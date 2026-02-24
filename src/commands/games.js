@@ -139,20 +139,26 @@ module.exports.ahorcado = {
       
       const opciones1 = letras1.map(letra => {
         const estaUsada = estado.letrasUsadas.has(letra);
-        return new StringSelectMenuOptionBuilder()
+        const option = new StringSelectMenuOptionBuilder()
           .setLabel(letra)
           .setValue(letra)
-          .setEmoji(estaUsada ? "❌" : null)
           .setDefault(estaUsada);
+        if (estaUsada) {
+          option.setEmoji("❌");
+        }
+        return option;
       });
 
       const opciones2 = letras2.map(letra => {
         const estaUsada = estado.letrasUsadas.has(letra);
-        return new StringSelectMenuOptionBuilder()
+        const option = new StringSelectMenuOptionBuilder()
           .setLabel(letra)
           .setValue(letra)
-          .setEmoji(estaUsada ? "❌" : null)
           .setDefault(estaUsada);
+        if (estaUsada) {
+          option.setEmoji("❌");
+        }
+        return option;
       });
 
       const menu1 = new StringSelectMenuBuilder()
