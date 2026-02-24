@@ -138,28 +138,34 @@ module.exports.ttt = {
       esVsBot
     };
 
+    // Función para dibujar el tablero con emojis nice
     const dibujar = () => {
       let msg = "";
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           const idx = i * 3 + j;
           const cell = estado.tablero[idx];
-          msg += cell ? (cell === "X" ? "X" : "O") : ".";
-          msg += " ";
+          // Usamos emojis más atractivos
+          msg += cell ? (cell === "X" ? "🔴" : "🔵") : "⬜";
+          if (j < 2) msg += "│";
         }
         msg += "\n";
+        if (i < 2) msg += "─────┬─────┬─────\n";
       }
-      return msg;
+      // Usar >>> para formato de bloque en Discord
+      return ">>> " + msg;
     };
 
+    // Función para crear botones mejorados
     const crearBotones = () => {
       const botones = [];
       let fila = new ActionRowBuilder();
       for (let i = 0; i < 9; i++) {
         const cell = estado.tablero[i];
+        let emoji = cell ? (cell === "X" ? "🔴" : "🔵") : "➕";
         fila.addComponents(new ButtonBuilder()
           .setCustomId("ttt_" + i)
-          .setLabel(cell ? (cell === "X" ? "X" : "O") : (i + 1).toString())
+          .setLabel(emoji)
           .setStyle(cell === "X" ? ButtonStyle.Danger : cell === "O" ? ButtonStyle.Primary : ButtonStyle.Secondary)
           .setDisabled(cell !== null));
         if ((i + 1) % 3 === 0) { botones.push(fila); fila = new ActionRowBuilder(); }
@@ -167,6 +173,7 @@ module.exports.ttt = {
       return botones;
     };
 
+    // Función para verificar ganador
     const verificar = () => {
       const lineas = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
       for (const [a,b,c] of lineas) {
@@ -175,12 +182,42 @@ module.exports.ttt = {
       return !estado.tablero.includes(null) ? "empate" : null;
     };
 
+    // Movimiento del bot
     const botMove = () => {
       const disponibles = estado.tablero.map((v, i) => v === null ? i : -1).filter(i => i >= 0);
       return disponibles[Math.floor(Math.random() * disponibles.length)];
     };
 
-    const msg = await interaction.reply({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones(), fetchReply: true });
+    // Función para crear el embed con diseño mejorado
+    const crearEmbed = (turnoActual = null) => {
+      const esTurnoX = estado.turno === estado.jugadorX;
+      const nombreTurno = esTurnoX ? `<@${estado.jugadorX}>` : (estado.esVsBot ? "🤖 Bot" : `<@${estado.turno}>`);
+      
+      // Color según el turno
+      const colorTurno = esTurnoX ? 0xED4245 : 0x5865F2;
+      
+      // Info de jugadores
+      const infoJugadores = esVsBot 
+        ? `🔴 **X:** ${interaction.user}\n🔵 **O:** 🤖 Bot`
+        : `🔴 **X:** <@${estado.jugadorX}>\n🔵 **O:** <@${estado.jugadorO}>`;
+
+      const embed = new EmbedBuilder()
+        .setColor(colorTurno)
+        .setTitle("🎮 Tic Tac Toe - 3 en Raya")
+        .setDescription("¡Partido en progreso!")
+        .addFields(
+          { name: "👥 Jugadores", value: infoJugadores, inline: false },
+          { name: "🎯 Turno de", value: nombreTurno, inline: true },
+          { name: "🔢 Ronda", value: `${estado.tablero.filter(c => c !== null).length + 1}/9`, inline: true },
+          { name: "📊 Tablero", value: dibujar(), inline: false }
+        )
+        .setFooter({ text: esVsBot ? "Jugando contra el Bot" : "PvP" })
+        .setTimestamp();
+
+      return embed;
+    };
+
+    const msg = await interaction.reply({ embeds: [crearEmbed()], components: crearBotones(), fetchReply: true });
 
     const filter = i => {
       if (estado.esVsBot) {
@@ -198,26 +235,55 @@ module.exports.ttt = {
       const idx = parseInt(i.customId.replace("ttt_", ""));
       if (estado.tablero[idx] !== null) return;
       
+      // Movimiento del jugador
       estado.tablero[idx] = estado.turno === estado.jugadorX ? "X" : "O";
       let winner = verificar();
       
       if (winner) {
-        await i.update({ embeds: [new EmbedBuilder().setColor(winner === "empate" ? 0xFEE75C : 0x57F287).setTitle(winner === "empate" ? "EMPATE" : winner + " GANA").setDescription(dibujar())], components: [] }).catch(() => {});
+        const colorFinal = winner === "empate" ? 0xFEE75C : (winner === "X" ? 0xED4245 : 0x5865F2);
+        const tituloFinal = winner === "empate" ? "🤝 ¡EMPATE!" : (winner === "X" ? "🔴 ¡X GANA!" : "🔵 ¡O GANA!");
+        const descFinal = winner === "empate" ? "¡El tablero está lleno!" : `¡Felicidades <@${winner === "X" ? estado.jugadorX : estado.jugadorO}>!`;
+        
+        await i.update({ 
+          embeds: [new EmbedBuilder()
+            .setColor(colorFinal)
+            .setTitle(tituloFinal)
+            .setDescription(descFinal)
+            .addFields({ name: "📊 Tablero final", value: dibujar(), inline: false })
+            .setFooter({ text: "Partida terminada" })
+            .setTimestamp()], 
+          components: [] 
+        }).catch(() => {});
         return collector.stop();
       }
 
-    if (esVsBot) {
+      // Turno del bot
+      if (esVsBot) {
         const mov = botMove();
         if (mov !== undefined) estado.tablero[mov] = "O";
         winner = verificar();
         if (winner) {
-          await i.update({ embeds: [new EmbedBuilder().setColor(winner === "empate" ? 0xFEE75C : 0x57F287).setTitle(winner === "empate" ? "EMPATE" : winner + " GANA").setDescription(dibujar())], components: [] }).catch(() => {});
+          const colorFinal = winner === "empate" ? 0xFEE75C : (winner === "X" ? 0xED4245 : 0x5865F2);
+          const tituloFinal = winner === "empate" ? "🤝 ¡EMPATE!" : (winner === "X" ? "🔴 ¡GANASTE!" : "🔵 ¡GANÓ EL BOT!");
+          const descFinal = winner === "X" ? "¡Felicidades! Has ganado." : "¡El bot ha ganado!";
+          
+          await i.update({ 
+            embeds: [new EmbedBuilder()
+              .setColor(colorFinal)
+              .setTitle(tituloFinal)
+              .setDescription(descFinal)
+              .addFields({ name: "📊 Tablero final", value: dibujar(), inline: false })
+              .setFooter({ text: "Partida terminada" })
+              .setTimestamp()], 
+            components: [] 
+          }).catch(() => {});
           return collector.stop();
         }
       }
 
+      // Cambiar turno
       estado.turno = esVsBot ? interaction.user.id : (estado.turno === estado.jugadorX ? estado.jugadorO : estado.jugadorX);
-      await i.update({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones() }).catch(() => {});
+      await i.update({ embeds: [crearEmbed()], components: crearBotones() }).catch(() => {});
     });
   }
 };
