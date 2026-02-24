@@ -3,17 +3,10 @@ const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js"
 const chalk = require("chalk");
 const fs    = require("fs");
 const path  = require("path");
-const http = require('http');
+const express = require("express");
 
-const port = process.env.SERVER_PORT || process.env.PORT || 8080;
-
-// Eliminamos la variable host y usamos '0.0.0.0' directamente
-http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Bot Online\n');
-}).listen(port, '0.0.0.0', () => {
-    console.log(`🟢 Servidor web sincronizado con Holy.gg en el puerto ${port}`);
-});
+// Variable para almacenar el cliente de Discord
+let discordClient = null;
 
 // Debug: Mostrar variables de entorno
 console.log("🔍 Debug - MONGO_URI:", process.env.MONGO_URI ? "✓ Configurada" : "✗ No encontrada");
@@ -45,6 +38,14 @@ async function startBot() {
       GatewayIntentBits.GuildPresences, // ← Necesario para la presencia
     ],
     partials: [Partials.Channel, Partials.Message, Partials.GuildMember],
+  });
+
+  // Guardar el cliente para uso en el servidor web
+  discordClient = client;
+  
+  // Iniciar servidor Express cuando el bot esté listo
+  client.once("ready", () => {
+    iniciarServidorExpress(client);
   });
 
   client.commands = new Collection();
@@ -216,6 +217,60 @@ async function registrarComandos(client) {
   } catch (error) {
     console.error(chalk.red("❌ Error al registrar comandos:"), error.message);
   }
+}
+
+// Función para iniciar el servidor Express con la dashboard
+function iniciarServidorExpress(client) {
+  const app = express();
+  
+  // Puerto dinámico (process.env.PORT para Pterodactyl, o 3000 por defecto)
+  const PORT = process.env.PORT || process.env.SERVER_PORT || 3000;
+  
+  // Configurar EJS como motor de plantillas
+  app.set("view engine", "ejs");
+  app.set("views", path.join(__dirname, "views"));
+  
+  // Ruta principal - Dashboard
+  app.get("/", (req, res) => {
+    // Calcular tiempo activo
+    const uptimeSeconds = Math.floor(process.uptime());
+    const hours = Math.floor(uptimeSeconds / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    const uptime = `${hours}h ${minutes}m`;
+    
+    // Calcular usuarios totales
+    let totalUsers = 0;
+    client.guilds.cache.forEach(guild => {
+      totalUsers += guild.memberCount;
+    });
+    
+    // Datos para la vista
+    const datos = {
+      botName: client.user.username,
+      botAvatar: client.user.displayAvatarURL({ format: "png", size: 256 }),
+      serverCount: client.guilds.cache.size,
+      userCount: totalUsers,
+      ping: client.ws.ping,
+      uptime: uptime
+    };
+    
+    res.render("dashboard", datos);
+  });
+  
+  // Ruta de health check (para Pterodactyl)
+  app.get("/health", (req, res) => {
+    res.json({ 
+      status: "ok", 
+      bot: client.user?.username || "connecting",
+      servers: client.guilds.cache.size
+    });
+  });
+  
+  // Iniciar el servidor
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(chalk.green(`🌐 Servidor web iniciado en puerto ${PORT}`));
+    console.log(chalk.blue(`   📊 Dashboard: http://localhost:${PORT}`));
+  });
 }
 
 // Iniciar el bot

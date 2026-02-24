@@ -69,6 +69,32 @@
 
 ---
 
+## Dashboard Web v1.3
+
+### Características ✓
+- Servidor Express integrado en el mismo proceso que el bot
+- Motor de plantillas EJS para renderizar HTML
+- Puerto dinámico (process.env.PORT para Pterodactyl)
+- Se inicia automáticamente cuando el bot se conecta
+- Muestra información en tiempo real:
+  - Nombre del bot
+  - Avatar del bot
+  - Cantidad de servidores
+  - Usuarios totales
+  - Ping del bot
+  - Tiempo activo
+
+### Archivos Creados/Modificados
+
+| Archivo | Acción |
+|---------|--------|
+| `package.json` | +express, +ejs |
+| `index.js` | +servidor Express + función iniciarServidorExpress |
+| `views/dashboard.ejs` | Nueva plantilla HTML |
+| `TODO.md` | Actualizado |
+
+---
+
 ## Próximas mejoras potenciales
 
 1. Sistema de sugerencias con votación anónima
