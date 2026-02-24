@@ -192,6 +192,9 @@ module.exports.ttt = {
     const collector = msg.createMessageComponentCollector({ filter, time: 60000 });
 
     collector.on("collect", async i => {
+      // Verificar si la interacción ya fue procesada
+      if (i.replied || i.deferred) return;
+      
       const idx = parseInt(i.customId.replace("ttt_", ""));
       if (estado.tablero[idx] !== null) return;
       
@@ -199,24 +202,24 @@ module.exports.ttt = {
       let winner = verificar();
       
       if (winner) {
-        await i.update({ embeds: [new EmbedBuilder().setColor(winner === "empate" ? 0xFEE75C : 0x57F287).setTitle(winner === "empate" ? "EMPATE" : winner + " GANA").setDescription(dibujar())], components: [] });
+        await i.update({ embeds: [new EmbedBuilder().setColor(winner === "empate" ? 0xFEE75C : 0x57F287).setTitle(winner === "empate" ? "EMPATE" : winner + " GANA").setDescription(dibujar())], components: [] }).catch(() => {});
         return collector.stop();
       }
 
       if (esVsBot) {
-        await i.update({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar() + "\nBot pensando...")], components: crearBotones() });
+        await i.update({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar() + "\nBot pensando...")], components: crearBotones() }).catch(() => {});
         await new Promise(r => setTimeout(r, 500));
         const mov = botMove();
         if (mov !== undefined) estado.tablero[mov] = "O";
         winner = verificar();
         if (winner) {
-          await i.update({ embeds: [new EmbedBuilder().setColor(winner === "empate" ? 0xFEE75C : 0x57F287).setTitle(winner === "empate" ? "EMPATE" : winner + " GANA").setDescription(dibujar())], components: [] });
+          await i.update({ embeds: [new EmbedBuilder().setColor(winner === "empate" ? 0xFEE75C : 0x57F287).setTitle(winner === "empate" ? "EMPATE" : winner + " GANA").setDescription(dibujar())], components: [] }).catch(() => {});
           return collector.stop();
         }
       }
 
       estado.turno = esVsBot ? interaction.user.id : (estado.turno === estado.jugadorX ? estado.jugadorO : estado.jugadorX);
-      await i.update({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones() });
+      await i.update({ embeds: [new EmbedBuilder().setColor(0x5865F2).setTitle("TIC TAC TOE").setDescription(dibujar())], components: crearBotones() }).catch(() => {});
     });
   }
 };
