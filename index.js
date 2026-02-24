@@ -146,12 +146,54 @@ async function startBot() {
 `));
   console.log("🔥 BOT ACTUALIZADO - " + new Date().toLocaleTimeString());
 
+  // ── Registrar comandos de slash automáticamente
+  client.once("ready", async () => {
+    await registrarComandos(client);
+  });
+
   // ── Iniciar sesión
   client.login(process.env.DISCORD_TOKEN).catch(err => {
     console.error(chalk.red("\n❌ Error al iniciar:"), err.message);
     console.error(chalk.yellow("💡 Verifica que DISCORD_TOKEN en .env sea correcto.\n"));
     process.exit(1);
   });
+}
+
+// Función para registrar comandos de slash
+async function registrarComandos(client) {
+  try {
+    console.log(chalk.yellow("📝 Registrando comandos de slash..."));
+    
+    const commands = [];
+    
+    // Recoger todos los comandos
+    for (const [name, cmd] of client.commands) {
+      if (cmd.data) {
+        commands.push(cmd.data);
+      }
+    }
+    
+    // Registrar globalmente
+    if (commands.length > 0) {
+      await client.application.commands.set(commands);
+      console.log(chalk.green(`✅ ${commands.length} comandos de slash registrados globalmente`));
+    }
+    
+    // También registrar en cada servidor (para velocidad)
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        await guild.commands.set(commands);
+        console.log(chalk.green(`✅ Comandos registrados en: ${guild.name}`));
+      } catch (err) {
+        console.log(chalk.yellow(`⚠️ No se pudo registrar en ${guild.name}: ${err.message}`));
+      }
+    }
+    
+    console.log(chalk.blue("🎉 Registro de comandos completado!\n"));
+    
+  } catch (error) {
+    console.error(chalk.red("❌ Error al registrar comandos:"), error.message);
+  }
 }
 
 // Iniciar el bot
