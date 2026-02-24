@@ -1986,38 +1986,87 @@
 
                     <!-- Channels Tab -->
                     <div class="config-content active" id="tab-channels">
-                        <div class="config-section">
-                            <h3 class="config-section-title"><i class="fas fa-book"></i> Canales del Sistema</h3>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Canal de Logs</label>
-                                    <small>Canal donde se registrarán los logs de tickets</small>
-                                    <input type="text" class="form-input" id="log_channel" placeholder="ID del canal o #nombre">
+                        <!-- Canal de Logs -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon">
+                                    <i class="fas fa-book"></i>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Canal de Transcripciones</label>
-                                    <small>Canal donde se guardarán las transcripciones</small>
-                                    <input type="text" class="form-input" id="transcript_channel" placeholder="ID del canal o #nombre">
+                                <div>
+                                    <div class="visual-card-title">Canal de Logs</div>
+                                    <div class="visual-card-desc">Registro de actividad del sistema</div>
                                 </div>
                             </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Canal del Dashboard</label>
-                                    <small>Canal para el dashboard en tiempo real</small>
-                                    <input type="text" class="form-input" id="dashboard_channel" placeholder="ID del canal o #nombre">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Canal de Reporte Semanal</label>
-                                    <small>Canal para reportes automáticos semanales</small>
-                                    <input type="text" class="form-input" id="weekly_report_channel" placeholder="ID del canal o #nombre">
-                                </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-hashtag"></i>
+                                <input type="text" class="form-input" id="log_channel" placeholder="ID del canal o #nombre">
                             </div>
+                        </div>
 
-                            <div class="form-group">
-                                <label class="form-label">Canal del Panel de Tickets</label>
-                                <small>Canal donde está el panel de tickets</small>
+                        <!-- Canal de Transcripciones -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon" style="background: rgba(67, 181, 129, 0.15); color: var(--secondary);">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="visual-card-title">Canal de Transcripciones</div>
+                                    <div class="visual-card-desc">Guardar transcripciones de tickets</div>
+                                </div>
+                            </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-hashtag"></i>
+                                <input type="text" class="form-input" id="transcript_channel" placeholder="ID del canal o #nombre">
+                            </div>
+                        </div>
+
+                        <!-- Canal del Dashboard -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon" style="background: rgba(250, 166, 26, 0.15); color: var(--warning);">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div>
+                                    <div class="visual-card-title">Canal del Dashboard</div>
+                                    <div class="visual-card-desc">Dashboard en tiempo real</div>
+                                </div>
+                            </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-hashtag"></i>
+                                <input type="text" class="form-input" id="dashboard_channel" placeholder="ID del canal o #nombre">
+                            </div>
+                        </div>
+
+                        <!-- Canal de Reporte Semanal -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon" style="background: rgba(155, 89, 182, 0.15); color: #9b59b6;">
+                                    <i class="fas fa-calendar-week"></i>
+                                </div>
+                                <div>
+                                    <div class="visual-card-title">Canal de Reporte Semanal</div>
+                                    <div class="visual-card-desc">Reportes automáticos semanales</div>
+                                </div>
+                            </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-hashtag"></i>
+                                <input type="text" class="form-input" id="weekly_report_channel" placeholder="ID del canal o #nombre">
+                            </div>
+                        </div>
+
+                        <!-- Canal del Panel de Tickets -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon" style="background: rgba(114, 137, 218, 0.15); color: var(--primary);">
+                                    <i class="fas fa-ticket-alt"></i>
+                                </div>
+                                <div>
+                                    <div class="visual-card-title">Canal del Panel de Tickets</div>
+                                    <div class="visual-card-desc">Donde está el panel de tickets</div>
+                                </div>
+                            </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-hashtag"></i>
                                 <input type="text" class="form-input" id="panel_channel_id" placeholder="ID del canal o #nombre">
                             </div>
                         </div>
@@ -2025,25 +2074,53 @@
 
                     <!-- Roles Tab -->
                     <div class="config-content" id="tab-roles">
-                        <div class="config-section">
-                            <h3 class="config-section-title"><i class="fas fa-user-shield"></i> Roles de Personal</h3>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Rol de Soporte</label>
-                                    <small>Rol del equipo de soporte</small>
-                                    <input type="text" class="form-input" id="support_role" placeholder="ID del rol o @nombre">
+                        <!-- Rol de Soporte -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon">
+                                    <i class="fas fa-headset"></i>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Rol de Administrador</label>
-                                    <small>Rol de administrador del bot</small>
-                                    <input type="text" class="form-input" id="admin_role" placeholder="ID del rol o @nombre">
+                                <div>
+                                    <div class="visual-card-title">Rol de Soporte</div>
+                                    <div class="visual-card-desc">Equipo de atención al usuario</div>
                                 </div>
                             </div>
-                            
-                            <div class="form-group">
-                                <label class="form-label">Rol de Verificación</label>
-                                <small>Rol mínimo para abrir tickets (0 para desactivar)</small>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-user-tag"></i>
+                                <input type="text" class="form-input" id="support_role" placeholder="ID del rol o @nombre">
+                            </div>
+                        </div>
+
+                        <!-- Rol de Administrador -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon" style="background: rgba(237, 66, 69, 0.15); color: var(--danger);">
+                                    <i class="fas fa-crown"></i>
+                                </div>
+                                <div>
+                                    <div class="visual-card-title">Rol de Administrador</div>
+                                    <div class="visual-card-desc">Control total del bot</div>
+                                </div>
+                            </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-user-tag"></i>
+                                <input type="text" class="form-input" id="admin_role" placeholder="ID del rol o @nombre">
+                            </div>
+                        </div>
+
+                        <!-- Rol de Verificación -->
+                        <div class="visual-card">
+                            <div class="visual-card-header">
+                                <div class="visual-card-icon" style="background: rgba(67, 181, 129, 0.15); color: var(--secondary);">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div>
+                                    <div class="visual-card-title">Rol de Verificación</div>
+                                    <div class="visual-card-desc">Mínimo para abrir tickets (0 = desactivar)</div>
+                                </div>
+                            </div>
+                            <div class="channel-input-wrapper">
+                                <i class="fas fa-user-tag"></i>
                                 <input type="text" class="form-input" id="verify_role" placeholder="ID del rol o @nombre">
                             </div>
                         </div>
