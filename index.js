@@ -1,12 +1,16 @@
 require("dotenv").config();
 const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js");
-const chalk = require("chalk");
-const fs    = require("fs");
-const path  = require("path");
+const chalk   = require("chalk");
+const fs      = require("fs");
+const path    = require("path");
 const express = require("express");
 
 // Middleware de autenticación
 const { setupSession, setupAuthRoutes, checkAuth, checkOwner, injectUser } = require("./src/middleware/auth");
+
+// Handlers de dashboard y música (usados tanto por el bot como por el servidor Express)
+const { startDashboardAutoUpdate, forceUpdateDashboard } = require("./src/handlers/dashboardHandler");
+const { startOrphanCleanup } = require("./src/handlers/musicHandler");
 
 // Variable para almacenar el cliente de Discord
 let discordClient = null;
@@ -117,10 +121,6 @@ async function startBot() {
     }
   }
 
-  // ── Iniciar sistemas de auto-actualización
-  const { startDashboardAutoUpdate, forceUpdateDashboard } = require("./src/handlers/dashboardHandler");
-  const { startOrphanCleanup } = require("./src/handlers/musicHandler");
-  
   // Dashboard auto-update (cada 30 segundos)
   startDashboardAutoUpdate(client);
   
