@@ -226,8 +226,8 @@ async function registrarComandos(client) {
 function iniciarServidorExpress(client) {
   const app = express();
   
-  // Puerto dinámico (process.env.PORT para Pterodactyl, fallback 19318)
-  const PORT = process.env.PORT || 19318;
+  // Puerto dinámico (process.env.SERVER_PORT para Pterodactyl, fallback 19318)
+  const PORT = process.env.SERVER_PORT || process.env.PORT || 19318;
   
   // Configurar EJS como motor de plantillas
   app.set("view engine", "ejs");
