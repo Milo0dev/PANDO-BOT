@@ -1443,244 +1443,57 @@
         }
 
         /* ===== DISCORD CHANNEL WRAPPER - UNIQUE CLASSES ===== */
-        .discord-channel-wrapper {
-            position: relative;
+        /* ===== NUEVO DISEÑO - DISCORD UI DROPDOWN ESTÁNDAR ===== */
+        
+        /* Contenedor principal relativo */
+        .discord-ui-dropdown-container {
+            position: relative !important;
             width: 100%;
             max-width: 400px;
         }
 
-        /* Botón trigger del dropdown */
-        .discord-channel-trigger {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            min-height: 46px;
-        }
-
-        .discord-channel-trigger:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: var(--primary);
-        }
-
-        .discord-channel-trigger .dropdown-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .discord-channel-trigger .dropdown-label i {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(114, 137, 218, 0.15);
-            border-radius: 6px;
-            color: var(--primary);
-            font-size: 0.85em;
-        }
-
-        .discord-channel-trigger .dropdown-value {
-            color: var(--text-primary);
-            font-weight: 500;
-            font-size: 0.95em;
-        }
-
-        .discord-channel-trigger .dropdown-value.placeholder {
-            color: var(--text-muted);
-        }
-
-        .discord-channel-trigger .dropdown-chevron {
-            color: var(--text-secondary);
-            font-size: 0.8em;
-            transition: transform 0.2s ease;
-        }
-
-        .discord-channel-wrapper.open .discord-channel-trigger {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(114, 137, 218, 0.15);
-        }
-
-        .discord-channel-wrapper.open .dropdown-chevron {
-            transform: rotate(180deg);
-            color: var(--primary);
-        }
-
-        /* El menú desplegable (Fondo oscuro sólido garantizado) */
-        .discord-channel-menu {
-            position: absolute;
-            top: calc(100% + 5px);
-            left: 0;
-            width: 100%;
-            background-color: #2b2d31 !important;
-            border: 1px solid #1e1f22;
-            border-radius: 8px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.8);
-            z-index: 99999;
-            max-height: 250px;
-            overflow-y: auto;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
-        }
-
-        /* Clase que se activará con JavaScript */
-        .discord-channel-wrapper.open .discord-channel-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        /* Categorías */
-        .discord-channel-header {
-            padding: 10px 14px;
-            font-size: 0.75em;
-            font-weight: 600;
-            color: #949ba4;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #1e1f22;
-            background: #2b2d31;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            position: sticky;
-            top: 0;
-        }
-
-        .discord-channel-header i {
-            width: auto;
-            color: var(--primary);
-        }
-
-        .discord-channel-category {
-            padding: 8px 14px 6px;
-            font-size: 0.75em;
-            font-weight: 600;
-            color: #949ba4;
-            background: transparent;
-            border-bottom: 1px solid #1e1f22;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: default;
-            pointer-events: none;
-            user-select: none;
-        }
-
-        .discord-channel-category i {
-            color: #faa61a;
-        }
-
-        /* Opciones */
-        .discord-channel-option {
-            padding: 10px 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: background-color 0.15s ease;
-            border-bottom: 1px solid transparent;
-        }
-
-        .discord-channel-option:last-child {
-            border-bottom: none;
-        }
-
-        .discord-channel-option:hover {
-            background-color: #3f4147;
-        }
-
-        .discord-channel-option.selected {
-            background-color: #3f4147;
-            border-left: 3px solid var(--primary);
-        }
-
-        .discord-channel-option .option-icon {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            border-radius: 4px;
-            color: #949ba4;
-            font-size: 0.8em;
-            flex-shrink: 0;
-        }
-
-        .discord-channel-option.selected .option-icon {
-            background: transparent;
-            color: var(--primary);
-        }
-
-        .discord-channel-option .option-name {
-            flex: 1;
-            font-size: 0.9em;
+        /* El botón gatillo */
+        .discord-ui-dropdown-trigger {
+            background-color: #1e1f22;
             color: #dbdee1;
-        }
-
-        .discord-channel-option.selected .option-name {
-            color: var(--primary);
-            font-weight: 500;
-        }
-
-        .discord-channel-option.none {
-            color: #949ba4;
-            font-style: italic;
-        }
-
-        /* Scrollbar style for dropdown */
-        .discord-channel-menu::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .discord-channel-menu::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .discord-channel-menu::-webkit-scrollbar-thumb {
-            background: #1a1b1e;
+            padding: 10px;
             border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #2b2d31;
         }
 
-        .discord-channel-menu::-webkit-scrollbar-thumb:hover {
-            background: #111214;
+        /* EL MENÚ FLOTANTE - ESTO ES LO CRÍTICO */
+        .discord-ui-dropdown-menu {
+            /* Estado CERRADO por defecto: */
+            display: none !important; 
+
+            /* Posicionamiento y estilo: */
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            width: 100% !important;
+            max-height: 250px !important;
+            overflow-y: auto !important;
+            background-color: #2b2d31 !important;
+            border: 1px solid #1e1f22 !important;
+            border-radius: 0 0 4px 4px !important;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.9) !important;
+            z-index: 999999 !important;
+            margin-top: 2px;
         }
 
-        /* Custom dropdown for roles */
-        .discord-channel-option .role-color-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 3px;
-            flex-shrink: 0;
+        /* Clase ACTIVADORA para mostrar el menú */
+        .discord-ui-dropdown-container.is-open .discord-ui-dropdown-menu {
+            display: block !important;
         }
 
-        /* Scrollbar for custom dropdown */
-        .discord-channel-menu::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .discord-channel-menu::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .discord-channel-menu::-webkit-scrollbar-thumb {
-            background: var(--card-border);
-            border-radius: 3px;
-        }
-
-        .discord-channel-menu::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
-        }
+        /* Estilos de opciones */
+        .discord-ui-option { padding: 8px 12px; cursor: pointer; color: #dbdee1; }
+        .discord-ui-option:hover { background-color: #404249 !important; }
+        .discord-ui-category { padding: 8px 12px; font-size: 0.85em; color: #949ba4; font-weight: bold; text-transform: uppercase; pointer-events: none; }
 
         /* Selector de Rol */
         .role-option {
@@ -2455,24 +2268,12 @@
                                     <div class="visual-card-desc">Registro de actividad del sistema</div>
                                 </div>
                             </div>
-                            <div class="discord-channel-wrapper" id="log_channel_dropdown">
-                                <div class="discord-channel-trigger" onclick="toggleCustomDropdown('log_channel_dropdown', event)">
-                                    <span class="dropdown-label">
-                                        <i class="fas fa-hashtag"></i>
-                                        <span class="dropdown-value placeholder" id="log_channel_display">Seleccionar canal...</span>
-                                    </span>
-                                    <span class="dropdown-chevron"><i class="fas fa-chevron-down"></i></span>
+                            <div class="discord-ui-dropdown-container" id="log_channel_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('log_channel_dropdown', event)">
+                                    <span id="log_channel_display">Seleccionar canal...</span>
+                                    <span>▼</span>
                                 </div>
-                                <div class="discord-channel-menu">
-                                    <div class="discord-channel-header">
-                                        <i class="fas fa-list"></i>
-                                        Canales de texto
-                                    </div>
-                                    <div class="discord-channel-option none" onclick="selectCustomChannel('log_channel', '', 'Seleccionar canal...')">
-                                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
-                                        <span class="option-name">Ninguno</span>
-                                    </div>
-                                </div>
+                                <div class="discord-ui-dropdown-menu" id="log_channel_menu"></div>
                                 <input type="hidden" id="log_channel" value="">
                             </div>
                         </div>
@@ -2488,24 +2289,12 @@
                                     <div class="visual-card-desc">Guardar transcripciones de tickets</div>
                                 </div>
                             </div>
-                            <div class="discord-channel-wrapper" id="transcript_channel_dropdown">
-                                <div class="discord-channel-trigger" onclick="toggleCustomDropdown('transcript_channel_dropdown', event)">
-                                    <span class="dropdown-label">
-                                        <i class="fas fa-hashtag"></i>
-                                        <span class="dropdown-value placeholder" id="transcript_channel_display">Seleccionar canal...</span>
-                                    </span>
-                                    <span class="dropdown-chevron"><i class="fas fa-chevron-down"></i></span>
+                            <div class="discord-ui-dropdown-container" id="transcript_channel_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('transcript_channel_dropdown', event)">
+                                    <span id="transcript_channel_display">Seleccionar canal...</span>
+                                    <span>▼</span>
                                 </div>
-                                <div class="discord-channel-menu">
-                                    <div class="discord-channel-header">
-                                        <i class="fas fa-list"></i>
-                                        Canales de texto
-                                    </div>
-                                    <div class="discord-channel-option none" onclick="selectCustomChannel('transcript_channel', '', 'Seleccionar canal...')">
-                                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
-                                        <span class="option-name">Ninguno</span>
-                                    </div>
-                                </div>
+                                <div class="discord-ui-dropdown-menu" id="transcript_channel_menu"></div>
                                 <input type="hidden" id="transcript_channel" value="">
                             </div>
                         </div>
@@ -2521,24 +2310,12 @@
                                     <div class="visual-card-desc">Dashboard en tiempo real</div>
                                 </div>
                             </div>
-                            <div class="discord-channel-wrapper" id="dashboard_channel_dropdown">
-                                <div class="discord-channel-trigger" onclick="toggleCustomDropdown('dashboard_channel_dropdown', event)">
-                                    <span class="dropdown-label">
-                                        <i class="fas fa-hashtag"></i>
-                                        <span class="dropdown-value placeholder" id="dashboard_channel_display">Seleccionar canal...</span>
-                                    </span>
-                                    <span class="dropdown-chevron"><i class="fas fa-chevron-down"></i></span>
+                            <div class="discord-ui-dropdown-container" id="dashboard_channel_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('dashboard_channel_dropdown', event)">
+                                    <span id="dashboard_channel_display">Seleccionar canal...</span>
+                                    <span>▼</span>
                                 </div>
-                                <div class="discord-channel-menu">
-                                    <div class="discord-channel-header">
-                                        <i class="fas fa-list"></i>
-                                        Canales de texto
-                                    </div>
-                                    <div class="discord-channel-option none" onclick="selectCustomChannel('dashboard_channel', '', 'Seleccionar canal...')">
-                                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
-                                        <span class="option-name">Ninguno</span>
-                                    </div>
-                                </div>
+                                <div class="discord-ui-dropdown-menu" id="dashboard_channel_menu"></div>
                                 <input type="hidden" id="dashboard_channel" value="">
                             </div>
                         </div>
@@ -2554,24 +2331,12 @@
                                     <div class="visual-card-desc">Reportes automáticos semanales</div>
                                 </div>
                             </div>
-                            <div class="discord-channel-wrapper" id="weekly_report_channel_dropdown">
-                                <div class="discord-channel-trigger" onclick="toggleCustomDropdown('weekly_report_channel_dropdown', event)">
-                                    <span class="dropdown-label">
-                                        <i class="fas fa-hashtag"></i>
-                                        <span class="dropdown-value placeholder" id="weekly_report_channel_display">Seleccionar canal...</span>
-                                    </span>
-                                    <span class="dropdown-chevron"><i class="fas fa-chevron-down"></i></span>
+                            <div class="discord-ui-dropdown-container" id="weekly_report_channel_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('weekly_report_channel_dropdown', event)">
+                                    <span id="weekly_report_channel_display">Seleccionar canal...</span>
+                                    <span>▼</span>
                                 </div>
-                                <div class="discord-channel-menu">
-                                    <div class="discord-channel-header">
-                                        <i class="fas fa-list"></i>
-                                        Canales de texto
-                                    </div>
-                                    <div class="discord-channel-option none" onclick="selectCustomChannel('weekly_report_channel', '', 'Seleccionar canal...')">
-                                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
-                                        <span class="option-name">Ninguno</span>
-                                    </div>
-                                </div>
+                                <div class="discord-ui-dropdown-menu" id="weekly_report_channel_menu"></div>
                                 <input type="hidden" id="weekly_report_channel" value="">
                             </div>
                         </div>
@@ -2587,24 +2352,12 @@
                                     <div class="visual-card-desc">Donde está el panel de tickets</div>
                                 </div>
                             </div>
-                            <div class="discord-channel-wrapper" id="panel_channel_id_dropdown">
-                                <div class="discord-channel-trigger" onclick="toggleCustomDropdown('panel_channel_id_dropdown', event)">
-                                    <span class="dropdown-label">
-                                        <i class="fas fa-hashtag"></i>
-                                        <span class="dropdown-value placeholder" id="panel_channel_id_display">Seleccionar canal...</span>
-                                    </span>
-                                    <span class="dropdown-chevron"><i class="fas fa-chevron-down"></i></span>
+                            <div class="discord-ui-dropdown-container" id="panel_channel_id_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('panel_channel_id_dropdown', event)">
+                                    <span id="panel_channel_id_display">Seleccionar canal...</span>
+                                    <span>▼</span>
                                 </div>
-                                <div class="discord-channel-menu">
-                                    <div class="discord-channel-header">
-                                        <i class="fas fa-list"></i>
-                                        Canales de texto
-                                    </div>
-                                    <div class="discord-channel-option none" onclick="selectCustomChannel('panel_channel_id', '', 'Seleccionar canal...')">
-                                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
-                                        <span class="option-name">Ninguno</span>
-                                    </div>
-                                </div>
+                                <div class="discord-ui-dropdown-menu" id="panel_channel_id_menu"></div>
                                 <input type="hidden" id="panel_channel_id" value="">
                             </div>
                         </div>
@@ -3530,234 +3283,206 @@
             }
         });
 
-        // Canales y roles ahora se cargan mediante loadCustomChannelDropdowns
+        // ===== NUEVO SISTEMA DE DROPDOWNS DISCORD UI - IMPLEMENTACIÓN DEFINITIVA =====
 
-        // ===== CUSTOM CHANNEL DROPDOWN FUNCTIONS =====
-        // Función para abrir/cerrar dropdowns con clase .open (patrón limpio)
-        function setupDropdownToggles() {
-            document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
-                const button = wrapper.querySelector('.custom-dropdown-trigger');
-                if (!button) return;
-                
-                button.onclick = function(e) {
-                    e.stopPropagation();
-                    // Cerrar cualquier otro menú abierto
-                    document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
-                        if (w !== wrapper) w.classList.remove('open');
-                    });
-                    // Abrir/Cerrar el actual
-                    wrapper.classList.toggle('open');
-                };
+        // Almacenar datos de canales globalmente para uso en los dropdowns
+        let discordChannelsData = [];
+
+        // Función PRINCIPAL para renderizar el dropdown de canales
+        function renderDiscordChannelDropdown(containerId, channels, selectedChannelId) {
+            const containerTarget = document.getElementById(containerId);
+            if (!containerTarget) return;
+            
+            // Limpiar contenedor base
+            containerTarget.innerHTML = '';
+
+            // 1. Crear ESTRUCTURA
+            const wrapper = document.createElement('div');
+            wrapper.className = 'discord-ui-dropdown-container';
+
+            const trigger = document.createElement('div');
+            trigger.className = 'discord-ui-dropdown-trigger';
+            
+            // Determinar texto inicial basado en valor seleccionado
+            let initialText = 'Seleccionar canal...';
+            if (selectedChannelId) {
+                const selectedChannel = channels.find(c => c.id === selectedChannelId);
+                initialText = selectedChannel ? `#${selectedChannel.name}` : '# Canal Seleccionado';
+            }
+            
+            trigger.innerHTML = `<span>${initialText}</span> <span>▼</span>`;
+
+            const menu = document.createElement('div');
+            menu.className = 'discord-ui-dropdown-menu';
+
+            // 2. Llenar el menú con canales agrupados por categoría
+            let menuHTML = '';
+            
+            // Opción "Ninguno" primero
+            menuHTML += `<div class="discord-ui-option" data-channel-id="">`;
+            menuHTML += `<i class="fas fa-times-circle" style="margin-right: 8px;"></i> Ninguno`;
+            menuHTML += `</div>`;
+
+            // Agrupar canales por categoría
+            const categories = {};
+            let noCategory = [];
+
+            channels.forEach(channel => {
+                if (channel.type === 0) { // Text channel
+                    if (channel.parentId && categories[channel.parentId]) {
+                        categories[channel.parentId].push(channel);
+                    } else {
+                        noCategory.push(channel);
+                    }
+                } else if (channel.type === 4) { // Category
+                    categories[channel.id] = [];
+                }
             });
-        }
 
-        // Cerrar al hacer clic fuera del menú
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.custom-select-wrapper')) {
-                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
-                    w.classList.remove('open');
+            // Añadir canales categorizados
+            Object.keys(categories).forEach(catId => {
+                const catChannels = categories[catId];
+                if (catChannels.length > 0) {
+                    const cat = channels.find(c => c.id === catId);
+                    const catName = cat ? cat.name : 'Categoría';
+
+                    menuHTML += `<div class="discord-ui-category">📁 ${catName}</div>`;
+
+                    catChannels.forEach(channel => {
+                        const isSelected = selectedChannelId === channel.id;
+                        menuHTML += `<div class="discord-ui-option${isSelected ? ' selected' : ''}" data-channel-id="${channel.id}">`;
+                        menuHTML += `<i class="fas fa-hashtag" style="margin-right: 8px; opacity: 0.6;"></i> ${channel.name}`;
+                        menuHTML += `</div>`;
+                    });
+                }
+            });
+
+            // Añadir canales sin categoría
+            if (noCategory.length > 0) {
+                menuHTML += `<div class="discord-ui-category">📋 Canales</div>`;
+
+                noCategory.forEach(channel => {
+                    const isSelected = selectedChannelId === channel.id;
+                    menuHTML += `<div class="discord-ui-option${isSelected ? ' selected' : ''}" data-channel-id="${channel.id}">`;
+                    menuHTML += `<i class="fas fa-hashtag" style="margin-right: 8px; opacity: 0.6;"></i> ${channel.name}`;
+                    menuHTML += `</div>`;
                 });
             }
-        });
 
-async function loadCustomChannelDropdowns(guildId) {
+            menu.innerHTML = menuHTML;
+
+            // 3. Lógica del Toggle (SIMPLE Y AISLADA)
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Cerrar otros si los hubiera
+                document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
+                    if (el !== wrapper) el.classList.remove('is-open');
+                });
+                wrapper.classList.toggle('is-open');
+            });
+
+            // 4. Lógica de selección de opción
+            menu.addEventListener('click', (e) => {
+                const option = e.target.closest('.discord-ui-option');
+                if (option && !option.classList.contains('discord-ui-category')) {
+                    const channelId = option.dataset.channelId;
+                    const channelName = option.textContent.trim();
+                    
+                    // Actualizar el display
+                    trigger.innerHTML = `<span>${channelName}</span> <span>▼</span>`;
+                    
+                    // Actualizar el input hidden
+                    const hiddenInput = containerTarget.querySelector('input[type="hidden"]');
+                    if (hiddenInput) {
+                        hiddenInput.value = channelId || '';
+                    }
+                    
+                    // Cerrar el menú
+                    wrapper.classList.remove('is-open');
+                }
+            });
+
+            // 5. Ensamblar (CRUCIAL: trigger y menu DENTRO del wrapper)
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(menu);
+            containerTarget.appendChild(wrapper);
+        }
+
+        // Función para cargar canales y renderizar TODOS los dropdowns
+        async function loadAndRenderChannelDropdowns(guildId, savedSettings) {
             try {
                 const response = await fetch('/api/channels/' + guildId);
                 const data = await response.json();
-                const channels = data.channels || [];
+                discordChannelsData = data.channels || [];
 
-                // Map of dropdown IDs to their corresponding input and display IDs
-                const dropdownMappings = {
-                    'log_channel_dropdown': { input: 'log_channel', display: 'log_channel_display' },
-                    'transcript_channel_dropdown': { input: 'transcript_channel', display: 'transcript_channel_display' },
-                    'dashboard_channel_dropdown': { input: 'dashboard_channel', display: 'dashboard_channel_display' },
-                    'weekly_report_channel_dropdown': { input: 'weekly_report_channel', display: 'weekly_report_channel_display' },
-                    'panel_channel_id_dropdown': { input: 'panel_channel_id', display: 'panel_channel_id_display' }
-                };
-
-                Object.keys(dropdownMappings).forEach(dropdownId => {
-                    const dropdown = document.getElementById(dropdownId);
-                    if (!dropdown) return;
-
-                    const config = dropdownMappings[dropdownId];
-
-                    // Find the EXISTING .discord-channel-menu element (DO NOT create a new one)
-                    const menu = dropdown.querySelector('.discord-channel-menu');
-                    if (!menu) {
-                        console.error('Menu container not found for:', dropdownId);
-                        return;
+                // Configuración de cada dropdown
+                const dropdownConfigs = [
+                    { 
+                        containerId: 'log_channel_dropdown', 
+                        inputId: 'log_channel', 
+                        settingKey: 'log_channel' 
+                    },
+                    { 
+                        containerId: 'transcript_channel_dropdown', 
+                        inputId: 'transcript_channel', 
+                        settingKey: 'transcript_channel' 
+                    },
+                    { 
+                        containerId: 'dashboard_channel_dropdown', 
+                        inputId: 'dashboard_channel', 
+                        settingKey: 'dashboard_channel' 
+                    },
+                    { 
+                        containerId: 'weekly_report_channel_dropdown', 
+                        inputId: 'weekly_report_channel', 
+                        settingKey: 'weekly_report_channel' 
+                    },
+                    { 
+                        containerId: 'panel_channel_id_dropdown', 
+                        inputId: 'panel_channel_id', 
+                        settingKey: 'panel_channel_id' 
                     }
+                ];
 
-                    // Clear existing options (keep the header if present)
-                    const existingHeader = menu.querySelector('.discord-channel-header');
-                    menu.innerHTML = '';
-                    if (existingHeader) {
-                        menu.appendChild(existingHeader);
-                    }
-
-                    // Add "Ninguno" option to the menu
-                    const noneOption = document.createElement('div');
-                    noneOption.className = 'discord-channel-option none';
-                    noneOption.onclick = (e) => {
-                        e.stopPropagation();
-                        selectCustomChannel(config.input, '', 'Seleccionar canal...');
-                    };
-                    noneOption.innerHTML = `
-                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
-                        <span class="option-name">Ninguno</span>
-                    `;
-                    menu.appendChild(noneOption);
-
-                    // Group channels by categories
-                    const categories = {};
-                    const noCategory = [];
-
-                    channels.forEach(channel => {
-                        if (channel.type === 0) { // Only text channels
-                            if (channel.parentId && categories[channel.parentId]) {
-                                categories[channel.parentId].channels.push(channel);
-                            } else {
-                                noCategory.push(channel);
-                            }
-                        } else if (channel.type === 4) { // Category
-                            categories[channel.id] = { name: channel.name, channels: [] };
-                        }
-                    });
-
-                    // Add categorized channels
-                    Object.values(categories).forEach(cat => {
-                        if (cat.channels.length > 0) {
-                            // Add category header
-                            const catHeader = document.createElement('div');
-                            catHeader.className = 'discord-channel-category';
-                            catHeader.innerHTML = '<i class="fas fa-folder"></i> ' + cat.name;
-                            menu.appendChild(catHeader);
-
-                            // Add channels in this category
-                            cat.channels.forEach(channel => {
-                                const option = document.createElement('div');
-                                option.className = 'discord-channel-option';
-                                option.onclick = (e) => {
-                                    e.stopPropagation();
-                                    selectCustomChannel(config.input, channel.id, '#' + channel.name);
-                                };
-                                option.innerHTML = `
-                                    <span class="option-icon"><i class="fas fa-hashtag"></i></span>
-                                    <span class="option-name">${channel.name}</span>
-                                `;
-                                menu.appendChild(option);
-                            });
-                        }
-                    });
-
-                    // Add uncategorized channels
-                    if (noCategory.length > 0) {
-                        // Add a category header for uncategorized channels
-                        const uncatHeader = document.createElement('div');
-                        uncatHeader.className = 'discord-channel-category';
-                        uncatHeader.innerHTML = '<i class="fas fa-folder"></i> Canales';
-                        menu.appendChild(uncatHeader);
-
-                        noCategory.forEach(channel => {
-                            const option = document.createElement('div');
-                            option.className = 'discord-channel-option';
-                            option.onclick = (e) => {
-                                e.stopPropagation();
-                                selectCustomChannel(config.input, channel.id, '#' + channel.name);
-                            };
-                            option.innerHTML = `
-                                <span class="option-icon"><i class="fas fa-hashtag"></i></span>
-                                <span class="option-name">${channel.name}</span>
-                            `;
-                            menu.appendChild(option);
-                        });
-                    }
+                dropdownConfigs.forEach(config => {
+                    const savedValue = savedSettings ? savedSettings[config.settingKey] : '';
+                    renderDiscordChannelDropdown(config.containerId, discordChannelsData, savedValue);
                 });
+
             } catch (error) {
-                console.error('Error loading custom channel dropdowns:', error);
+                console.error('Error loading channel dropdowns:', error);
             }
         }
 
-        function toggleCustomDropdown(dropdownId, event) {
-            // Prevent event propagation if provided
-            if (event) {
-                event.stopPropagation();
+        // Listener global para cerrar al hacer clic fuera
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
+                el.classList.remove('is-open');
+            });
+        });
+
+        // Override de loadSettings para usar el nuevo sistema de dropdowns
+        const originalLoadSettings3 = loadSettings;
+        loadSettings = async function(guildId) {
+            // Guardar los settings antes de llamar al original
+            let currentSettings = {};
+            
+            // Cargar settings primero
+            try {
+                const response = await fetch(`/api/settings/${guildId}`);
+                const data = await response.json();
+                if (data.settings) {
+                    currentSettings = data.settings;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
             }
             
-            const dropdown = document.getElementById(dropdownId);
-            if (!dropdown) return;
-
-            // Close other custom dropdowns (usando la clase .open del CSS)
-            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
-                if (w.id !== dropdownId) {
-                    w.classList.remove('open');
-                }
-            });
-
-            // Toggle the clicked dropdown usando la clase .open
-            dropdown.classList.toggle('open');
-        }
-
-        function selectCustomChannel(inputId, channelId, channelName) {
-            const input = document.getElementById(inputId);
-            const display = document.getElementById(inputId + '_display');
-            const dropdown = document.getElementById(inputId + '_dropdown');
-
-            if (input) input.value = channelId || '';
-            if (display) {
-                display.textContent = channelName || 'Seleccionar canal...';
-                display.classList.toggle('placeholder', !channelId);
-            }
-
-            // Close dropdown usando la clase .open
-            if (dropdown) {
-                dropdown.classList.remove('open');
-            }
-
-            // Update selected state
-            if (dropdown) {
-                const options = dropdown.querySelectorAll('.custom-dropdown-option');
-                options.forEach(opt => opt.classList.remove('selected'));
-                if (channelId) {
-                    options.forEach(opt => {
-                        if (opt.onclick && opt.onclick.toString().includes(channelId)) {
-                            opt.classList.add('selected');
-                        }
-                    });
-                } else {
-                    // Select "Ninguno" option
-                    const noneOption = dropdown.querySelector('.none');
-                    if (noneOption) noneOption.classList.add('selected');
-                }
-            }
-        }
-
-        // Initialize custom dropdowns with saved values
-        function initCustomDropdowns() {
-            const dropdownMappings = {
-                'log_channel': 'log_channel_display',
-                'transcript_channel': 'transcript_channel_display',
-                'dashboard_channel': 'dashboard_channel_display',
-                'weekly_report_channel': 'weekly_report_channel_display',
-                'panel_channel_id': 'panel_channel_id_display'
-            };
-
-            Object.entries(dropdownMappings).forEach(([inputId, displayId]) => {
-                const input = document.getElementById(inputId);
-                const display = document.getElementById(displayId);
-
-                if (input && display && input.value) {
-                    display.textContent = input.value;
-                    display.classList.remove('placeholder');
-                }
-            });
-        }
-
-        // Update loadSettings to initialize custom dropdowns
-        const originalLoadSettings2 = loadSettings;
-        loadSettings = async function(guildId) {
-            await originalLoadSettings2(guildId);
-            initCustomDropdowns();
+            // Llamar al original
+            await originalLoadSettings3(guildId);
+            
+            // Después de cargar settings, renderizar los dropdowns con los datos reales
+            await loadAndRenderChannelDropdowns(guildId, currentSettings);
         };
     </script>
 </body>
