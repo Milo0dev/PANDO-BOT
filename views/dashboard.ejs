@@ -1062,7 +1062,7 @@
         .pando-setting-card:has(.discord-ui-dropdown-container.is-open),
         .visual-card:has(.visual-select.open),
         .pando-setting-card:has(.visual-select.open) {
-            z-index: 999999 !important; 
+            z-index: 900000 !important; 
             position: relative !important;
             transform: translateY(-2px) !important;
             border-color: rgba(88, 101, 242, 0.4) !important;
@@ -1082,7 +1082,7 @@
         li:has(.pando-setting-card:has(.visual-select.open)),
         article:has(.visual-card:has(.visual-select.open)),
         article:has(.pando-setting-card:has(.visual-select.open)) {
-            z-index: 999999 !important;
+            z-index: 899000 !important;
             position: relative !important;
         }
 
@@ -1171,7 +1171,7 @@
             max-height: 250px;
             overflow-y: auto;
             display: none;
-            z-index: 9999999;
+            z-index: 900100;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
 
@@ -1529,7 +1529,7 @@
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
             box-sizing: border-box !important;
             padding: 6px 0 !important;
-            z-index: 999999 !important;
+            z-index: 900100 !important;
         }
 
         /* 2. Opciones (Base para la animación) */
@@ -2061,7 +2061,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
 
         /* 1. ELEVACIÓN MASIVA: Todo contenedor que tenga un menú abierto adentro sube al máximo nivel, rompiendo la celda del Grid */
         div:has(.discord-ui-dropdown-container.is-open) {
-            z-index: 999999 !important;
+            z-index: 899000 !important;
         }
 
         /* 2. EL BLOQUEO GLOBAL: Si hay CUALQUIER menú abierto en el body, las DEMÁS tarjetas se vuelven invisibles para el ratón */
@@ -2121,7 +2121,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
 
         /* 4. ASEGURA z-index INSTANTÁNEO: Prioridad absoluta para menús abiertos */
         .discord-ui-dropdown-container.is-open {
-            z-index: 999999 !important;
+            z-index: 900000 !important;
         }
 
         /* ==================== BLOQUEO TOTAL ANTI-FLICKER ==================== */
@@ -2133,7 +2133,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             transform: translateY(-2px) !important; /* La mantiene elevada de forma fija e inamovible */
             border-color: rgba(88, 101, 242, 0.4) !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
-            z-index: 999999 !important;
+            z-index: 900000 !important;
         }
 
         /* 1b. CONGELAR LA TARJETA ACTIVA para visual-card también */
@@ -2142,19 +2142,19 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             transform: translateY(-2px) !important; /* La mantiene elevada de forma fija e inamovible */
             border-color: rgba(88, 101, 242, 0.4) !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
-            z-index: 999999 !important;
+            z-index: 900000 !important;
         }
 
         /* 2. CONGELAR LA CELDA DEL GRID PADRE */
         div:has(.discord-ui-dropdown-container.is-open) {
             transition: none !important; /* evita que el contenedor intente animarse */
-            z-index: 999999 !important;
+            z-index: 899000 !important;
             position: relative !important;
         }
 
-        /* 3. ASEGURAR EL MENÚ FLOTANTE AL MÁXIMO NIVEL */
+        /* 3. ASEGURAR EL MENÚ FLOTANTE AL MÁXIMO NIVEL (dentro del área de contenido, pero por debajo de la navbar) */
         .discord-ui-dropdown-menu {
-            z-index: 9999999 !important; /* Añadimos un 9 extra para garantizar que venza a su propia tarjeta */
+            z-index: 900100 !important;
         }
 
         /* ==================== CORRECCIÓN ADICIONAL: ANTI-UNHOVER GLITCH ==================== */
@@ -2168,13 +2168,13 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             transform: translateY(-2px) !important;
             border-color: rgba(88, 101, 242, 0.4) !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
-            z-index: 999999 !important;
+            z-index: 900000 !important;
         }
 
         /* 5. La regla de BLOQUEO GLOBAL debe respetar la tarjeta activa - NO aplicar z-index: 0 */
         body:has(.discord-ui-dropdown-container.is-open) .pando-setting-card:has(.discord-ui-dropdown-container.is-open),
         body:has(.discord-ui-dropdown-container.is-open) .visual-card:has(.discord-ui-dropdown-container.is-open) {
-            z-index: 999999 !important;
+            z-index: 900000 !important;
             pointer-events: auto !important;
             transform: translateY(-2px) !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
