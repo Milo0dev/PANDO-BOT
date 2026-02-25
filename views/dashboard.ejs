@@ -2146,16 +2146,13 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
            y causa un glitch de z-index. La solución: forzar que la tarjeta con dropdown abierto
            ignore completamente las reglas de hover durante la transición */
 
-        /* 4. BLOQUEAR COMPLETAMENTE las reglas hover cuando hay dropdown abierto */
-        .pando-setting-card:has(.discord-ui-dropdown-container.is-open):hover,
-        .visual-card:has(.discord-ui-dropdown-container.is-open):hover {
-            /* Sobrescribir cualquier efecto hover - mantener estado "is-open" exclusivamente */
-            z-index: 999999 !important;
+        /* 4. BLOQUEAR COMPLETAMENTE las reglas hover cuando hay dropdown abierto - SIN :hover */
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open) {
+            transition: none !important;
             transform: translateY(-2px) !important;
             border-color: rgba(88, 101, 242, 0.4) !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
-            /* NO permitir que el hover agregue transiciones adicionales */
-            transition: none !important;
+            z-index: 999999 !important;
         }
 
         /* 5. La regla de BLOQUEO GLOBAL debe respetar la tarjeta activa - NO aplicar z-index: 0 */
@@ -3693,6 +3690,12 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             // Forzar z-index directamente en la tarjeta
             card.style.position = 'relative';
             card.style.zIndex = '999999';
+
+            // CANDADO INQUEBRANTABLE: Elevar también la celda del Grid padre
+            const gridCell = card.parentElement;
+            if (gridCell) {
+                gridCell.style.setProperty('z-index', '999999', 'important');
+            }
         }
 
         // Función para limpiar todos los z-index de las tarjetas
@@ -3701,6 +3704,14 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             document.querySelectorAll('.visual-card, .pando-setting-card').forEach(card => {
                 card.style.zIndex = '';
                 card.style.position = '';
+            });
+            
+            // Limpiar z-index de las celdas del Grid padre
+            document.querySelectorAll('.pando-setting-card, .visual-card').forEach(card => {
+                const gridCell = card.parentElement;
+                if (gridCell) {
+                    gridCell.style.removeProperty('z-index');
+                }
             });
         }
 
