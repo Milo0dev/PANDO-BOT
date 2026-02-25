@@ -1025,37 +1025,23 @@
 
         /* ===== NUEVO DISEÑO VISUAL - TARJETAS Y MENÚS ===== */
         
-        /* Visual Cards para configuración */
+        /* Visual Cards para configuración - MODERN DARK UI */
         .visual-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
+            background-color: #111214 !important; /* Un fondo más profundo y oscuro */
+            border: 1px solid rgba(255, 255, 255, 0.06) !important; /* Borde sutil estilo cristal */
+            border-radius: 12px !important; /* Curvas más modernas */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+            transition: all 0.3s ease !important; /* Para que la animación sea fluida */
+            overflow: visible !important; /* Vital para no cortar los dropdowns flotantes */
             padding: 24px;
             margin-bottom: 16px;
-            transition: all 0.3s ease;
             position: relative;
-            overflow: visible;
-        }
-
-        .visual-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--gradient-1);
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
         .visual-card:hover {
-            border-color: rgba(114, 137, 218, 0.3);
-            transform: translateX(5px);
-        }
-
-        .visual-card:hover::before {
-            opacity: 1;
+            transform: translateY(-2px) !important;
+            border-color: rgba(88, 101, 242, 0.4) !important; /* Brillo sutil azul Discord en el borde */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
         }
 
         .visual-card-header {
@@ -1071,8 +1057,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(114, 137, 218, 0.15);
-            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 10px;
             font-size: 1.3em;
             color: var(--primary);
         }
