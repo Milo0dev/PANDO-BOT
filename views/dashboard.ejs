@@ -3472,12 +3472,26 @@
                     if (!dropdown) return;
 
                     const config = dropdownMappings[dropdownId];
-                    const menu = dropdown.querySelector('.custom-dropdown-menu');
 
-                    // Clear existing options except the "Ninguno" option
-                    const noneOption = menu.querySelector('.none');
-                    menu.innerHTML = '';
-                    if (noneOption) menu.appendChild(noneOption.cloneNode(true));
+                    // Remove existing menu if it exists
+                    const existingMenu = dropdown.querySelector('.custom-dropdown-menu');
+                    if (existingMenu) existingMenu.remove();
+
+                    // Create new menu container with forced styles
+                    const menu = document.createElement('div');
+                    menu.style.cssText = "position: absolute; width: 100%; max-height: 250px; overflow-y: auto; background-color: #2b2d31 !important; border: 1px solid #1e1f22 !important; box-shadow: 0px 8px 16px rgba(0,0,0,0.9) !important; z-index: 999999 !important; opacity: 1 !important; margin-top: 5px;";
+                    menu.style.setProperty('display', 'none', 'important');
+                    dropdown.appendChild(menu);
+
+                    // Add "Ninguno" option
+                    const noneOption = document.createElement('div');
+                    noneOption.className = 'custom-dropdown-option none';
+                    noneOption.onclick = () => selectCustomChannel(config.input, '', 'Seleccionar canal...');
+                    noneOption.innerHTML = `
+                        <span class="option-icon"><i class="fas fa-times-circle"></i></span>
+                        <span class="option-name">Ninguno</span>
+                    `;
+                    menu.appendChild(noneOption);
 
                     // Group channels by categories
                     const categories = {};
