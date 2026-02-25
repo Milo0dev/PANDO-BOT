@@ -2140,6 +2140,33 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         .discord-ui-dropdown-menu {
             z-index: 9999999 !important; /* Añadimos un 9 extra para garantizar que venza a su propia tarjeta */
         }
+
+        /* ==================== CORRECCIÓN ADICIONAL: ANTI-UNHOVER GLITCH ==================== */
+        /* El problema: al hacer unhover mientras el dropdown está abierto, el estado hover se desvanece
+           y causa un glitch de z-index. La solución: forzar que la tarjeta con dropdown abierto
+           ignore completamente las reglas de hover durante la transición */
+
+        /* 4. BLOQUEAR COMPLETAMENTE las reglas hover cuando hay dropdown abierto */
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open):hover,
+        .visual-card:has(.discord-ui-dropdown-container.is-open):hover {
+            /* Sobrescribir cualquier efecto hover - mantener estado "is-open" exclusivamente */
+            z-index: 999999 !important;
+            transform: translateY(-2px) !important;
+            border-color: rgba(88, 101, 242, 0.4) !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
+            /* NO permitir que el hover agregue transiciones adicionales */
+            transition: none !important;
+        }
+
+        /* 5. La regla de BLOQUEO GLOBAL debe respetar la tarjeta activa - NO aplicar z-index: 0 */
+        body:has(.discord-ui-dropdown-container.is-open) .pando-setting-card:has(.discord-ui-dropdown-container.is-open),
+        body:has(.discord-ui-dropdown-container.is-open) .visual-card:has(.discord-ui-dropdown-container.is-open) {
+            z-index: 999999 !important;
+            pointer-events: auto !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
+            border-color: rgba(88, 101, 242, 0.4) !important;
+        }
     </style>
 </head>
 <body>
