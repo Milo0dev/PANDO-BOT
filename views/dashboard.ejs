@@ -2107,6 +2107,39 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         .discord-ui-dropdown-container.is-open {
             z-index: 999999 !important;
         }
+
+        /* ==================== BLOQUEO TOTAL ANTI-FLICKER ==================== */
+        /* Solución definitiva: Congelar la tarjeta activa para evitar el Stacking Context temporal */
+
+        /* 1. CONGELAR LA TARJETA ACTIVA (La clave absoluta) */
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open) {
+            transition: none !important; /* PROHIBE la animación para evitar el salto de z-index */
+            transform: translateY(-2px) !important; /* La mantiene elevada de forma fija e inamovible */
+            border-color: rgba(88, 101, 242, 0.4) !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
+            z-index: 999999 !important;
+        }
+
+        /* 1b. CONGELAR LA TARJETA ACTIVA para visual-card también */
+        .visual-card:has(.discord-ui-dropdown-container.is-open) {
+            transition: none !important; /* PROHIBE la animación para evitar el salto de z-index */
+            transform: translateY(-2px) !important; /* La mantiene elevada de forma fija e inamovible */
+            border-color: rgba(88, 101, 242, 0.4) !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
+            z-index: 999999 !important;
+        }
+
+        /* 2. CONGELAR LA CELDA DEL GRID PADRE */
+        div:has(.discord-ui-dropdown-container.is-open) {
+            transition: none !important; /* evita que el contenedor intente animarse */
+            z-index: 999999 !important;
+            position: relative !important;
+        }
+
+        /* 3. ASEGURAR EL MENÚ FLOTANTE AL MÁXIMO NIVEL */
+        .discord-ui-dropdown-menu {
+            z-index: 9999999 !important; /* Añadimos un 9 extra para garantizar que venza a su propia tarjeta */
+        }
     </style>
 </head>
 <body>
