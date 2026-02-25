@@ -1441,23 +1441,218 @@
             color: var(--primary);
         }
 
-        .custom-dropdown-menu {
-            position: absolute !important;
-            top: calc(100% + 5px) !important;
-            left: 0 !important;
-            width: 100% !important;
-            background-color: #2b2d31 !important;
-            border: 1px solid #1e1f22 !important;
-            border-radius: 8px !important;
-            z-index: 99999 !important;
-            display: none !important;
-            max-height: 250px !important;
-            overflow-y: auto !important;
-            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.8) !important;
+        /* ===== CUSTOM SELECT WRAPPER - PATRÓN LIMPIO ===== */
+        .custom-select-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
         }
 
-        .custom-dropdown-menu.show {
-            display: block !important;
+        /* Botón trigger del dropdown */
+        .custom-dropdown-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 46px;
+        }
+
+        .custom-dropdown-trigger:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--primary);
+        }
+
+        .custom-dropdown-trigger .dropdown-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .custom-dropdown-trigger .dropdown-label i {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(114, 137, 218, 0.15);
+            border-radius: 6px;
+            color: var(--primary);
+            font-size: 0.85em;
+        }
+
+        .custom-dropdown-trigger .dropdown-value {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.95em;
+        }
+
+        .custom-dropdown-trigger .dropdown-value.placeholder {
+            color: var(--text-muted);
+        }
+
+        .custom-dropdown-trigger .dropdown-chevron {
+            color: var(--text-secondary);
+            font-size: 0.8em;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-select-wrapper.open .custom-dropdown-trigger {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(114, 137, 218, 0.15);
+        }
+
+        .custom-select-wrapper.open .dropdown-chevron {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+
+        /* El menú desplegable (Fondo oscuro sólido garantizado) */
+        .custom-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 5px);
+            left: 0;
+            width: 100%;
+            background-color: #2b2d31 !important;
+            border: 1px solid #1e1f22;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.8);
+            z-index: 99999;
+            max-height: 250px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        }
+
+        /* Clase que se activará con JavaScript */
+        .custom-select-wrapper.open .custom-dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* Categorías */
+        .custom-dropdown-header {
+            padding: 10px 14px;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #949ba4;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #1e1f22;
+            background: #2b2d31;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: sticky;
+            top: 0;
+        }
+
+        .custom-dropdown-header i {
+            width: auto;
+            color: var(--primary);
+        }
+
+        .custom-dropdown-category {
+            padding: 8px 14px 6px;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #949ba4;
+            background: transparent;
+            border-bottom: 1px solid #1e1f22;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: default;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .custom-dropdown-category i {
+            color: #faa61a;
+        }
+
+        /* Opciones */
+        .custom-dropdown-option {
+            padding: 10px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.15s ease;
+            border-bottom: 1px solid transparent;
+        }
+
+        .custom-dropdown-option:last-child {
+            border-bottom: none;
+        }
+
+        .custom-dropdown-option:hover {
+            background-color: #3f4147;
+        }
+
+        .custom-dropdown-option.selected {
+            background-color: #3f4147;
+            border-left: 3px solid var(--primary);
+        }
+
+        .custom-dropdown-option .option-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border-radius: 4px;
+            color: #949ba4;
+            font-size: 0.8em;
+            flex-shrink: 0;
+        }
+
+        .custom-dropdown-option.selected .option-icon {
+            background: transparent;
+            color: var(--primary);
+        }
+
+        .custom-dropdown-option .option-name {
+            flex: 1;
+            font-size: 0.9em;
+            color: #dbdee1;
+        }
+
+        .custom-dropdown-option.selected .option-name {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .custom-dropdown-option.none {
+            color: #949ba4;
+            font-style: italic;
+        }
+
+        /* Scrollbar style for dropdown */
+        .custom-dropdown-menu::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar-thumb {
+            background: #1a1b1e;
+            border-radius: 4px;
+        }
+
+        .custom-dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: #111214;
         }
 
         .custom-dropdown-header {
@@ -2374,7 +2569,7 @@
                                     <div class="visual-card-desc">Registro de actividad del sistema</div>
                                 </div>
                             </div>
-                            <div class="custom-dropdown" id="log_channel_dropdown">
+                            <div class="custom-select-wrapper" id="log_channel_dropdown">
                                 <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('log_channel_dropdown', event)">
                                     <span class="dropdown-label">
                                         <i class="fas fa-hashtag"></i>
@@ -3452,6 +3647,33 @@
         // Canales y roles ahora se cargan mediante loadCustomChannelDropdowns
 
         // ===== CUSTOM CHANNEL DROPDOWN FUNCTIONS =====
+        // Función para abrir/cerrar dropdowns con clase .open (patrón limpio)
+        function setupDropdownToggles() {
+            document.querySelectorAll('.custom-select-wrapper').forEach(wrapper => {
+                const button = wrapper.querySelector('.custom-dropdown-trigger');
+                if (!button) return;
+                
+                button.onclick = function(e) {
+                    e.stopPropagation();
+                    // Cerrar cualquier otro menú abierto
+                    document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                        if (w !== wrapper) w.classList.remove('open');
+                    });
+                    // Abrir/Cerrar el actual
+                    wrapper.classList.toggle('open');
+                };
+            });
+        }
+
+        // Cerrar al hacer clic fuera del menú
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.custom-select-wrapper')) {
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                    w.classList.remove('open');
+                });
+            }
+        });
+
         async function loadCustomChannelDropdowns(guildId) {
             try {
                 const response = await fetch('/api/channels/' + guildId);
@@ -3477,10 +3699,9 @@
                     const existingMenu = dropdown.querySelector('.custom-dropdown-menu');
                     if (existingMenu) existingMenu.remove();
 
-                    // Create new menu container with forced styles
+                    // Create new menu (los estilos ya están en el CSS, no hay inline styles)
                     const menu = document.createElement('div');
-                    menu.style.cssText = "position: absolute; width: 100%; max-height: 250px; overflow-y: auto; background-color: #2b2d31 !important; border: 1px solid #1e1f22 !important; box-shadow: 0px 8px 16px rgba(0,0,0,0.9) !important; z-index: 999999 !important; opacity: 1 !important; margin-top: 5px;";
-                    menu.style.setProperty('display', 'none', 'important');
+                    menu.className = 'custom-dropdown-menu';
                     dropdown.appendChild(menu);
 
                     // Add "Ninguno" option
@@ -3542,6 +3763,9 @@
                         menu.appendChild(option);
                     });
                 });
+
+                // Configurar los toggles después de crear los dropdowns
+                setupDropdownToggles();
             } catch (error) {
                 console.error('Error loading custom channel dropdowns:', error);
             }
@@ -3553,21 +3777,18 @@
                 event.stopPropagation();
             }
             
-            // Close other custom dropdowns
-            document.querySelectorAll('.custom-dropdown-menu.show').forEach(menu => {
-                if (menu.closest('.custom-dropdown').id !== dropdownId) {
-                    menu.classList.remove('show');
+            const dropdown = document.getElementById(dropdownId);
+            if (!dropdown) return;
+
+            // Close other custom dropdowns (usando la clase .open del CSS)
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                if (w.id !== dropdownId) {
+                    w.classList.remove('open');
                 }
             });
 
-            // Toggle the clicked dropdown
-            const dropdown = document.getElementById(dropdownId);
-            if (dropdown) {
-                const menu = dropdown.querySelector('.custom-dropdown-menu');
-                if (menu) {
-                    menu.classList.toggle('show');
-                }
-            }
+            // Toggle the clicked dropdown usando la clase .open
+            dropdown.classList.toggle('open');
         }
 
         function selectCustomChannel(inputId, channelId, channelName) {
@@ -3581,35 +3802,28 @@
                 display.classList.toggle('placeholder', !channelId);
             }
 
-            // Close dropdown
-            const menu = dropdown.querySelector('.custom-dropdown-menu');
-            if (menu) menu.classList.remove('show');
+            // Close dropdown usando la clase .open
+            if (dropdown) {
+                dropdown.classList.remove('open');
+            }
 
             // Update selected state
-            const options = dropdown.querySelectorAll('.custom-dropdown-option');
-            options.forEach(opt => opt.classList.remove('selected'));
-            if (channelId) {
-                options.forEach(opt => {
-                    if (opt.onclick && opt.onclick.toString().includes(channelId)) {
-                        opt.classList.add('selected');
-                    }
-                });
-            } else {
-                // Select "Ninguno" option
-                const noneOption = dropdown.querySelector('.none');
-                if (noneOption) noneOption.classList.add('selected');
+            if (dropdown) {
+                const options = dropdown.querySelectorAll('.custom-dropdown-option');
+                options.forEach(opt => opt.classList.remove('selected'));
+                if (channelId) {
+                    options.forEach(opt => {
+                        if (opt.onclick && opt.onclick.toString().includes(channelId)) {
+                            opt.classList.add('selected');
+                        }
+                    });
+                } else {
+                    // Select "Ninguno" option
+                    const noneOption = dropdown.querySelector('.none');
+                    if (noneOption) noneOption.classList.add('selected');
+                }
             }
         }
-
-        // Close custom dropdowns when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.custom-dropdown')) {
-                // Close all open dropdown menus (those with .show class)
-                document.querySelectorAll('.custom-dropdown-menu.show').forEach(menu => {
-                    menu.classList.remove('show');
-                });
-            }
-        });
 
         // Initialize custom dropdowns with saved values
         function initCustomDropdowns() {
@@ -3626,7 +3840,6 @@
                 const display = document.getElementById(displayId);
 
                 if (input && display && input.value) {
-                    // For now, just show the ID - in a real implementation you'd fetch channel names
                     display.textContent = input.value;
                     display.classList.remove('placeholder');
                 }
@@ -3640,19 +3853,5 @@
             initCustomDropdowns();
         };
     </script>
-    <style>
-      /* Forzar el diseño del menú desplegable por encima de cualquier otro framework */
-      .custom-dropdown-menu {
-          background-color: #2b2d31 !important;
-          border: 1px solid #1e1f22 !important;
-          box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.8) !important;
-          color: #ffffff !important;
-      }
-      
-      /* Asegurar que las opciones tengan buen contraste */
-      .custom-dropdown-option:hover {
-          background-color: #3f4147 !important;
-      }
-    </style>
 </body>
 </html>
