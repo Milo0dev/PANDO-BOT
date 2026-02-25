@@ -3311,10 +3311,14 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     const btnText = btn.querySelector('.btn-text');
                     if (btnText) {
                         const originalHtml = btnText.innerHTML;
-                        btnText.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+                        btnText.innerHTML = '<i class="fas fa-check-circle"></i> ¡Guardado con éxito!';
+                        btn.style.background = '#28a745';
+                        btn.style.boxShadow = '0 4px 20px rgba(40, 167, 69, 0.4)';
                         setTimeout(() => {
                             btnText.innerHTML = originalHtml;
-                        }, 2000);
+                            btn.style.background = '';
+                            btn.style.boxShadow = '';
+                        }, 3000);
                     }
                 } else {
                     showToast(result.error || 'Error al guardar', 'error');
