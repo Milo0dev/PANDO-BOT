@@ -3136,6 +3136,7 @@
             document.getElementById('configServerId').textContent = 'ID: ' + server.id;
             
             await loadSettings(server.id);
+            await loadCustomChannelDropdowns(server.id);
         }
 
         // Load settings for a server
@@ -3447,126 +3448,7 @@
             }
         });
 
-        // CANALES Y ROLES INTERACTIVOS
-        let serverChannels = [];
-        let serverRoles = [];
-
-        async function loadServerChannels(guildId) {
-            try {
-                const response = await fetch('/api/channels/' + guildId);
-                const data = await response.json();
-                serverChannels = data.channels || [];
-                const channelDropdowns = ['log_channel_dropdown', 'transcript_channel_dropdown', 'dashboard_channel_dropdown', 'weekly_report_channel_dropdown', 'panel_channel_id_dropdown'];
-                channelDropdowns.forEach(function(dropdownId) {
-                    const dropdown = document.getElementById(dropdownId);
-                    if (!dropdown) return;
-                    const noneOption = dropdown.querySelector('.none');
-                    dropdown.innerHTML = '';
-                    if (noneOption) dropdown.appendChild(noneOption.cloneNode(true));
-                    const categories = {};
-                    const noCategory = [];
-                    serverChannels.forEach(function(channel) {
-                        if (channel.type === 4) categories[channel.id] = { name: channel.name, channels: [] };
-                        else if (channel.parentId && categories[channel.parentId]) categories[channel.parentId].channels.push(channel);
-                        else noCategory.push(channel);
-                    });
-                    Object.values(categories).forEach(function(cat) {
-                        if (cat.channels.length > 0) {
-                            const catHeader = document.createElement('div');
-                            catHeader.className = 'channel-category';
-                            catHeader.innerHTML = '<i class="fas fa-folder"></i> ' + cat.name;
-                            dropdown.appendChild(catHeader);
-                            cat.channels.forEach(function(channel) {
-                                const option = document.createElement('div');
-                                option.className = 'channel-option';
-                                option.dataset.id = channel.id;
-                                option.innerHTML = '<span class="channel-icon"><i class="fas fa-hashtag"></i></span><span class="channel-name">' + channel.name + '</span>';
-                                option.onclick = function() { selectChannel(dropdownId.replace('_dropdown', ''), channel.id, '#' + channel.name); };
-                                dropdown.appendChild(option);
-                            });
-                        }
-                    });
-                    noCategory.forEach(function(channel) {
-                        const option = document.createElement('div');
-                        option.className = 'channel-option';
-                        option.dataset.id = channel.id;
-                        option.innerHTML = '<span class="channel-icon"><i class="fas fa-hashtag"></i></span><span class="channel-name">' + channel.name + '</span>';
-                        option.onclick = function() { selectChannel(dropdownId.replace('_dropdown', ''), channel.id, '#' + channel.name); };
-                        dropdown.appendChild(option);
-                    });
-                });
-            } catch (error) { console.error('Error loading channels:', error); }
-        }
-
-        async function loadServerRoles(guildId) {
-            try {
-                const response = await fetch('/api/roles/' + guildId);
-                const data = await response.json();
-                serverRoles = data.roles || [];
-                const roleDropdowns = ['support_role_dropdown', 'admin_role_dropdown', 'verify_role_dropdown'];
-                roleDropdowns.forEach(function(dropdownId) {
-                    const dropdown = document.getElementById(dropdownId);
-                    if (!dropdown) return;
-                    const noneOption = dropdown.querySelector('.none');
-                    dropdown.innerHTML = '';
-                    if (noneOption) dropdown.appendChild(noneOption.cloneNode(true));
-                    serverRoles.forEach(function(role) {
-                        const option = document.createElement('div');
-                        option.className = 'role-option';
-                        option.dataset.id = role.id;
-                        option.innerHTML = '<span class="role-color" style="background:' + role.color + '"></span><span class="role-name">' + role.name + '</span>';
-                        option.onclick = function() { selectRole(dropdownId.replace('_dropdown', ''), role.id, '@' + role.name); };
-                        dropdown.appendChild(option);
-                    });
-                });
-            } catch (error) { console.error('Error loading roles:', error); }
-        }
-
-        function toggleChannelDropdown(dropdownId) {
-            document.querySelectorAll('.channel-dropdown.open').forEach(function(d) { if (d.id !== dropdownId) d.classList.remove('open'); });
-            const dropdown = document.getElementById(dropdownId);
-            if (dropdown) dropdown.classList.toggle('open');
-        }
-
-        function toggleRoleDropdown(dropdownId) {
-            document.querySelectorAll('.channel-dropdown.open').forEach(function(d) { if (d.id !== dropdownId) d.classList.remove('open'); });
-            const dropdown = document.getElementById(dropdownId);
-            if (dropdown) dropdown.classList.toggle('open');
-        }
-
-        function selectChannel(inputId, channelId, channelName) {
-            const input = document.getElementById(inputId);
-            if (input) { input.value = channelId || ''; input.placeholder = channelName || 'Seleccionar canal...'; }
-            const dropdown = document.getElementById(inputId + '_dropdown');
-            if (dropdown) {
-                dropdown.classList.remove('open');
-                dropdown.querySelectorAll('.channel-option').forEach(function(opt) { opt.classList.toggle('selected', opt.dataset.id === channelId); });
-            }
-        }
-
-        function selectRole(inputId, roleId, roleName) {
-            const input = document.getElementById(inputId);
-            if (input) { input.value = roleId || ''; input.placeholder = roleName || 'Seleccionar rol...'; }
-            const dropdown = document.getElementById(inputId + '_dropdown');
-            if (dropdown) {
-                dropdown.classList.remove('open');
-                dropdown.querySelectorAll('.role-option').forEach(function(opt) { opt.classList.toggle('selected', opt.dataset.id === roleId); });
-            }
-        }
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.channel-input-relative')) {
-                document.querySelectorAll('.channel-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
-            }
-        });
-
-        var originalSelectServer = selectServer;
-        selectServer = async function(server) {
-            await originalSelectServer(server);
-            await loadServerChannels(server.id);
-            await loadServerRoles(server.id);
-            await loadCustomChannelDropdowns(server.id);
-        };
+        // Canales y roles ahora se cargan mediante loadCustomChannelDropdowns
 
         // ===== CUSTOM CHANNEL DROPDOWN FUNCTIONS =====
         async function loadCustomChannelDropdowns(guildId) {
