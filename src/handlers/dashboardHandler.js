@@ -11,9 +11,13 @@ let dashboardClient = null;
  * Actualiza o crea el mensaje del dashboard en el canal configurado
  */
 async function updateDashboard(guild) {
+  console.log(`[DASHBOARD] Intentando actualizar el panel para el servidor ${guild.name}...`);
   try {
     const s = await settings.get(guild.id);
-    if (!s || !s.dashboard_channel) return;
+    if (!s || !s.dashboard_channel) {
+      console.log(`\x1b[33m[DASHBOARD] ⚠️ Cancelado: No hay 'Canal del Dashboard' configurado en la web para ${guild.name}\x1b[0m`);
+      return;
+    }
 
     let channel = guild.channels.cache.get(s.dashboard_channel);
     if (!channel) {
@@ -30,11 +34,13 @@ async function updateDashboard(guild) {
       try {
         const msg = await channel.messages.fetch(s.dashboard_message_id);
         await msg.edit({ embeds: [embed] });
+        console.log(`\x1b[32m[DASHBOARD] ✅ Panel actualizado correctamente en el canal ${channel.name}\x1b[0m`);
         return;
       } catch {}
     }
 
     const msg = await channel.send({ embeds: [embed] });
+    console.log(`\x1b[32m[DASHBOARD] ✅ Panel actualizado correctamente en el canal ${channel.name}\x1b[0m`);
     await settings.update(guild.id, { dashboard_message_id: msg.id });
   } catch (e) {}
 }
