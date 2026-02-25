@@ -1456,8 +1456,8 @@
             box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.8) !important;
         }
 
-        .custom-dropdown.open .custom-dropdown-menu {
-            display: block;
+        .custom-dropdown-menu.show {
+            display: block !important;
         }
 
         .custom-dropdown-header {
@@ -2375,7 +2375,7 @@
                                 </div>
                             </div>
                             <div class="custom-dropdown" id="log_channel_dropdown">
-                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('log_channel_dropdown')">
+                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('log_channel_dropdown', event)">
                                     <span class="dropdown-label">
                                         <i class="fas fa-hashtag"></i>
                                         <span class="dropdown-value placeholder" id="log_channel_display">Seleccionar canal...</span>
@@ -2408,7 +2408,7 @@
                                 </div>
                             </div>
                             <div class="custom-dropdown" id="transcript_channel_dropdown">
-                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('transcript_channel_dropdown')">
+                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('transcript_channel_dropdown', event)">
                                     <span class="dropdown-label">
                                         <i class="fas fa-hashtag"></i>
                                         <span class="dropdown-value placeholder" id="transcript_channel_display">Seleccionar canal...</span>
@@ -2441,7 +2441,7 @@
                                 </div>
                             </div>
                             <div class="custom-dropdown" id="dashboard_channel_dropdown">
-                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('dashboard_channel_dropdown')">
+                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('dashboard_channel_dropdown', event)">
                                     <span class="dropdown-label">
                                         <i class="fas fa-hashtag"></i>
                                         <span class="dropdown-value placeholder" id="dashboard_channel_display">Seleccionar canal...</span>
@@ -2474,7 +2474,7 @@
                                 </div>
                             </div>
                             <div class="custom-dropdown" id="weekly_report_channel_dropdown">
-                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('weekly_report_channel_dropdown')">
+                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('weekly_report_channel_dropdown', event)">
                                     <span class="dropdown-label">
                                         <i class="fas fa-hashtag"></i>
                                         <span class="dropdown-value placeholder" id="weekly_report_channel_display">Seleccionar canal...</span>
@@ -2507,7 +2507,7 @@
                                 </div>
                             </div>
                             <div class="custom-dropdown" id="panel_channel_id_dropdown">
-                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('panel_channel_id_dropdown')">
+                                <div class="custom-dropdown-trigger" onclick="toggleCustomDropdown('panel_channel_id_dropdown', event)">
                                     <span class="dropdown-label">
                                         <i class="fas fa-hashtag"></i>
                                         <span class="dropdown-value placeholder" id="panel_channel_id_display">Seleccionar canal...</span>
@@ -3533,16 +3533,26 @@
             }
         }
 
-        function toggleCustomDropdown(dropdownId) {
+        function toggleCustomDropdown(dropdownId, event) {
+            // Prevent event propagation if provided
+            if (event) {
+                event.stopPropagation();
+            }
+            
             // Close other custom dropdowns
-            document.querySelectorAll('.custom-dropdown.open').forEach(d => {
-                if (d.id !== dropdownId) d.classList.remove('open');
+            document.querySelectorAll('.custom-dropdown-menu.show').forEach(menu => {
+                if (menu.closest('.custom-dropdown').id !== dropdownId) {
+                    menu.classList.remove('show');
+                }
             });
 
             // Toggle the clicked dropdown
             const dropdown = document.getElementById(dropdownId);
             if (dropdown) {
-                dropdown.classList.toggle('open');
+                const menu = dropdown.querySelector('.custom-dropdown-menu');
+                if (menu) {
+                    menu.classList.toggle('show');
+                }
             }
         }
 
@@ -3579,8 +3589,9 @@
         // Close custom dropdowns when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.custom-dropdown')) {
-                document.querySelectorAll('.custom-dropdown.open').forEach(dropdown => {
-                    dropdown.classList.remove('open');
+                // Close all open dropdown menus (those with .show class)
+                document.querySelectorAll('.custom-dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
                 });
             }
         });
