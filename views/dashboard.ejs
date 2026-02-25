@@ -1045,12 +1045,15 @@
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
         }
 
-        /* CORRECCIÓN 2: La tarjeta mantiene su z-index cuando el dropdown está abierto */
-        .visual-card:hover,
-        .visual-card:has(.discord-ui-dropdown-container.is-open) {
-            z-index: 99999 !important;
-            position: relative !important;
-        }
+/* CORRECCIÓN 2: La tarjeta mantiene su z-index cuando el dropdown está abierto */
+.visual-card:hover,
+.visual-card:has(.discord-ui-dropdown-container.is-open) {
+    transform: translateY(-2px) !important;
+    border-color: rgba(88, 101, 242, 0.4) !important;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
+    z-index: 99999 !important;
+    position: relative !important;
+}
 
         /* CORRECCIÓN 3: El contenedor del grid también eleva su z-index */
         div:has(> .visual-card:has(.discord-ui-dropdown-container.is-open)) {
@@ -1519,11 +1522,11 @@
         }
 
         /* 3. Estado HOVER (La animación y colores exactos de Tickets) */
-        .discord-ui-option:hover { 
+.discord-ui-option:hover { 
             background-color: #262936 !important; /* El resalte azul marino */
             border-left-color: #5865F2 !important; /* Aparece la franja azul de Discord */
             color: #ffffff !important; /* Texto blanco brillante */
-            padding-left: 19px !important; /* Pequeño empuje visual */
+            /* padding-left eliminado para evitar el layout shift */
         }
 
         /* 4. Categorías (Alineadas y limpias) */
@@ -1544,7 +1547,7 @@
         /* --- EL INTERRUPTOR QUE FALTA Y SU ANIMACIÓN --- */
         .discord-ui-dropdown-container.is-open .discord-ui-dropdown-menu {
             display: block !important;
-            animation: discordDropdownFadeIn 0.15s ease-out forwards !important;
+animation: discordDropdownFadeIn 0.15s ease-out both !important;
         }
 
         @keyframes discordDropdownFadeIn {
