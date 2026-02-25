@@ -3314,6 +3314,13 @@
 
             const menu = document.createElement('div');
             menu.className = 'discord-ui-dropdown-menu';
+            
+            // FORZAR estilos críticos en línea para ganar especificidad contra el CSS del framework
+            menu.style.setProperty('background-color', '#2b2d31', 'important');
+            menu.style.setProperty('opacity', '1', 'important');
+            menu.style.setProperty('border', '1px solid #1e1f22', 'important');
+            menu.style.setProperty('box-shadow', '0 8px 16px rgba(0,0,0,0.9)', 'important');
+            menu.style.setProperty('z-index', '999999', 'important');
 
             // 2. Llenar el menú con canales agrupados por categoría
             let menuHTML = '';
