@@ -2075,6 +2075,38 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         .visual-card:has(.discord-ui-dropdown-container.is-open) {
             pointer-events: auto !important;
         }
+
+        /* ==================== CORRECCIÓN ANTI-FLICKER ==================== */
+        /* Elimina el flicker en las transiciones evitando que z-index se anime */
+
+        /* 1. CONGELA LAS TRANSICIONES: Excluye z-index de las transiciones */
+        .visual-card,
+        .pando-setting-card,
+        .visual-card:hover,
+        .pando-setting-card:hover,
+        .visual-card:has(.discord-ui-dropdown-container.is-open),
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open) {
+            transition-property: transform, border-color, box-shadow, background-color !important;
+            transition-duration: 0.2s !important;
+        }
+
+        /* 2. Z-INDEX INSTANTÁNEO: Cambia al instante sin transición */
+        .visual-card,
+        .pando-setting-card {
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+        }
+
+        /* 3. CONTENEDOR PADRE ESTABLE: La celda Grid no se anima */
+        div:has(> .visual-card),
+        div:has(> .pando-setting-card),
+        .visual-cards-grid {
+            transition: none !important;
+        }
+
+        /* 4. ASEGURA z-index INSTANTÁNEO: Prioridad absoluta para menús abiertos */
+        .discord-ui-dropdown-container.is-open {
+            z-index: 999999 !important;
+        }
     </style>
 </head>
 <body>
