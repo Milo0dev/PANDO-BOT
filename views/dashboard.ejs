@@ -2039,6 +2039,42 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                 justify-content: center;
             }
         }
+
+        /* ==================== BLOQUEO GLOBAL (GLOBAL LOCK) ==================== */
+        /* Solución definitiva al problema de superposición de menús en el Grid */
+
+        /* 1. ELEVACIÓN MASIVA: Todo contenedor que tenga un menú abierto adentro sube al máximo nivel, rompiendo la celda del Grid */
+        div:has(.discord-ui-dropdown-container.is-open) {
+            z-index: 999999 !important;
+        }
+
+        /* 2. EL BLOQUEO GLOBAL: Si hay CUALQUIER menú abierto en el body, las DEMÁS tarjetas se vuelven invisibles para el ratón */
+        body:has(.discord-ui-dropdown-container.is-open) .pando-setting-card:not(:has(.discord-ui-dropdown-container.is-open)) {
+            pointer-events: none !important; /* El ratón las traspasa y las ignora */
+            transform: none !important; /* Impide que se eleven */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; /* Mantiene sombra base */
+            border-color: rgba(255, 255, 255, 0.06) !important; /* Mantiene el borde apagado */
+            z-index: 0 !important; /* Las manda al fondo */
+        }
+
+        /* 2b. EL BLOQUEO GLOBAL para visual-card también */
+        body:has(.discord-ui-dropdown-container.is-open) .visual-card:not(:has(.discord-ui-dropdown-container.is-open)) {
+            pointer-events: none !important; /* El ratón las traspasa y las ignora */
+            transform: none !important; /* Impide que se eleven */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important; /* Mantiene sombra base */
+            border-color: rgba(255, 255, 255, 0.06) !important; /* Mantiene el borde apagado */
+            z-index: 0 !important; /* Las manda al fondo */
+        }
+
+        /* 3. PROTECCIÓN DEL MENÚ ACTIVO: Asegura que el menú que SÍ está abierto siga recibiendo clics */
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open) {
+            pointer-events: auto !important;
+        }
+
+        /* 3b. PROTECCIÓN DEL MENÚ ACTIVO para visual-card también */
+        .visual-card:has(.discord-ui-dropdown-container.is-open) {
+            pointer-events: auto !important;
+        }
     </style>
 </head>
 <body>
