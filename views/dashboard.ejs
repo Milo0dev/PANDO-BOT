@@ -814,6 +814,13 @@
         .config-header-info p {
             color: var(--text-secondary);
             font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-header-info p i {
+            color: var(--secondary);
         }
 
         /* Tabs */
@@ -2994,7 +3001,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                                     <i class="fas fa-envelope-open-text"></i>
                                 </div>
                                 <div class="toggle-visual-text">
-                                    <h4>DM al Abrir Ticket</h4>
+                                    <h4>DM al Abrir Ticket</h3>
                                     <p>Enviar confirmación por DM al abrir</p>
                                 </div>
                             </div>
@@ -3010,7 +3017,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                                     <i class="fas fa-envelope-check"></i>
                                 </div>
                                 <div class="toggle-visual-text">
-                                    <h4>DM al Cerrar Ticket</h4>
+                                    <h4>DM al Cerrar Ticket</h3>
                                     <p>Enviar notificación por DM al cerrar</p>
                                 </div>
                             </div>
@@ -3460,8 +3467,26 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         // Load settings and initialize visual selects
         const originalLoadSettings = loadSettings;
         loadSettings = async function(guildId) {
+            // Guardar los settings antes de llamar al original
+            let currentSettings = {};
+
+            // Cargar settings primero
+            try {
+                const response = await fetch(`/api/settings/${guildId}`);
+                const data = await response.json();
+                if (data.settings) {
+                    currentSettings = data.settings;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+
+            // Llamar al original
             await originalLoadSettings(guildId);
-            initVisualSelects();
+
+            // Después de cargar settings, renderizar los dropdowns con los datos reales
+            await loadAndRenderChannelDropdowns(guildId, currentSettings);
+            await loadAndRenderRoleDropdowns(guildId, currentSettings);
         };
 
         // Loading overlay
@@ -3574,6 +3599,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             menu.innerHTML = menuHTML;
 
             // 3. Lógica del Toggle
+            // El z-index ahora se maneja automáticamente con CSS :has()
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isOpen = wrapper.classList.contains('is-open');
@@ -3591,7 +3617,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             // 4. Lógica de selección de opción
             menu.addEventListener('click', (e) => {
                 const option = e.target.closest('.discord-ui-option');
-                if (option) {
+                if (option && !option.classList.contains('discord-ui-category')) {
                     const roleId = option.dataset.roleId;
                     const roleName = option.textContent.trim();
                     
@@ -3695,6 +3721,8 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             const gridCell = card.parentElement;
             if (gridCell) {
                 gridCell.style.setProperty('z-index', '999999', 'important');
+                gridCell.style.setProperty('position', 'relative', 'important');
+                gridCell.style.setProperty('transition', 'none', 'important');
             }
         }
 
@@ -3711,6 +3739,8 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                 const gridCell = card.parentElement;
                 if (gridCell) {
                     gridCell.style.removeProperty('z-index');
+                    gridCell.style.removeProperty('position');
+                    gridCell.style.removeProperty('transition');
                 }
             });
         }
