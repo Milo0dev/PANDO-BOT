@@ -1044,6 +1044,7 @@
             padding: 24px;
             margin-bottom: 16px;
             position: relative;
+            isolation: isolate; /* Cada tarjeta crea su propio stacking context para dropdowns */
         }
 
         /* 1. Elevación normal en Hover (Jerarquía baja) */
@@ -1218,8 +1219,6 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
             overflow: visible !important;
-            position: relative;
-            isolation: isolate;
         }
 
         /* Toggle mejorado con icono */
