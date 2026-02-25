@@ -3547,9 +3547,33 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             // Toggle este dropdown
             if (isOpen) {
                 container.classList.remove('is-open');
+                // Limpiar z-index del padre al cerrar
+                cleanupDropdownZIndexes();
             } else {
                 container.classList.add('is-open');
+                // Forzar z-index del padre al abrir
+                elevateDropdownParent(container);
             }
+        }
+
+        // Función para elevar la tarjeta directamente (más confiable que el padre)
+        function elevateDropdownParent(menuContainer) {
+            // Buscar la tarjeta (visual-card o pando-setting-card)
+            const card = menuContainer.closest('.visual-card') || menuContainer.closest('.pando-setting-card');
+            if (!card) return;
+
+            // Forzar z-index directamente en la tarjeta
+            card.style.position = 'relative';
+            card.style.zIndex = '999999';
+        }
+
+        // Función para limpiar todos los z-index de las tarjetas
+        function cleanupDropdownZIndexes() {
+            // Limpiar todas las tarjetas
+            document.querySelectorAll('.visual-card, .pando-setting-card').forEach(card => {
+                card.style.zIndex = '';
+                card.style.position = '';
+            });
         }
 
         // Función PRINCIPAL para renderizar el dropdown de canales
@@ -3742,6 +3766,8 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
                 el.classList.remove('is-open');
             });
+            // Limpiar z-index de los padres al cerrar por clic fuera
+            cleanupDropdownZIndexes();
         });
 
         // Override de loadSettings para usar el nuevo sistema de dropdowns
