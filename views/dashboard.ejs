@@ -2437,9 +2437,13 @@
                                     <div class="visual-card-desc">Equipo de atención al usuario</div>
                                 </div>
                             </div>
-                            <div class="channel-input-wrapper">
-                                <i class="fas fa-user-tag"></i>
-                                <input type="text" class="form-input" id="support_role" placeholder="ID del rol o @nombre">
+                            <div class="discord-ui-dropdown-container" id="support_role_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('support_role_dropdown', event)">
+                                    <span id="support_role_display">Seleccionar rol...</span>
+                                    <span class="discord-ui-arrow">▼</span>
+                                </div>
+                                <div class="discord-ui-dropdown-menu" id="support_role_menu"></div>
+                                <input type="hidden" id="support_role" value="">
                             </div>
                         </div>
 
@@ -2454,9 +2458,13 @@
                                     <div class="visual-card-desc">Control total del bot</div>
                                 </div>
                             </div>
-                            <div class="channel-input-wrapper">
-                                <i class="fas fa-user-tag"></i>
-                                <input type="text" class="form-input" id="admin_role" placeholder="ID del rol o @nombre">
+                            <div class="discord-ui-dropdown-container" id="admin_role_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('admin_role_dropdown', event)">
+                                    <span id="admin_role_display">Seleccionar rol...</span>
+                                    <span class="discord-ui-arrow">▼</span>
+                                </div>
+                                <div class="discord-ui-dropdown-menu" id="admin_role_menu"></div>
+                                <input type="hidden" id="admin_role" value="">
                             </div>
                         </div>
 
@@ -2471,9 +2479,13 @@
                                     <div class="visual-card-desc">Mínimo para abrir tickets (0 = desactivar)</div>
                                 </div>
                             </div>
-                            <div class="channel-input-wrapper">
-                                <i class="fas fa-user-tag"></i>
-                                <input type="text" class="form-input" id="verify_role" placeholder="ID del rol o @nombre">
+                            <div class="discord-ui-dropdown-container" id="verify_role_dropdown">
+                                <div class="discord-ui-dropdown-trigger" onclick="toggleDiscordUIDropdown('verify_role_dropdown', event)">
+                                    <span id="verify_role_display">Seleccionar rol...</span>
+                                    <span class="discord-ui-arrow">▼</span>
+                                </div>
+                                <div class="discord-ui-dropdown-menu" id="verify_role_menu"></div>
+                                <input type="hidden" id="verify_role" value="">
                             </div>
                         </div>
                     </div>
@@ -3346,8 +3358,173 @@
 
         // ===== NUEVO SISTEMA DE DROPDOWNS DISCORD UI - IMPLEMENTACIÓN DEFINITIVA =====
 
-        // Almacenar datos de canales globalmente para uso en los dropdowns
+        // Almacenar datos de canales y roles globalmente para uso en los dropdowns
         let discordChannelsData = [];
+        let discordRolesData = [];
+
+        // Función para renderizar el dropdown de roles
+        function renderDiscordRoleDropdown(containerId, roles, selectedRoleId) {
+            const containerTarget = document.getElementById(containerId);
+            if (!containerTarget) return;
+            
+            // Limpiar contenedor base
+            containerTarget.innerHTML = '';
+
+            // 1. Crear ESTRUCTURA
+            const wrapper = document.createElement('div');
+            wrapper.className = 'discord-ui-dropdown-container';
+
+            const trigger = document.createElement('div');
+            trigger.className = 'discord-ui-dropdown-trigger';
+            
+            // Determinar texto inicial basado en valor seleccionado
+            let initialText = 'Seleccionar rol...';
+            if (selectedRoleId) {
+                const selectedRole = roles.find(r => r.id === selectedRoleId);
+                initialText = selectedRole ? `@${selectedRole.name}` : '@ Rol Seleccionado';
+            }
+            
+            trigger.innerHTML = `<span>${initialText}</span> <span class="discord-ui-arrow">▼</span>`;
+
+            const menu = document.createElement('div');
+            menu.className = 'discord-ui-dropdown-menu';
+            
+            // FORZAR estilos críticos en línea
+            menu.style.setProperty('background-color', '#2b2d31', 'important');
+            menu.style.setProperty('opacity', '1', 'important');
+            menu.style.setProperty('border', '1px solid #1e1f22', 'important');
+            menu.style.setProperty('box-shadow', '0 8px 16px rgba(0,0,0,0.9)', 'important');
+            menu.style.setProperty('z-index', '999999', 'important');
+
+            // 2. Llenar el menú con roles
+            let menuHTML = '';
+            
+            // Opción "Ninguno" primero
+            menuHTML += `<div class="discord-ui-option" data-role-id="">`;
+            menuHTML += `<i class="fas fa-times-circle" style="margin-right: 8px;"></i> Ninguno`;
+            menuHTML += `</div>`;
+
+            // Ordenar roles por posición (los de mayor posición arriba)
+            const sortedRoles = [...roles].sort((a, b) => b.position - a.position);
+
+            // Añadir roles
+            sortedRoles.forEach(role => {
+                if (role.id !== role.guildId) { // Excluir @everyone
+                    const isSelected = selectedRoleId === role.id;
+                    const roleColor = role.color ? '#' + role.color.toString(16).padStart(6, '0') : '#a3a6aa';
+                    
+                    menuHTML += `<div class="discord-ui-option${isSelected ? ' selected' : ''}" data-role-id="${role.id}">`;
+                    menuHTML += `<span class="role-color" style="width: 12px; height: 12px; border-radius: 3px; background-color: ${roleColor}; margin-right: 8px; flex-shrink: 0;"></span>`;
+                    menuHTML += `@ ${role.name}`;
+                    menuHTML += `</div>`;
+                }
+            });
+
+            menu.innerHTML = menuHTML;
+
+            // 3. Lógica del Toggle
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = wrapper.classList.contains('is-open');
+                
+                // Cerrar los demás dropdowns
+                document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
+                    el.classList.remove('is-open');
+                });
+
+                if (!isOpen) {
+                    wrapper.classList.add('is-open');
+                }
+            });
+
+            // 4. Lógica de selección de opción
+            menu.addEventListener('click', (e) => {
+                const option = e.target.closest('.discord-ui-option');
+                if (option) {
+                    const roleId = option.dataset.roleId;
+                    const roleName = option.textContent.trim();
+                    
+                    // Actualizar el display
+                    trigger.innerHTML = `<span>${roleName}</span> <span class="discord-ui-arrow">▼</span>`;
+                    
+                    // Actualizar el input hidden
+                    const hiddenInput = containerTarget.querySelector('input[type="hidden"]');
+                    if (hiddenInput) {
+                        hiddenInput.value = roleId || '';
+                    }
+                    
+                    // Cerrar el menú
+                    wrapper.classList.remove('is-open');
+                }
+            });
+
+            // 5. Ensamblar
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(menu);
+            containerTarget.appendChild(wrapper);
+        }
+
+        // Función para cargar roles y renderizar los dropdowns
+        async function loadAndRenderRoleDropdowns(guildId, savedSettings) {
+            try {
+                const response = await fetch('/api/roles/' + guildId);
+                const data = await response.json();
+                discordRolesData = data.roles || [];
+
+                // Configuración de cada dropdown de roles
+                const roleDropdownConfigs = [
+                    { 
+                        containerId: 'support_role_dropdown', 
+                        inputId: 'support_role', 
+                        settingKey: 'support_role' 
+                    },
+                    { 
+                        containerId: 'admin_role_dropdown', 
+                        inputId: 'admin_role', 
+                        settingKey: 'admin_role' 
+                    },
+                    { 
+                        containerId: 'verify_role_dropdown', 
+                        inputId: 'verify_role', 
+                        settingKey: 'verify_role' 
+                    }
+                ];
+
+                roleDropdownConfigs.forEach(config => {
+                    const savedValue = savedSettings ? savedSettings[config.settingKey] : '';
+                    renderDiscordRoleDropdown(config.containerId, discordRolesData, savedValue);
+                });
+
+            } catch (error) {
+                console.error('Error loading role dropdowns:', error);
+            }
+        }
+
+
+        // Función para togglear el dropdown (usada por los triggers estáticos en HTML)
+        function toggleDiscordUIDropdown(containerId, event) {
+            event.stopPropagation();
+            
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Toggle the is-open class
+            const isOpen = container.classList.contains('is-open');
+            
+            // Cerrar todos los demás dropdowns primero
+            document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
+                if (el !== container) {
+                    el.classList.remove('is-open');
+                }
+            });
+            
+            // Toggle este dropdown
+            if (isOpen) {
+                container.classList.remove('is-open');
+            } else {
+                container.classList.add('is-open');
+            }
+        }
 
         // Función PRINCIPAL para renderizar el dropdown de canales
         function renderDiscordChannelDropdown(containerId, channels, selectedChannelId) {
@@ -3540,7 +3717,7 @@
         loadSettings = async function(guildId) {
             // Guardar los settings antes de llamar al original
             let currentSettings = {};
-            
+
             // Cargar settings primero
             try {
                 const response = await fetch(`/api/settings/${guildId}`);
@@ -3551,12 +3728,13 @@
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
-            
+
             // Llamar al original
             await originalLoadSettings3(guildId);
-            
+
             // Después de cargar settings, renderizar los dropdowns con los datos reales
             await loadAndRenderChannelDropdowns(guildId, currentSettings);
+            await loadAndRenderRoleDropdowns(guildId, currentSettings);
         };
     </script>
 </body>
