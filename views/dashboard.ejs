@@ -3678,6 +3678,12 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
 
         // Función para cargar canales y renderizar TODOS los dropdowns
         async function loadAndRenderChannelDropdowns(guildId, savedSettings) {
+            // Bloquear actualizaciones del DOM si el usuario está interactuando con un menú
+            if (document.querySelector('.discord-ui-dropdown-container.is-open')) {
+                console.log("Actualización en tiempo real pausada: Menú abierto.");
+                return; // Aborta la actualización para no destruir la UI activa
+            }
+
             try {
                 const response = await fetch('/api/channels/' + guildId);
                 const data = await response.json();
