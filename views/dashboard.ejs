@@ -1480,7 +1480,9 @@
             background-color: #202225;
         }
 
-        /* 1. Contenedor del Menú (Fondo oscuro azulado para igualar el dashboard) */
+        /* --- INICIO DEL DISEÑO CLONADO DE TICKETS --- */
+
+        /* 1. Contenedor Principal (Fondo oscuro azulado exacto al de Tickets) */
         .discord-ui-dropdown-menu {
             display: none !important; 
             position: absolute !important;
@@ -1490,71 +1492,52 @@
             max-height: 300px !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
-            background-color: #16181d !important; /* Tono oscuro azulado exacto */
-            border: 1px solid #2a2c36 !important; /* Borde sutil a juego */
-            border-radius: 8px !important;
+            background-color: #16181d !important; /* El tono exacto del dashboard */
+            border: 1px solid #2a2c36 !important;
+            border-radius: 8px !important; /* Bordes suaves */
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
             box-sizing: border-box !important;
-            padding: 6px 0 !important; /* Espacio superior e inferior interno */
+            padding: 6px 0 !important;
+            z-index: 999999 !important;
         }
 
-        /* Scrollbar Estilo Discord */
-        /* Scrollbar estilo Discord para el menú flotante */
-        .discord-ui-dropdown-menu::-webkit-scrollbar {
-            width: 8px !important;
-        }
-        .discord-ui-dropdown-menu::-webkit-scrollbar-track {
-            background: #2b2d31 !important;
-            border-radius: 0 0 4px 0 !important;
-        }
-        .discord-ui-dropdown-menu::-webkit-scrollbar-thumb {
-            background-color: #1a1b1e !important;
-            border-radius: 4px !important;
-        }
-
-        /* Clase ACTIVADORA para mostrar el menú */
-        .discord-ui-dropdown-container.is-open .discord-ui-dropdown-menu {
-            display: block !important;
-        }
-
-        /* Elevar el contenedor entero al frente cuando el menú está activo */
-        .discord-ui-dropdown-container.is-open {
-            z-index: 99999 !important;
-        }
-
-        /* 2. Opciones individuales (Más espacio y alineación de iconos) */
+        /* 2. Opciones (Base para la animación) */
         .discord-ui-option { 
             padding: 10px 16px !important; 
             cursor: pointer !important; 
-            color: #a3a6aa !important; /* Texto un poco más apagado en reposo */
-            border-left: 3px solid transparent !important; 
-            transition: all 0.15s ease !important;
+            color: #a3a6aa !important; /* Color de texto en reposo */
+            border-left: 3px solid transparent !important; /* Borde invisible listo para animator */
+            /* ESTA ES LA CLAVE DE LA ANIMACIÓN SUAVE: */
+            transition: all 0.15s ease-in-out !important;
             font-size: 14px !important;
+            font-weight: 500 !important;
             display: flex !important;
             align-items: center !important;
-            gap: 8px !important; /* Separa el # o el emoji del nombre del canal */
+            gap: 10px !important; /* Separación perfecta entre icono y texto */
         }
 
-        /* 3. Efecto Hover (Fondo azulado claro y línea vibrante) */
+        /* 3. Estado HOVER (La animación y colores exactos de Tickets) */
         .discord-ui-option:hover { 
-            background-color: #262936 !important; /* Resalte azul marino */
-            border-left: 3px solid #5865F2 !important; /* Línea de Discord */
-            color: #ffffff !important; /* Texto blanco puro al pasar el ratón */
+            background-color: #262936 !important; /* El resalte azul marino */
+            border-left-color: #5865F2 !important; /* Aparece la franja azul de Discord */
+            color: #ffffff !important; /* Texto blanco brillante */
+            padding-left: 19px !important; /* Pequeño empuje visual */
         }
 
-        /* 4. Categorías (Diseño limpio y profesional para "==== IMPORTANT ====") */
+        /* 4. Categorías (Alineadas y limpias) */
         .discord-ui-category {
             padding: 16px 16px 6px 16px !important;
             font-size: 11px !important;
-            font-weight: 700 !important;
+            font-weight: 800 !important;
             color: #72767d !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
             pointer-events: none !important;
             display: flex !important;
             align-items: center !important;
-            gap: 6px !important;
+            gap: 8px !important;
         }
+        /* --- FIN DEL DISEÑO CLONADO --- */
 
         /* Selector de Rol */
         .role-option {
