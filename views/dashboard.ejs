@@ -1539,6 +1539,25 @@
         }
         /* --- FIN DEL DISEÑO CLONADO --- */
 
+        /* --- EL INTERRUPTOR QUE FALTA Y SU ANIMACIÓN --- */
+        .discord-ui-dropdown-container.is-open .discord-ui-dropdown-menu {
+            display: block !important;
+            animation: discordDropdownFadeIn 0.15s ease-out forwards !important;
+        }
+
+        @keyframes discordDropdownFadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-8px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        /* ----------------------------------------------- */
+
+
         /* Selector de Rol */
         .role-option {
             padding: 10px 16px;
