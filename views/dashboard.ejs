@@ -1480,21 +1480,22 @@
             background-color: #202225;
         }
 
-        /* Ajuste estético del contenedor del menú */
+        /* 1. Contenedor del Menú (Fondo oscuro azulado para igualar el dashboard) */
         .discord-ui-dropdown-menu {
             display: none !important; 
             position: absolute !important;
             top: calc(100% + 5px) !important;
             left: 0 !important;
             width: 100% !important;
-            max-height: 250px !important;
+            max-height: 300px !important;
             overflow-y: auto !important;
-            overflow-x: hidden !important; /* Evita desbordes horizontales */
-            background-color: #1e1f22 !important; /* Fondo más oscuro y limpio */
-            border: 1px solid #2b2d31 !important;
-            border-radius: 8px !important; /* Bordes redondeados tipo Discord */
-            box-shadow: 0 8px 16px rgba(0,0,0,0.4) !important;
+            overflow-x: hidden !important;
+            background-color: #16181d !important; /* Tono oscuro azulado exacto */
+            border: 1px solid #2a2c36 !important; /* Borde sutil a juego */
+            border-radius: 8px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
             box-sizing: border-box !important;
+            padding: 6px 0 !important; /* Espacio superior e inferior interno */
         }
 
         /* Scrollbar Estilo Discord */
@@ -1521,24 +1522,39 @@
             z-index: 99999 !important;
         }
 
-        /* Estilo base de cada opción de canal */
+        /* 2. Opciones individuales (Más espacio y alineación de iconos) */
         .discord-ui-option { 
-            padding: 10px 12px !important; 
+            padding: 10px 16px !important; 
             cursor: pointer !important; 
-            color: #dbdee1 !important; 
-            border-left: 3px solid transparent !important; /* Espacio reservado para la franja hover */
-            transition: background-color 0.15s ease, border-left-color 0.15s ease !important;
+            color: #a3a6aa !important; /* Texto un poco más apagado en reposo */
+            border-left: 3px solid transparent !important; 
+            transition: all 0.15s ease !important;
             font-size: 14px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important; /* Separa el # o el emoji del nombre del canal */
         }
 
-        /* Efecto HOVER idéntico a la UI de Tickets */
+        /* 3. Efecto Hover (Fondo azulado claro y línea vibrante) */
         .discord-ui-option:hover { 
-            background-color: #2b2d31 !important; /* Resaltado de fondo */
-            border-left: 3px solid #5865F2 !important; /* Franja azul característica */
-            color: #ffffff !important;
+            background-color: #262936 !important; /* Resalte azul marino */
+            border-left: 3px solid #5865F2 !important; /* Línea de Discord */
+            color: #ffffff !important; /* Texto blanco puro al pasar el ratón */
         }
-        
-        .discord-ui-category { padding: 8px 12px; font-size: 0.85em; color: #949ba4; font-weight: bold; text-transform: uppercase; pointer-events: none; }
+
+        /* 4. Categorías (Diseño limpio y profesional para "==== IMPORTANT ====") */
+        .discord-ui-category {
+            padding: 16px 16px 6px 16px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #72767d !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            pointer-events: none !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
 
         /* Selector de Rol */
         .role-option {
