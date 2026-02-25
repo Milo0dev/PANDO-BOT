@@ -1026,7 +1026,7 @@
         /* ===== NUEVO DISEÑO VISUAL - TARJETAS Y MENÚS ===== */
         
         /* Visual Cards para configuración - MODERN DARK UI */
-        .visual-card {
+        .visual-card, .pando-setting-card {
             background-color: #111214 !important; /* Un fondo más profundo y oscuro */
             border: 1px solid rgba(255, 255, 255, 0.06) !important; /* Borde sutil estilo cristal */
             border-radius: 12px !important; /* Curvas más modernas */
@@ -1039,25 +1039,32 @@
             position: relative;
         }
 
-        .visual-card:hover {
+        /* 1. Elevación normal en Hover (Jerarquía baja) */
+        .visual-card:hover, 
+        .pando-setting-card:hover {
+            z-index: 9999 !important;
+            position: relative !important;
             transform: translateY(-2px) !important;
-            border-color: rgba(88, 101, 242, 0.4) !important; /* Brillo sutil azul Discord en el borde */
+            border-color: rgba(88, 101, 242, 0.4) !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
         }
 
-/* CORRECCIÓN 2: La tarjeta mantiene su z-index cuando el dropdown está abierto */
-.visual-card:hover,
-.visual-card:has(.discord-ui-dropdown-container.is-open) {
-    transform: translateY(-2px) !important;
-    border-color: rgba(88, 101, 242, 0.4) !important;
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
-    z-index: 99999 !important;
-    position: relative !important;
-}
+        /* 2. Elevación SUPREMA para la tarjeta activa (Jerarquía invencible) */
+        .visual-card:has(.discord-ui-dropdown-container.is-open),
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open) {
+            z-index: 999999 !important; 
+            position: relative !important;
+            transform: translateY(-2px) !important;
+            border-color: rgba(88, 101, 242, 0.4) !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
+        }
 
-        /* CORRECCIÓN 3: El contenedor del grid también eleva su z-index */
-        div:has(> .visual-card:has(.discord-ui-dropdown-container.is-open)) {
-            z-index: 99999 !important;
+        /* 3. Elevación del contenedor padre en cuadrículas o listas */
+        div:has(> .visual-card:has(.discord-ui-dropdown-container.is-open)),
+        div:has(> .pando-setting-card:has(.discord-ui-dropdown-container.is-open)),
+        li:has(> .visual-card:has(.discord-ui-dropdown-container.is-open)),
+        li:has(> .pando-setting-card:has(.discord-ui-dropdown-container.is-open)) {
+            z-index: 999999 !important;
             position: relative !important;
         }
 
