@@ -1058,7 +1058,9 @@
 
         /* 2. Elevación SUPREMA para la tarjeta activa (Jerarquía invencible) */
         .visual-card:has(.discord-ui-dropdown-container.is-open),
-        .pando-setting-card:has(.discord-ui-dropdown-container.is-open) {
+        .pando-setting-card:has(.discord-ui-dropdown-container.is-open),
+        .visual-card:has(.visual-select.open),
+        .pando-setting-card:has(.visual-select.open) {
             z-index: 999999 !important; 
             position: relative !important;
             transform: translateY(-2px) !important;
@@ -1072,7 +1074,13 @@
         li:has(.visual-card:has(.discord-ui-dropdown-container.is-open)),
         li:has(.pando-setting-card:has(.discord-ui-dropdown-container.is-open)),
         article:has(.visual-card:has(.discord-ui-dropdown-container.is-open)),
-        article:has(.pando-setting-card:has(.discord-ui-dropdown-container.is-open)) {
+        article:has(.pando-setting-card:has(.discord-ui-dropdown-container.is-open)),
+        div:has(.visual-card:has(.visual-select.open)),
+        div:has(.pando-setting-card:has(.visual-select.open)),
+        li:has(.visual-card:has(.visual-select.open)),
+        li:has(.pando-setting-card:has(.visual-select.open)),
+        article:has(.visual-card:has(.visual-select.open)),
+        article:has(.pando-setting-card:has(.visual-select.open)) {
             z-index: 999999 !important;
             position: relative !important;
         }
@@ -1162,7 +1170,7 @@
             max-height: 250px;
             overflow-y: auto;
             display: none;
-            z-index: 100;
+            z-index: 9999999;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         }
 
@@ -1210,6 +1218,8 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
             overflow: visible !important;
+            position: relative;
+            isolation: isolate;
         }
 
         /* Toggle mejorado con icono */
