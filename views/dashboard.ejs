@@ -1498,21 +1498,17 @@
         }
 
         /* Scrollbar Estilo Discord */
+        /* Scrollbar estilo Discord para el menú flotante */
         .discord-ui-dropdown-menu::-webkit-scrollbar {
-            width: 6px;
+            width: 8px !important;
         }
-
         .discord-ui-dropdown-menu::-webkit-scrollbar-track {
-            background: transparent;
+            background: #2b2d31 !important;
+            border-radius: 0 0 4px 0 !important;
         }
-
         .discord-ui-dropdown-menu::-webkit-scrollbar-thumb {
-            background: #1e1f22;
-            border-radius: 10px;
-        }
-
-        .discord-ui-dropdown-menu::-webkit-scrollbar-thumb:hover {
-            background: #18191c;
+            background-color: #1a1b1e !important;
+            border-radius: 4px !important;
         }
 
         /* Clase ACTIVADORA para mostrar el menú */
@@ -3424,21 +3420,24 @@
                 e.stopPropagation();
                 const isOpen = wrapper.classList.contains('is-open');
                 
-                // Cerrar todos los demás y restaurar z-index del padre
+                // Cerrar los demás
                 document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
-                    if (el !== wrapper) {
-                        el.classList.remove('is-open');
-                        // Restaurar z-index del padre si existe
-                        const parentCard = el.closest('[class*="bg-"], [class*="card"], div[style*="background"]'); 
-                        if(parentCard) parentCard.style.zIndex = '';
+                    el.classList.remove('is-open');
+                    const parentCard = el.closest('[class*="bg-"], [class*="card"], div[style*="background"]'); 
+                    if(parentCard) {
+                        parentCard.style.zIndex = '';
+                        // No quitamos la position por seguridad del layout
                     }
                 });
 
                 if (!isOpen) {
                     wrapper.classList.add('is-open');
-                    // Elevar la tarjeta padre actual por encima de las demás
+                    // Elevar la tarjeta padre actual (LA CLAVE ESTÁ AQUÍ)
                     const myParentCard = wrapper.closest('[class*="bg-"], [class*="card"], div[style*="background"]');
-                    if(myParentCard) myParentCard.style.zIndex = '9999';
+                    if(myParentCard) {
+                        myParentCard.style.position = 'relative'; /* OBLIGATORIO PARA QUE Z-INDEX FUNCIONE */
+                        myParentCard.style.zIndex = '9999';
+                    }
                 }
             });
 
