@@ -406,7 +406,8 @@ function iniciarServidorExpress(client) {
       // Validate and sanitize updates
       const allowedFields = [
         "log_channel", "transcript_channel", "dashboard_channel", 
-        "weekly_report_channel", "support_role", "admin_role", "verify_role",
+        "weekly_report_channel", "panel_channel_id",
+        "support_role", "admin_role", "verify_role",
         "max_tickets", "global_ticket_limit", "cooldown_minutes", "min_days",
         "auto_close_minutes", "sla_minutes", "smart_ping_minutes",
         "dm_on_open", "dm_on_close", "log_edits", "log_deletes",

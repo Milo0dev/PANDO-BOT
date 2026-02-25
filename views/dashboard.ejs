@@ -3272,41 +3272,48 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             }
             
             const btn = document.querySelector('.save-btn');
+            if (!btn) return;
+            
             btn.classList.add('loading');
             btn.disabled = true;
             
-            const updates = {
-                log_channel: parseId(document.getElementById('log_channel').value),
-                transcript_channel: parseId(document.getElementById('transcript_channel').value),
-                dashboard_channel: parseId(document.getElementById('dashboard_channel').value),
-                weekly_report_channel: parseId(document.getElementById('weekly_report_channel').value),
-                panel_channel_id: parseId(document.getElementById('panel_channel_id').value),
-                support_role: parseId(document.getElementById('support_role').value),
-                admin_role: parseId(document.getElementById('admin_role').value),
-                verify_role: parseId(document.getElementById('verify_role').value),
-                max_tickets: parseInt(document.getElementById('max_tickets').value) || 3,
-                global_ticket_limit: parseInt(document.getElementById('global_ticket_limit').value) || 0,
-                cooldown_minutes: parseInt(document.getElementById('cooldown_minutes').value) || 0,
-                min_days: parseInt(document.getElementById('min_days').value) || 0,
-                auto_close_minutes: parseInt(document.getElementById('auto_close_minutes').value) || 0,
-                sla_minutes: parseInt(document.getElementById('sla_minutes').value) || 0,
-                smart_ping_minutes: parseInt(document.getElementById('smart_ping_minutes').value) || 0,
-                log_edits: document.getElementById('log_edits').checked,
-                log_deletes: document.getElementById('log_deletes').checked,
-                dm_on_open: document.getElementById('dm_on_open').checked,
-                dm_on_close: document.getElementById('dm_on_close').checked,
-                maintenance_mode: document.getElementById('maintenance_mode').checked,
-                maintenance_reason: document.getElementById('maintenance_reason').value || null
-            };
-            
             try {
+                const updates = {
+                    log_channel: parseId(document.getElementById('log_channel')?.value),
+                    transcript_channel: parseId(document.getElementById('transcript_channel')?.value),
+                    dashboard_channel: parseId(document.getElementById('dashboard_channel')?.value),
+                    weekly_report_channel: parseId(document.getElementById('weekly_report_channel')?.value),
+                    panel_channel_id: parseId(document.getElementById('panel_channel_id')?.value),
+                    support_role: parseId(document.getElementById('support_role')?.value),
+                    admin_role: parseId(document.getElementById('admin_role')?.value),
+                    verify_role: parseId(document.getElementById('verify_role')?.value),
+                    max_tickets: parseInt(document.getElementById('max_tickets')?.value) || 3,
+                    global_ticket_limit: parseInt(document.getElementById('global_ticket_limit')?.value) || 0,
+                    cooldown_minutes: parseInt(document.getElementById('cooldown_minutes')?.value) || 0,
+                    min_days: parseInt(document.getElementById('min_days')?.value) || 0,
+                    auto_close_minutes: parseInt(document.getElementById('auto_close_minutes')?.value) || 0,
+                    sla_minutes: parseInt(document.getElementById('sla_minutes')?.value) || 0,
+                    smart_ping_minutes: parseInt(document.getElementById('smart_ping_minutes')?.value) || 0,
+                    log_edits: document.getElementById('log_edits')?.checked ?? false,
+                    log_deletes: document.getElementById('log_deletes')?.checked ?? false,
+                    dm_on_open: document.getElementById('dm_on_open')?.checked ?? false,
+                    dm_on_close: document.getElementById('dm_on_close')?.checked ?? false,
+                    maintenance_mode: document.getElementById('maintenance_mode')?.checked ?? false,
+                    maintenance_reason: document.getElementById('maintenance_reason')?.value || null
+                };
+                
                 const response = await fetch(`/api/settings/${currentGuildId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updates)
                 });
                 
-                const result = await response.json();
+                let result;
+                try {
+                    result = await response.json();
+                } catch (jsonError) {
+                    result = { success: false, error: 'Respuesta inválida del servidor' };
+                }
                 
                 if (result.success) {
                     showToast('Configuración guardada correctamente', 'success');
@@ -3314,11 +3321,12 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     showToast(result.error || 'Error al guardar', 'error');
                 }
             } catch (error) {
+                console.error('Error en saveSettings:', error);
                 showToast('Error al guardar configuración', 'error');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
             }
-            
-            btn.classList.remove('loading');
-            btn.disabled = false;
         }
 
         // Parse ID from input (supports #channel, @role, or raw ID)
