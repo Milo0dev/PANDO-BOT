@@ -3315,8 +3315,16 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     result = { success: false, error: 'Respuesta inválida del servidor' };
                 }
                 
-                if (result.success) {
+                if (response.ok && result.success) {
                     showToast('Configuración guardada correctamente', 'success');
+                    const btnText = btn.querySelector('.btn-text');
+                    if (btnText) {
+                        const originalHtml = btnText.innerHTML;
+                        btnText.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+                        setTimeout(() => {
+                            btnText.innerHTML = originalHtml;
+                        }, 2000);
+                    }
                 } else {
                     showToast(result.error || 'Error al guardar', 'error');
                 }
