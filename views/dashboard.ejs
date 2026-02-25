@@ -9,6 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        /* Elevar dinámicamente cualquier contenedor que tenga un dropdown abierto */
+        div:has(.discord-ui-dropdown-container.is-open),
+        li:has(.discord-ui-dropdown-container.is-open),
+        article:has(.discord-ui-dropdown-container.is-open) {
+            position: relative !important;
+            z-index: 99999 !important;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -3415,29 +3423,19 @@
 
             menu.innerHTML = menuHTML;
 
-            // 3. Lógica del Toggle (SIMPLE Y AISLADA) - CON ELEVACIÓN DINÁMICA DE Z-INDEX
+            // 3. Lógica del Toggle (SIMPLE Y AISLADA)
+            // El z-index ahora se maneja automáticamente con CSS :has()
             trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const isOpen = wrapper.classList.contains('is-open');
                 
-                // Cerrar los demás
+                // Cerrar los demás dropdowns
                 document.querySelectorAll('.discord-ui-dropdown-container.is-open').forEach(el => {
                     el.classList.remove('is-open');
-                    const parentCard = el.closest('[class*="bg-"], [class*="card"], div[style*="background"]'); 
-                    if(parentCard) {
-                        parentCard.style.zIndex = '';
-                        // No quitamos la position por seguridad del layout
-                    }
                 });
 
                 if (!isOpen) {
                     wrapper.classList.add('is-open');
-                    // Elevar la tarjeta padre actual (LA CLAVE ESTÁ AQUÍ)
-                    const myParentCard = wrapper.closest('[class*="bg-"], [class*="card"], div[style*="background"]');
-                    if(myParentCard) {
-                        myParentCard.style.position = 'relative'; /* OBLIGATORIO PARA QUE Z-INDEX FUNCIONE */
-                        myParentCard.style.zIndex = '9999';
-                    }
                 }
             });
 
