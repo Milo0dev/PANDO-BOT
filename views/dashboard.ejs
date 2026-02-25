@@ -1445,11 +1445,12 @@
         /* ===== DISCORD CHANNEL WRAPPER - UNIQUE CLASSES ===== */
         /* ===== NUEVO DISEÑO - DISCORD UI DROPDOWN ESTÁNDAR ===== */
         
-        /* Contenedor principal relativo */
+        /* Contenedor principal relativo - INNEGOCIABLE para que no desplace contenido */
         .discord-ui-dropdown-container {
             position: relative !important;
             width: 100%;
             max-width: 400px;
+            overflow: visible !important;
         }
 
         /* El botón gatillo */
@@ -1463,6 +1464,12 @@
             justify-content: space-between;
             align-items: center;
             border: 1px solid #2b2d31;
+            transition: all 0.2s ease;
+        }
+
+        .discord-ui-dropdown-trigger:hover {
+            border-color: #404249;
+            background-color: #202225;
         }
 
         /* EL MENÚ FLOTANTE - ESTO ES LO CRÍTICO */
@@ -1470,20 +1477,41 @@
             /* Estado CERRADO por defecto: */
             display: none !important; 
 
-            /* Posicionamiento y estilo: */
+            /* Posicionamiento ABSOLUTO - INNEGOCIABLE */
             position: absolute !important;
-            top: 100% !important;
+            top: calc(100% + 5px) !important;
             left: 0 !important;
             width: 100% !important;
-            min-width: 200px !important;
-            max-height: 250px !important;
+            min-width: 250px !important;
+            max-height: 300px !important;
             overflow-y: auto !important;
+            
+            /* Estética Premium - 100% opaco */
             background-color: #2b2d31 !important;
             border: 1px solid #1e1f22 !important;
-            border-radius: 0 0 4px 4px !important;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.9) !important;
+            border-radius: 4px !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+            
+            /* Z-index ultra alto para aparecer POR ENCIMA */
             z-index: 999999 !important;
-            margin-top: 2px;
+        }
+
+        /* Scrollbar Estilo Discord */
+        .discord-ui-dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .discord-ui-dropdown-menu::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .discord-ui-dropdown-menu::-webkit-scrollbar-thumb {
+            background: #1e1f22;
+            border-radius: 10px;
+        }
+
+        .discord-ui-dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: #18191c;
         }
 
         /* Clase ACTIVADORA para mostrar el menú */
