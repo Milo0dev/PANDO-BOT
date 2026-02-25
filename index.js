@@ -118,7 +118,7 @@ async function startBot() {
   }
 
   // ── Iniciar sistemas de auto-actualización
-  const { startDashboardAutoUpdate } = require("./src/handlers/dashboardHandler");
+  const { startDashboardAutoUpdate, forceUpdateDashboard } = require("./src/handlers/dashboardHandler");
   const { startOrphanCleanup } = require("./src/handlers/musicHandler");
   
   // Dashboard auto-update (cada 30 segundos)
@@ -393,10 +393,16 @@ function iniciarServidorExpress(client) {
   app.post("/api/settings/:guildId", checkAuth, checkOwner, async (req, res) => {
     const { guildId } = req.params;
     const updates = req.body;
+
+    console.log("[API] POST /api/settings/:guildId recibido", {
+      guildId,
+      updates
+    });
     
     // Verify bot is in this guild
     const guild = client.guilds.cache.get(guildId);
     if (!guild) {
+      console.warn("[API] Guild no encontrada para settings", { guildId });
       return res.status(404).json({ error: "Servidor no encontrado" });
     }
     
@@ -420,11 +426,31 @@ function iniciarServidorExpress(client) {
           sanitizedUpdates[key] = updates[key];
         }
       }
+
+      console.log("[API] /api/settings sanitizedUpdates:", {
+        guildId,
+        sanitizedUpdates
+      });
       
-      await settings.update(guildId, sanitizedUpdates);
+      const updatedSettings = await settings.update(guildId, sanitizedUpdates);
+
+      console.log("[API] settings.update completado", {
+        guildId,
+        updatedSettings
+      });
+
+      // Aplicar inmediatamente la nueva configuración al dashboard en Discord
+      try {
+        console.log("[DASHBOARD] Forzando actualización de dashboard para guild", guildId);
+        await forceUpdateDashboard(guildId);
+        console.log("[DASHBOARD] Actualización de dashboard completada para guild", guildId);
+      } catch (error) {
+        console.error("[DASHBOARD] Error al forzar actualización después de guardar settings:", error?.message || error);
+      }
       
-      res.json({ success: true, message: "Configuración guardada" });
+      res.status(200).json({ success: true, message: "Configuración guardada", settings: updatedSettings });
     } catch (error) {
+      console.error("[API] Error en POST /api/settings/:guildId:", error);
       res.status(500).json({ error: error.message });
     }
   });

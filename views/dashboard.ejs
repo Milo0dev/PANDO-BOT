@@ -3264,7 +3264,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             showLoading(false);
         }
 
-        // Save settings
+        // Save settings (usa la misma estructura que el guardado en tiempo real)
         async function saveSettings() {
             if (!currentGuildId) {
                 showToast('Selecciona un servidor primero', 'warning');
@@ -3278,29 +3278,13 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             btn.disabled = true;
             
             try {
-                const updates = {
-                    log_channel: parseId(document.getElementById('log_channel')?.value),
-                    transcript_channel: parseId(document.getElementById('transcript_channel')?.value),
-                    dashboard_channel: parseId(document.getElementById('dashboard_channel')?.value),
-                    weekly_report_channel: parseId(document.getElementById('weekly_report_channel')?.value),
-                    panel_channel_id: parseId(document.getElementById('panel_channel_id')?.value),
-                    support_role: parseId(document.getElementById('support_role')?.value),
-                    admin_role: parseId(document.getElementById('admin_role')?.value),
-                    verify_role: parseId(document.getElementById('verify_role')?.value),
-                    max_tickets: parseInt(document.getElementById('max_tickets')?.value) || 3,
-                    global_ticket_limit: parseInt(document.getElementById('global_ticket_limit')?.value) || 0,
-                    cooldown_minutes: parseInt(document.getElementById('cooldown_minutes')?.value) || 0,
-                    min_days: parseInt(document.getElementById('min_days')?.value) || 0,
-                    auto_close_minutes: parseInt(document.getElementById('auto_close_minutes')?.value) || 0,
-                    sla_minutes: parseInt(document.getElementById('sla_minutes')?.value) || 0,
-                    smart_ping_minutes: parseInt(document.getElementById('smart_ping_minutes')?.value) || 0,
-                    log_edits: document.getElementById('log_edits')?.checked ?? false,
-                    log_deletes: document.getElementById('log_deletes')?.checked ?? false,
-                    dm_on_open: document.getElementById('dm_on_open')?.checked ?? false,
-                    dm_on_close: document.getElementById('dm_on_close')?.checked ?? false,
-                    maintenance_mode: document.getElementById('maintenance_mode')?.checked ?? false,
-                    maintenance_reason: document.getElementById('maintenance_reason')?.value || null
-                };
+                const updates = getConfigPayload();
+                if (!updates) {
+                    showToast('No hay cambios para guardar', 'info');
+                    return;
+                }
+
+                console.log('[DASHBOARD] saveSettings payload:', updates);
                 
                 const response = await fetch(`/api/settings/${currentGuildId}`, {
                     method: 'POST',
@@ -3312,8 +3296,15 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                 try {
                     result = await response.json();
                 } catch (jsonError) {
+                    console.error('[DASHBOARD] Error parseando JSON en saveSettings:', jsonError);
                     result = { success: false, error: 'Respuesta inválida del servidor' };
                 }
+
+                console.log('[DASHBOARD] saveSettings response:', {
+                    status: response.status,
+                    ok: response.ok,
+                    body: result
+                });
                 
                 if (response.ok && result.success) {
                     showToast('Configuración guardada correctamente', 'success');
@@ -3404,6 +3395,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             realtimeSaveTimer = setTimeout(async () => {
                 realtimeSaveTimer = null;
                 try {
+                    console.log('[DASHBOARD] realtime save payload:', payload);
                     const response = await fetch(`/api/settings/${currentGuildId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3413,8 +3405,16 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     try {
                         result = await response.json();
                     } catch (e) {
+                        console.error('[DASHBOARD] Error parseando JSON en guardado en tiempo real:', e);
                         result = { success: false, error: 'Respuesta inválida del servidor' };
                     }
+
+                    console.log('[DASHBOARD] realtime save response:', {
+                        status: response.status,
+                        ok: response.ok,
+                        body: result
+                    });
+
                     if (!result.success) {
                         showToast(result.error || 'Error al guardar', 'error');
                     }
