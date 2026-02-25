@@ -1557,6 +1557,16 @@
         }
         /* ----------------------------------------------- */
 
+        /* Clase para el icono de la flecha */
+        .discord-ui-arrow {
+            display: inline-block !important; /* Necesario para que la transformación funcione en un span */
+            transition: transform 0.2s ease-in-out !important; /* Suaviza el giro */
+        }
+
+        /* Estado rotado cuando el menú está abierto */
+        .discord-ui-dropdown-container.is-open .discord-ui-arrow {
+            transform: rotate(180deg) !important; /* Gira 180 grados (apunta hacia arriba) */
+        }
 
         /* Selector de Rol */
         .role-option {
@@ -3373,7 +3383,7 @@
                 initialText = selectedChannel ? `#${selectedChannel.name}` : '# Canal Seleccionado';
             }
             
-            trigger.innerHTML = `<span>${initialText}</span> <span>▼</span>`;
+            trigger.innerHTML = `<span>${initialText}</span> <span class="discord-ui-arrow">▼</span>`;
 
             const menu = document.createElement('div');
             menu.className = 'discord-ui-dropdown-menu';
@@ -3465,7 +3475,7 @@
                     const channelName = option.textContent.trim();
                     
                     // Actualizar el display
-                    trigger.innerHTML = `<span>${channelName}</span> <span>▼</span>`;
+                    trigger.innerHTML = `<span>${channelName}</span> <span class="discord-ui-arrow">▼</span>`;
                     
                     // Actualizar el input hidden
                     const hiddenInput = containerTarget.querySelector('input[type="hidden"]');
