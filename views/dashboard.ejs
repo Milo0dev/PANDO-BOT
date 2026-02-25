@@ -1490,6 +1490,11 @@
             display: block !important;
         }
 
+        /* Elevar el contenedor entero al frente cuando el menú está activo */
+        .discord-ui-dropdown-container.is-open {
+            z-index: 99999 !important;
+        }
+
         /* Estilos de opciones */
         .discord-ui-option { padding: 8px 12px; cursor: pointer; color: #dbdee1; }
         .discord-ui-option:hover { background-color: #404249 !important; }
