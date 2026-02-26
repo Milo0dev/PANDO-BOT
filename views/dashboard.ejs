@@ -4398,5 +4398,192 @@ Swal.fire({
             });
         });
     </script>
+
+    <!-- ========================================== -->
+    <!-- MUTATIONOBSERVER DEFINITIVO PARA TOM SELECT -->
+    <!-- Solución para selects renderizados dinámicamente -->
+    <!-- ========================================== -->
+    <script>
+        /**
+         * ==========================================
+         * MUTATIONOBSERVER PARA TOM SELECT
+         * Inicializa dinámicamente elementos <select>
+         * que aparecen tras seleccionar un servidor
+         * ==========================================
+         */
+
+        // Función principal: inicializa Tom Select en un elemento <select>
+        function inicializarTomSelectEnElemento(selectElement) {
+            // Verificar que el elemento existe
+            if (!selectElement) return;
+
+            // Verificar si ya fue inicializado con Tom Select
+            // (tiene la clase 'ts-hidden-accessible' o 'tomselected')
+            if (selectElement.classList.contains('ts-hidden-accessible') || 
+                selectElement.classList.contains('tomselected')) {
+                console.log('[TomSelect Observer] ⏭️  Omitido (ya inicializado):', selectElement.id || selectElement.name || selectElement.className);
+                return;
+            }
+
+            // NO inicializar selects que son usados por custom dropdowns de Discord UI
+            // Estos tienen su propio sistema de UI y no necesitan Tom Select
+            const parentContainer = selectElement.closest('.discord-ui-dropdown-container');
+            if (parentContainer) {
+                console.log('[TomSelect Observer] ⏭️  Omitido (Discord UI dropdown):', selectElement.id || selectElement.name);
+                return;
+            }
+
+            // Verificar si el select está visible o es procesable
+            const style = window.getComputedStyle(selectElement);
+            const isHidden = style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+            
+            // Inicializar solo si no está oculto
+            if (isHidden) {
+                console.log('[TomSelect Observer] ⏭️  Omitido (oculto):', selectElement.id || selectElement.name);
+                return;
+            }
+
+            try {
+                // Inicializar Tom Select con configuración completa
+                new TomSelect(selectElement, {
+                    create: false,
+                    maxOptions: null,
+                    sortField: {
+                        field: "text",
+                        direction: "asc"
+                    },
+                    plugins: ['clear_button'],
+                    placeholder: selectElement.getAttribute('data-placeholder') || 'Seleccionar...',
+                    allowEmptyOption: true,
+                    onItemAdd: function() {
+                        this.setText('');
+                    },
+                    onFocus: function() {
+                        if (this.wrapper) {
+                            this.wrapper.classList.add('focus');
+                        }
+                    },
+                    onBlur: function() {
+                        if (this.wrapper) {
+                            this.wrapper.classList.remove('focus');
+                        }
+                    }
+                });
+
+                console.log('[TomSelect Observer] ✅ Inicializado:', selectElement.id || selectElement.name || 'select anónimo');
+            } catch (error) {
+                console.error('[TomSelect Observer] ❌ Error al inicializar:', selectElement.id || selectElement.name, error);
+            }
+        }
+
+        // Función que escanea el documento y busca todos los <select> no inicializados
+        function escanearYInicializarSelects() {
+            // Seleccionar TODOS los elementos <select> que NO han sido inicializados
+            const selects = document.querySelectorAll('select:not(.ts-hidden-accessible):not(.tomselected)');
+            
+            console.log('[TomSelect Observer] 🔍 Escaneando... Encontrados:', selects.length);
+            
+            selects.forEach(function(selectElement) {
+                inicializarTomSelectEnElemento(selectElement);
+            });
+        }
+
+        // ==========================================
+        // MUTATIONOBSERVER - VIGILA CAMBIOS EN EL DOM
+        // ==========================================
+        function iniciarMutationObserver() {
+            // Crear el observador de mutaciones
+            const observer = new MutationObserver(function(mutationsList, observer) {
+                let nuevosSelects = false;
+
+                mutationsList.forEach(function(mutation) {
+                    // Verificar si se agregaron nodos
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        mutation.addedNodes.forEach(function(addedNode) {
+                            // Caso 1: El nodo agregado ES un <select>
+                            if (addedNode.nodeName === 'SELECT') {
+                                nuevosSelects = true;
+                                console.log('[TomSelect Observer] 📥 Nuevo <select> detectado directamente');
+                            }
+                            // Caso 2: El nodo agregado es un elemento que PUEDE contener <select>
+                            else if (addedNode.nodeType === 1) { // Element node
+                                // Buscar selects dentro del elemento agregado
+                                const selectsInNode = addedNode.querySelectorAll('select');
+                                if (selectsInNode.length > 0) {
+                                    nuevosSelects = true;
+                                    console.log('[TomSelect Observer] 📥 Nuevo contenedor con', selectsInNode.length, '<select>(s)');
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // Si se detectaron nuevos selects, procesarlos
+                if (nuevosSelects) {
+                    // Pequeño delay para asegurar que el elemento esté completamente renderizado
+                    setTimeout(function() {
+                        escanearYInicializarSelects();
+                    }, 100);
+                }
+            });
+
+            // Iniciar la observación del document.body
+            observer.observe(document.body, {
+                childList: true,    // Observar hijos directos
+                subtree: true       // Observar todos los descendientes
+            });
+
+            console.log('[TomSelect Observer] 👁️  MutationObserver iniciado - Vigilando cambios en el DOM');
+        }
+
+        // ==========================================
+        // INICIALIZACIÓN CUANDO EL DOM ESTÉ LISTO
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[TomSelect Observer] 🚀 Iniciando sistema de inicialización...');
+            
+            // 1. Iniciar el MutationObserver para futuros elementos
+            iniciarMutationObserver();
+
+            // 2. Escanear inmediatamente por si ya existen selects
+            // (por si el servidor ya tenía datos cargados)
+            setTimeout(function() {
+                escanearYInicializarSelects();
+            }, 100);
+
+            // 3. Escaneo adicional tras selección de servidor
+            // (cuando se carga el panel de configuración)
+            // Este evento se dispara cuando se selecciona un servidor
+            const configPanel = document.getElementById('configPanel');
+            if (configPanel) {
+                const originalDisplay = configPanel.style.display;
+                
+                // Observar cuando el panel de configuración se hace visible
+                const configObserver = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                            const display = configPanel.style.display;
+                            if (display !== 'none' && display !== '') {
+                                console.log('[TomSelect Observer] 📋 Panel de configuración activado');
+                                setTimeout(function() {
+                                    escanearYInicializarSelects();
+                                }, 200);
+                            }
+                        }
+                    });
+                });
+
+                configObserver.observe(configPanel, { attributes: true });
+            }
+        });
+
+        // ==========================================
+        // FUNCIÓN PÚBLICA: Permitir recarga manual si es necesario
+        // ==========================================
+        window.reiniciarTomSelect = function() {
+            console.log('[TomSelect Observer] 🔄 Reinicialización manual solicitada');
+            escanearYInicializarSelects();
+        };
+    </script>
 </body>
 </html>
