@@ -3265,8 +3265,8 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             // MOSTRAR LA BARRA FLOTANTE DE GUARDADO
             document.querySelector('.floating-save-bar').classList.add('visible');
             
+            // Cargar configuración del servidor - los dropdowns se inicializan automáticamente
             await loadSettings(server.id);
-            await loadCustomChannelDropdowns(server.id);
         }
 
         // Load settings for a server
@@ -3488,7 +3488,7 @@ Swal.fire({
         function selectVisualOption(selectId, value, text) {
             const select = document.getElementById(selectId);
             const hiddenInput = select.parentElement.querySelector('input[type="hidden"]');
-            const textSpan = select.querySelector('#' + selectId.replace('Select', 'Text') || select.querySelector('.value span:last-child'));
+            const textSpan = select.querySelector('.value span:last-child') || select.querySelector('.value span');
 
             // Update hidden input
             if (hiddenInput) {
