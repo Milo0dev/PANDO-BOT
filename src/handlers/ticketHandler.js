@@ -114,6 +114,56 @@ async function createTicket(interaction, categoryId, answers = []) {
   const category = ticketCategories.find(c => c.id === categoryId);
   if (!category) return replyError(interaction, "Categoría no encontrada.");
 
+  // ═══════════════════════════════════════════════════════
+  //   GUARDIANES DE CREACIÓN - 4 VALIDACIONES ESTRICTAS
+  // ═══════════════════════════════════════════════════════
+
+  // ─────────────────────────────────────────────────────
+  //   1️⃣ DÍAS EN SERVIDOR (min_days)
+  // ─────────────────────────────────────────────────────
+  if (s.min_days > 0) {
+    const member = await guild.members.fetch(user.id).catch(() => null);
+    if (member) {
+      const days = (Date.now() - member.joinedTimestamp) / 86400000;
+      if (days < s.min_days) {
+        return replyError(interaction, `Debes llevar al menos **${s.min_days} día(s)** en el servidor para abrir un ticket.`);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────
+  //   2️⃣ LÍMITE GLOBAL (global_ticket_limit)
+  // ─────────────────────────────────────────────────────
+  if (s.global_ticket_limit > 0) {
+    const totalOpen = await tickets.getAllOpen(guild.id);
+    if (totalOpen.length >= s.global_ticket_limit) {
+      return replyError(interaction, `El servidor ha alcanzado el límite global de **${s.global_ticket_limit}** tickets abiertos. Por favor, espera a que se libere espacio.`);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────
+  //   3️⃣ MÁXIMO POR USUARIO (max_tickets)
+  // ─────────────────────────────────────────────────────
+  const openTickets = await tickets.getByUser(user.id, guild.id);
+  const maxPerUser = s.max_tickets || 3;
+  if (openTickets.length >= maxPerUser) {
+    return replyError(interaction, `Ya tienes **${openTickets.length}/${maxPerUser}** tickets abiertos: ${openTickets.map(t => `<#${t.channel_id}>`).join(", ")}`);
+  }
+
+  // ─────────────────────────────────────────────────────
+  //   4️⃣ TIEMPO DE ESPERA (cooldown_minutes)
+  // ─────────────────────────────────────────────────────
+  if (s.cooldown_minutes > 0) {
+    const remaining = await cooldowns.check(user.id, guild.id, s.cooldown_minutes);
+    if (remaining) {
+      return replyError(interaction, `Debes esperar **${remaining} minuto(s)** antes de abrir otro ticket.`);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  //   OTRAS VALIDACIONES (Mantenimiento, Blacklist, etc.)
+  // ═══════════════════════════════════════════════════════
+
   // Mantenimiento
   if (s.maintenance_mode) {
     return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], ephemeral: true });
@@ -123,12 +173,6 @@ async function createTicket(interaction, categoryId, answers = []) {
   const banned = await blacklist.check(user.id, guild.id);
   if (banned) return replyError(interaction, `Estás en la lista negra.\n**Razón:** ${banned.reason || "Sin razón"}`);
 
-  // Cooldown
-  if (s.cooldown_minutes > 0) {
-    const remaining = await cooldowns.check(user.id, guild.id, s.cooldown_minutes);
-    if (remaining) return replyError(interaction, `Debes esperar **${remaining} minuto(s)** antes de abrir otro ticket.`);
-  }
-
   // Rol mínimo requerido
   if (s.verify_role) {
     const member = await guild.members.fetch(user.id).catch(() => null);
@@ -137,31 +181,7 @@ async function createTicket(interaction, categoryId, answers = []) {
     }
   }
 
-  // Días mínimos en el servidor
-  if (s.min_days > 0) {
-    const member = await guild.members.fetch(user.id).catch(() => null);
-    if (member) {
-      const days = (Date.now() - member.joinedTimestamp) / 86400000;
-      if (days < s.min_days) {
-        return replyError(interaction, `Debes llevar al menos **${s.min_days} días** en el servidor para abrir tickets.`);
-      }
-    }
-  }
-
-  // Límite por usuario
-  const openTickets = await tickets.getByUser(user.id, guild.id);
-  if (openTickets.length >= (s.max_tickets || 3)) {
-    return replyError(interaction, `Ya tienes **${openTickets.length}/${s.max_tickets || 3}** tickets abiertos: ${openTickets.map(t => `<#${t.channel_id}>`).join(", ")}`);
-  }
-
-  // Límite global
-  if (s.global_ticket_limit > 0) {
-    const totalOpen = await tickets.getAllOpen(guild.id);
-    if (totalOpen.length >= s.global_ticket_limit) {
-      return replyError(interaction, `El servidor ha alcanzado el límite global de **${s.global_ticket_limit}** tickets abiertos. Por favor espera a que se libere espacio.`);
-    }
-  }
-
+  // Crear el ticket
   await interaction.deferReply({ ephemeral: true });
 
   try {
