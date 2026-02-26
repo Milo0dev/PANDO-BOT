@@ -538,11 +538,20 @@ const settings = {
       global_ticket_limit: 0,
       cooldown_minutes: 0,
       min_days: 0,
+      // === AUTOMATION SETTINGS ===
+      auto_close_hours: 0,          // Auto-cierre en horas (0 = desactivado)
+      sla_hours: 0,                 // Alerta SLA en horas (0 = desactivado)
+      smart_ping_hours: 0,          // Smart Ping en horas (0 = desactivado)
+      // Legacy support (in minutes)
       auto_close_minutes: 0,
       sla_minutes: 0,
       smart_ping_minutes: 0,
-      dm_on_open: true,
-      dm_on_close: true,
+      // === DM SETTINGS ===
+      dm_on_open: true,             // DM al abrir ticket
+      dm_on_close: true,            // DM al cerrar ticket
+      dm_transcripts: true,         // Adjuntar transcript HTML al DM
+      dm_alerts: true,              // Enviar alertas de cierre al usuario
+      // === LOGS ===
       log_edits: true,
       log_deletes: true,
       maintenance_mode: false,

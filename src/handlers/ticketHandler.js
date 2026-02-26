@@ -312,12 +312,82 @@ async function closeTicket(interaction, reason = null) {
     }
   } catch (e) { console.error("[TRANSCRIPT]", e.message); }
 
-  // DM al usuario
-  if (s.dm_on_close && user) {
-    const dmEmbed = E.infoEmbed("🔒 Ticket Cerrado",
-      `Tu ticket **#${ticket.ticket_id}** en **${guild.name}** fue cerrado.\n\n**Razón:** ${reason || "Sin razón"}\n**Duración:** ${E.duration(ticket.created_at)}${transcriptMsg ? `\n\n[📄 Ver transcripción](${transcriptMsg.url})` : ""}`
-    );
-    await user.send({ embeds: [dmEmbed] }).catch(() => {});
+  // ═══════════════════════════════════════════════════════════
+  //   DM PROFESIONAL CON TRANSCRIPT ADJUNTO (Lectura estricta de settings)
+  // ═══════════════════════════════════════════════════════════
+  
+  // Leer configuraciones de DM desde la base de datos
+  const dmEnabled = s.dm_on_close === true;
+  const dmTranscriptEnabled = s.dm_transcripts === true;
+  const dmAlertsEnabled = s.dm_alerts === true;
+  
+  if (dmEnabled && user && dmAlertsEnabled) {
+    try {
+      // Construir el embed profesional de despedida
+      const dmEmbed = new EmbedBuilder()
+        .setColor(E.Colors.SUCCESS)
+        .setTitle("🔒 Ticket Cerrado - " + guild.name)
+        .setThumbnail(guild.iconURL({ dynamic: true }))
+        .addFields(
+          { name: "🎫 Ticket", value: `#${ticket.ticket_id}`, inline: true },
+          { name: "📁 Categoría", value: ticket.category || "General", inline: true },
+          { name: "⏱️ Duración", value: E.duration(ticket.created_at), inline: true },
+          { name: "📋 Razón", value: reason || "Sin razón especificada", inline: false },
+          { name: "👮 Atendido por", value: `<@${interaction.user.id}>`, inline: true },
+        )
+        .setFooter({ text: "Gracias por confiar en nuestro soporte • Pando Bot" })
+        .setTimestamp();
+
+      // Añadir enlace de transcripción si existe
+      if (transcriptMsg) {
+        dmEmbed.addFields({ 
+          name: "📄 Transcripción", 
+          value: `[Ver transcripción completa](${transcriptMsg.url})`,
+          inline: false 
+        });
+      }
+
+      // Preparar archivos adjuntos (transcript HTML)
+      const attachmentFiles = [];
+      
+      if (dmTranscriptEnabled && transcriptMsg && transcriptMsg.attachments?.first()) {
+        // Adjuntar el archivo de transcript si está habilitado
+        attachmentFiles.push(transcriptMsg.attachments.first());
+      }
+
+      // ENVÍO CRÍTICO: Try/Catch estricto para evitar crasheo
+      await user.send({ 
+        embeds: [dmEmbed],
+        files: attachmentFiles.length > 0 ? attachmentFiles : undefined
+      }).then(() => {
+        console.log(`[DM] Transcript sent to user ${user.id} for ticket #${ticket.ticket_id}`);
+      });
+      
+    } catch (dmError) {
+      // ERROR CRÍTICO: El usuario tiene los DMs cerrados o bloqueados
+      console.error(`[DM ERROR] No se pudo enviar DM al usuario ${user.id}:`, dmError.message);
+      
+      // Notificar en el canal de logs si está configurado
+      if (s.log_channel) {
+        const logCh = guild.channels.cache.get(s.log_channel);
+        if (logCh) {
+          try {
+            await logCh.send({
+              embeds: [new EmbedBuilder()
+                .setColor(E.Colors.WARNING)
+                .setTitle("⚠️ Aviso: DM no enviado")
+                .setDescription(`No se pudo enviar el mensaje de cierre por DM al usuario <@${user.id}>.\n\n**Posible causa:** El usuario tiene los mensajes directos cerrados o ha bloqueado al bot.\n\n**Ticket:** #${ticket.ticket_id}`)
+                .addFields(
+                  { name: "📋 Transcripción disponible", value: transcriptMsg ? `[ aquí](${transcriptMsg.url})` : "No disponible", inline: true },
+                )
+                .setTimestamp()]
+            }).catch(() => {});
+          } catch (logError) {
+            console.error(`[DM ERROR] Could not send log to log channel:`, logError.message);
+          }
+        }
+      }
+    }
   }
 
   await interaction.editReply({ embeds: [E.ticketClosed(closed, interaction.user.id, reason)] });
