@@ -1033,14 +1033,15 @@
 
         /* Contenedor Sticky para el botón de guardar (Efecto Cristal Premium) */
         .save-btn-container {
-            position: sticky;
+            position: fixed;
             bottom: 0;
+            left: 0;
+            right: 0;
             padding: 20px;
-            z-index: 100;
-            background: rgba(30, 31, 34, 0.85);
+            z-index: 9999;
+            background: rgba(30, 31, 34, 0.95);
             backdrop-filter: blur(12px);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0 0 12px 12px;
             margin-top: 20px;
         }
 
