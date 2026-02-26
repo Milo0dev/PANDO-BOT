@@ -11,7 +11,28 @@ const {
   EmbedBuilder,
   MessageFlags 
 } = require("discord.js");
-const config = require("../config");
+
+// Categorías por defecto para el panel de tickets (hardcodeadas para evitar require('../config'))
+const ticketCategories = [
+  { 
+    id: "support", 
+    label: "Soporte General", 
+    description: "Abre un ticket para ayuda general", 
+    emoji: "🎫" 
+  },
+  { 
+    id: "report", 
+    label: "Reportes", 
+    description: "Reporta a un usuario o comportamiento inapropiado", 
+    emoji: "⚠️" 
+  },
+  { 
+    id: "bug", 
+    label: "Reportar Bug", 
+    description: "Reporta un bug o error en el servidor", 
+    emoji: "🐛" 
+  },
+];
 
 // Intervalo de actualización del dashboard (30 segundos)
 const DASHBOARD_UPDATE_INTERVAL = 30 * 1000;
@@ -113,13 +134,12 @@ async function updateTicketPanel(guild) {
         const existingMsg = await channel.messages.fetch(s.panel_message_id);
         if (existingMsg) {
           // El mensaje ya existe - editarlo con la misma lógica que sendPanel
-          // Replicamos exactamente la lógica de sendPanel para mantener consistencia
-          const p = config.panel;
+          // Usamos las categorías hardcodeadas localmente
           const embed = new EmbedBuilder()
-            .setTitle(p.title)
-            .setDescription(p.description)
-            .setColor(p.color)
-            .setFooter({ text: p.footer, iconURL: guild.iconURL({ dynamic: true }) })
+            .setTitle("🎫 Sistema de Tickets")
+            .setDescription("Selecciona una categoría para crear tu ticket.\n\nNuestro equipo de staff te atenderá lo más pronto posible.")
+            .setColor("#5865F2")
+            .setFooter({ text: "Pando Bot - Sistema de Tickets", iconURL: guild.iconURL({ dynamic: true }) })
             .setTimestamp();
 
           const openCount = await tickets.getAllOpen(guild.id);
@@ -128,7 +148,7 @@ async function updateTicketPanel(guild) {
           const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_category_select")
             .setPlaceholder("📋 Selecciona el tipo de ticket...")
-            .addOptions(config.categories.map(c => ({
+            .addOptions(ticketCategories.map(c => ({
               label: c.label, description: c.description, value: c.id, emoji: c.emoji,
             })));
 

@@ -9,18 +9,39 @@ const { tickets, settings, blacklist, staffStats, staffRatings, cooldowns } = re
 const { generateTranscript }  = require("../utils/transcript");
 const { updateDashboard }     = require("./dashboardHandler");
 const E = require("../utils/embeds");
-const config = require("../../config");
+
+// Categorías hardcodeadas para el panel de tickets (mismas que en dashboardHandler.js)
+const ticketCategories = [
+  { 
+    id: "support", 
+    label: "Soporte General", 
+    description: "Abre un ticket para ayuda general", 
+    emoji: "🎫" 
+  },
+  { 
+    id: "report", 
+    label: "Reportes", 
+    description: "Reporta a un usuario o comportamiento inapropiado", 
+    emoji: "⚠️" 
+  },
+  { 
+    id: "bug", 
+    label: "Reportar Bug", 
+    description: "Reporta un bug o error en el servidor", 
+    emoji: "🐛" 
+  },
+];
 
 // ─────────────────────────────────────────────────────
 //   PANEL
 // ─────────────────────────────────────────────────────
 async function sendPanel(channel, guild) {
-  const p = config.panel;
+  // Usamos las categorías hardcodeadas localmente
   const embed = new EmbedBuilder()
-    .setTitle(p.title)
-    .setDescription(p.description)
-    .setColor(p.color)
-    .setFooter({ text: p.footer, iconURL: guild.iconURL({ dynamic: true }) })
+    .setTitle("🎫 Sistema de Tickets")
+    .setDescription("Selecciona una categoría para crear tu ticket.\n\nNuestro equipo de staff te atenderá lo más pronto posible.")
+    .setColor("#5865F2")
+    .setFooter({ text: "Pando Bot - Sistema de Tickets", iconURL: guild.iconURL({ dynamic: true }) })
     .setTimestamp();
 
   const openCount = await tickets.getAllOpen(guild.id);
@@ -29,7 +50,7 @@ async function sendPanel(channel, guild) {
   const menu = new StringSelectMenuBuilder()
     .setCustomId("ticket_category_select")
     .setPlaceholder("📋 Selecciona el tipo de ticket...")
-    .addOptions(config.categories.map(c => ({
+    .addOptions(ticketCategories.map(c => ({
       label: c.label, description: c.description, value: c.id, emoji: c.emoji,
     })));
 
@@ -66,7 +87,7 @@ async function createTicket(interaction, categoryId, answers = []) {
   const guild    = interaction.guild;
   const user     = interaction.user;
   const s        = await settings.get(guild.id);
-  const category = config.categories.find(c => c.id === categoryId);
+  const category = ticketCategories.find(c => c.id === categoryId);
   if (!category) return replyError(interaction, "Categoría no encontrada.");
 
   // Mantenimiento
@@ -240,8 +261,8 @@ async function closeTicket(interaction, reason = null) {
 
   await interaction.editReply({ embeds: [E.ticketClosed(closed, interaction.user.id, reason)] });
 
-  // Rating por DM
-  if (config.ratings.enabled && user) {
+  // Rating por DM (habilitado por defecto)
+  if (user) {
     const staffWhoHandled = closed.claimed_by || closed.assigned_to || interaction.user.id;
     await sendRating(user, ticket, channel, staffWhoHandled);
   }
@@ -399,7 +420,7 @@ async function removeUser(interaction, user) {
 async function moveTicket(interaction, newCategoryId) {
   const ticket      = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
-  const newCategory = config.categories.find(c => c.id === newCategoryId);
+  const newCategory = ticketCategories.find(c => c.id === newCategoryId);
   if (!newCategory) return replyError(interaction, "Categoría no encontrada.");
 
   const oldCategory = ticket.category;
