@@ -4,8 +4,15 @@ const { tickets, settings, ticketLogs, modlogSettings } = require("../utils/data
 module.exports = {
   name: "messageUpdate",
   async execute(oldMsg, newMsg, client) {
+    // ── MEDIDA DE SEGURIDAD 1: Filtrar bots
     if (!newMsg.guild || newMsg.author?.bot) return;
-    if (oldMsg.content === newMsg.content)   return;
+    
+    // ── MEDIDA DE SEGURIDAD 2: Verificar contenido antes de procesar
+    // A veces Discord emite eventos de update solo por cargar un link o un embed sin cambio real de texto
+    if (oldMsg.content === newMsg.content) return;
+    
+    // Verificar que al menos uno de los contenidos exista
+    if (!oldMsg.content && !newMsg.content) return;
 
     const guild = newMsg.guild;
 
@@ -32,32 +39,43 @@ module.exports = {
       }
     }
 
-    // ── 2. Log de moderación global
-    const ml = await modlogSettings.get(guild.id);
-    if (!ml || !ml.enabled || !ml.log_msg_edit || !ml.channel) return;
-    
-    const s = await settings.get(guild.id);
-    if (ml.channel === s?.log_channel && ticket) return;
+    // ── 2. Log GLOBAL de moderación (usando log_channel de settings)
+    try {
+      const s = await settings.get(guild.id);
+      
+      // Verificar que log_channel existe en la base de datos
+      if (!s || !s.log_channel) return;
+      
+      // Obtener el canal de logs
+      const logCh = guild.channels.cache.get(s.log_channel);
+      if (!logCh) return;
+      
+      // Evitar doble log si ya se envió en el log de tickets
+      const ml = await modlogSettings.get(guild.id);
+      if (ml && ml.enabled && ml.log_msg_edit && ml.channel === s.log_channel && ticket) return;
 
-    const ch = guild.channels.cache.get(ml.channel);
-    if (!ch) return;
+      // Evitar enviar si el canal de logs es el mismo que el del ticket
+      if (ticket && s.log_channel === (await tickets.get(newMsg.channel.id))?.log_channel) return;
 
-    const before = (oldMsg.content || "*(vacío)*").substring(0, 500);
-    const after  = (newMsg.content || "*(vacío)*").substring(0, 500);
+      const before = (oldMsg.content || "*(vacío)*").substring(0, 500);
+      const after  = (newMsg.content || "*(vacío)*").substring(0, 500);
 
-    await ch.send({
-      embeds: [new EmbedBuilder()
-        .setColor(0xFEE75C)
-        .setTitle("✏️ Mensaje Editado")
-        .addFields(
-          { name: "👤 Autor",     value: `${newMsg.author.tag} <@${newMsg.author.id}>`, inline: true },
-          { name: "📌 Canal",     value: `<#${newMsg.channel.id}>`, inline: true },
-          { name: "🔗 Ir al msg", value: `[Click aquí](${newMsg.url})`, inline: true },
-          { name: "📝 Antes",     value: before, inline: false },
-          { name: "📝 Después",   value: after,  inline: false },
-        )
-        .setFooter({ text: `ID mensaje: ${newMsg.id}` })
-        .setTimestamp()],
-    }).catch(() => {});
+      await logCh.send({
+        embeds: [new EmbedBuilder()
+          .setColor(0xFEE75C) // Amarillo/Naranja para edición
+          .setTitle("✏️ Mensaje Editado")
+          .addFields(
+            { name: "👤 Autor",     value: `${newMsg.author.tag} <@${newMsg.author.id}>`, inline: true },
+            { name: "📌 Canal",     value: `<#${newMsg.channel.id}>`, inline: true },
+            { name: "🔗 Ir al msg", value: `[Click aquí](${newMsg.url})`, inline: true },
+            { name: "📝 Antes",     value: before, inline: false },
+            { name: "📝 Después",   value: after,  inline: false },
+          )
+          .setFooter({ text: `ID mensaje: ${newMsg.id} • ID canal: ${newMsg.channel.id}` })
+          .setTimestamp()],
+      }).catch(() => {});
+    } catch (err) {
+      console.error("[LOG_EDIT GLOBAL]", err.message);
+    }
   },
 };

@@ -269,7 +269,10 @@ async function closeTicket(interaction, reason = null) {
     if (s.transcript_channel) {
       const tCh = guild.channels.cache.get(s.transcript_channel);
       if (tCh) {
-        transcriptMsg = await tCh.send({ embeds: [transcriptEmbed(closed)], files: [attachment] });
+        transcriptMsg = await tCh.send({ 
+          embeds: [transcriptEmbed(closed, interaction.user.id, Date.now())], 
+          files: [attachment] 
+        });
         await tickets.update(channel.id, { transcript_url: transcriptMsg.url });
       }
     }
@@ -517,16 +520,29 @@ async function disableButtons(channel) {
   } catch {}
 }
 
-function transcriptEmbed(ticket) {
+function transcriptEmbed(ticket, closedByStaff = null, closedAt = null) {
   const { EmbedBuilder } = require("discord.js");
+  
+  // Formatear fecha de cierre
+  const fechaCierre = closedAt 
+    ? `<t:${Math.floor(closedAt / 1000)}:F>` 
+    : (ticket.closed_at ? `<t:${Math.floor(new Date(ticket.closed_at).getTime() / 1000)}:F>` : "No disponible");
+  
+  // Staff que cerró el ticket
+  const staffCierra = closedByStaff 
+    ? `<@${closedByStaff}>` 
+    : (ticket.closed_by ? `<@${ticket.closed_by}>` : "Desconocido");
+  
   return new EmbedBuilder()
     .setTitle("📄 Transcripción de Ticket")
-    .setColor(E.Colors.INFO)
+    .setColor(0x00FF00) // Verde para transcripciones
     .addFields(
-      { name: "🎫 Ticket",   value: `#${ticket.ticket_id}`, inline: true },
-      { name: "👤 Usuario",  value: `<@${ticket.user_id}>`, inline: true },
-      { name: "📁 Categoría",value: ticket.category,        inline: true },
-      { name: "⏱️ Duración", value: E.duration(ticket.created_at), inline: true },
+      { name: "🎫 Ticket",    value: `#${ticket.ticket_id}`, inline: true },
+      { name: "👤 Usuario",   value: `<@${ticket.user_id}>`, inline: true },
+      { name: "📁 Categoría", value: ticket.category,        inline: true },
+      { name: "⏱️ Duración",  value: E.duration(ticket.created_at), inline: true },
+      { name: "👮 Staff",     value: staffCierra,             inline: true },
+      { name: "📅 Cerrado",  value: fechaCierre,             inline: true },
       { name: "💬 Mensajes", value: `${ticket.message_count}`,     inline: true },
       { name: "⭐ Rating",   value: ticket.rating ? `${ticket.rating}/5` : "Sin calificar", inline: true },
     ).setTimestamp();
