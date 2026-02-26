@@ -218,10 +218,12 @@ async function createTicket(interaction, categoryId, answers = []) {
 
     await cooldowns.set(user.id, guild.id);
 
-    // Pings de roles para notificar al staff
+    // Pings de roles para notificar al staff (Manejar null)
     const pings = [];
-    if (s.support_role) pings.push(`<@&${s.support_role}>`);
-    category.pingRoles?.forEach(r => { if (!pings.includes(`<@&${r}>`)) pings.push(`<@&${r}>`); });
+    if (s.support_role && s.support_role !== null) {
+      pings.push(`<@&${s.support_role}>`);
+    }
+    category.pingRoles?.forEach(r => { if (r && !pings.includes(`<@&${r}>`)) pings.push(`<@&${r}>`); });
 
     // Enviar ping primero (fuera del embed)
     if (pings.length > 0) {

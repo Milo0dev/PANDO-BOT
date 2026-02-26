@@ -37,26 +37,20 @@ async function handleVerif(interaction) {
 async function handleVerifyStart(interaction) {
   const guild = interaction.guild;
   const user  = interaction.user;
-  const vs    = await verifSettings.get(guild.id);
-  const s     = await settings.get(guild.id); // Obtener settings para verify_role
+  
+  // OBTENER SOLO DE SETTINGS (fuente centralizada)
+  const s = await settings.get(guild.id);
+  const vs = await verifSettings.get(guild.id); // Solo para configuración del sistema (mode, channel, etc)
 
   if (!vs || !vs.enabled) {
     return interaction.reply({ embeds: [E.errorEmbed("El sistema de verificación no está activo.")], ephemeral: true });
   }
 
-  // Verificar si ya tiene el rol (primero verificar desde settings, luego desde verifSettings)
+  // Verificar si ya tiene el rol de verificación DESDE SETTINGS
   const member = await guild.members.fetch(user.id).catch(() => null);
   
-  // Verificar verify_role desde settings (fuente centralizada)
+  // Verificar verify_role desde settings (ÚNICA FUENTE)
   if (s.verify_role && s.verify_role !== null && member?.roles.cache.has(s.verify_role)) {
-    return interaction.reply({
-      embeds: [new EmbedBuilder().setColor(E.Colors.SUCCESS).setDescription("✅ ¡Ya estás verificado/a en este servidor!")],
-      ephemeral: true,
-    });
-  }
-  
-  // Verificar verified_role desde verifSettings (compatibilidad hacia atrás)
-  if (vs.verified_role && member?.roles.cache.has(vs.verified_role)) {
     return interaction.reply({
       embeds: [new EmbedBuilder().setColor(E.Colors.SUCCESS).setDescription("✅ ¡Ya estás verificado/a en este servidor!")],
       ephemeral: true,
@@ -65,7 +59,7 @@ async function handleVerifyStart(interaction) {
 
   // ── Modo BOTÓN: verificación directa
   if (vs.mode === "button") {
-    return completeVerification(interaction, guild, vs, user);
+    return completeVerification(interaction, guild, s, user);
   }
 
   // ── Modo CÓDIGO: enviar código por DM y mostrar modal
@@ -205,6 +199,7 @@ async function handleEnterCode(interaction) {
 async function handleCodeModal(interaction) {
   const guild = interaction.guild;
   const user  = interaction.user;
+  const s     = await settings.get(guild.id); // Settings para verify_role
   const vs    = await verifSettings.get(guild.id);
   const input = interaction.fields.getTextInputValue("code_input").toUpperCase().trim();
 
@@ -220,7 +215,7 @@ async function handleCodeModal(interaction) {
     return interaction.reply({ embeds: [E.errorEmbed(msgs[result.reason] || "Código inválido.")], ephemeral: true });
   }
 
-  return completeVerification(interaction, guild, vs, user);
+  return completeVerification(interaction, guild, s, user);
 }
 
 // ─────────────────────────────────────────────────────
@@ -229,6 +224,7 @@ async function handleCodeModal(interaction) {
 async function handleQuestionModal(interaction) {
   const guild  = interaction.guild;
   const user   = interaction.user;
+  const s      = await settings.get(guild.id); // Settings para verify_role
   const vs     = await verifSettings.get(guild.id);
   const answer = interaction.fields.getTextInputValue("answer_input").toLowerCase().trim();
 
@@ -242,7 +238,7 @@ async function handleQuestionModal(interaction) {
     });
   }
 
-  return completeVerification(interaction, guild, vs, user);
+  return completeVerification(interaction, guild, s, user);
 }
 
 // ─────────────────────────────────────────────────────
@@ -275,13 +271,11 @@ async function handleResendCode(interaction) {
 // ─────────────────────────────────────────────────────
 //   COMPLETAR VERIFICACIÓN
 // ─────────────────────────────────────────────────────
-async function completeVerification(interaction, guild, vs, user) {
+async function completeVerification(interaction, guild, s, user) {
   const member = await guild.members.fetch(user.id).catch(() => null);
   if (!member) return interaction.reply({ embeds: [E.errorEmbed("No se encontró tu perfil en el servidor.")], ephemeral: true });
 
-  // Obtener verify_role desde settings (fuente centralizada de verdad)
-  const s = await settings.get(guild.id);
-  
+  // OBTENER verify_role DESDE SETTINGS (ÚNICA FUENTE)
   // Aplicar verify_role desde settings si existe
   if (s.verify_role && s.verify_role !== null) {
     const verifyRole = guild.roles.cache.get(s.verify_role);
@@ -290,7 +284,10 @@ async function completeVerification(interaction, guild, vs, user) {
     }
   }
 
-  // Aplicar roles adicionales desde verifSettings (para compatibilidad hacia atrás)
+  // Obtener configuración adicional de verifSettings (solo para DM y logs)
+  const vs = await verifSettings.get(guild.id);
+  
+  // Aplicar roles adicionales desde verifSettings (para compatibilidad hacia atrás - verified_role)
   await applyVerification(member, guild, vs, "Verificación completada");
   await verifLogs.add(guild.id, user.id, "verified");
 
