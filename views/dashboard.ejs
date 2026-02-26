@@ -3665,6 +3665,9 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             const containerTarget = document.getElementById(containerId);
             if (!containerTarget) return;
             
+            // Capturar el input oculto antes de limpiar (evita que se borre el valor seleccionado)
+            const hiddenInput = containerTarget.querySelector('input[type="hidden"]');
+            
             // Limpiar contenedor base
             containerTarget.innerHTML = '';
 
@@ -3766,6 +3769,9 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             wrapper.appendChild(trigger);
             wrapper.appendChild(menu);
             containerTarget.appendChild(wrapper);
+            
+            // Restaurar el input oculto después de renderizar
+            if (hiddenInput) containerTarget.appendChild(hiddenInput);
         }
 
         // Función para cargar roles y renderizar los dropdowns
@@ -3876,6 +3882,9 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         function renderDiscordChannelDropdown(containerId, channels, selectedChannelId) {
             const containerTarget = document.getElementById(containerId);
             if (!containerTarget) return;
+            
+            // Capturar el input oculto antes de limpiar (evita que se borre el valor seleccionado)
+            const hiddenInput = containerTarget.querySelector('input[type="hidden"]');
             
             // Limpiar contenedor base
             containerTarget.innerHTML = '';
@@ -4008,6 +4017,9 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             wrapper.appendChild(trigger);
             wrapper.appendChild(menu);
             containerTarget.appendChild(wrapper);
+            
+            // Restaurar el input oculto después de renderizar
+            if (hiddenInput) containerTarget.appendChild(hiddenInput);
         }
 
         // Función para cargar canales y renderizar TODOS los dropdowns
