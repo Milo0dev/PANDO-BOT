@@ -2226,9 +2226,14 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             -webkit-backdrop-filter: blur(10px);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             z-index: 999999;
-            display: flex;
+            display: none; /* Oculto por defecto hasta que se seleccione un servidor */
             justify-content: center; /* Centra el botón en medio de la pantalla */
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Clase para mostrar la barra cuando hay servidor seleccionado */
+        .floating-save-bar.visible {
+            display: flex;
         }
     </style>
 </head>
@@ -3255,6 +3260,9 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             document.getElementById('configServerIcon').src = server.icon || '<%= botAvatar %>';
             document.getElementById('configServerName').textContent = server.name;
             document.getElementById('configServerId').textContent = 'ID: ' + server.id;
+            
+            // MOSTRAR LA BARRA FLOTANTE DE GUARDADO
+            document.querySelector('.floating-save-bar').classList.add('visible');
             
             await loadSettings(server.id);
             await loadCustomChannelDropdowns(server.id);
