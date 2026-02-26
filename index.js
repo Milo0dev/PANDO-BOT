@@ -394,11 +394,6 @@ function iniciarServidorExpress(client) {
     const { guildId } = req.params;
     const updates = req.body;
 
-    console.log("[API] POST /api/settings/:guildId recibido", {
-      guildId,
-      updates
-    });
-    
     // Verify bot is in this guild
     const guild = client.guilds.cache.get(guildId);
     if (!guild) {
@@ -427,17 +422,7 @@ function iniciarServidorExpress(client) {
         }
       }
 
-      console.log("[API] /api/settings sanitizedUpdates:", {
-        guildId,
-        sanitizedUpdates
-      });
-      
       const updatedSettings = await settings.update(guildId, sanitizedUpdates);
-
-      console.log("[API] settings.update completado", {
-        guildId,
-        updatedSettings
-      });
 
       // Aplicar inmediatamente la nueva configuración al dashboard en Discord
       try {
