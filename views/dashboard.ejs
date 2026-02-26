@@ -2674,29 +2674,29 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                                 </div>
                                 <div class="visual-select" id="maxTicketsSelect">
                                     <button class="visual-select-btn" onclick="toggleVisualSelect('maxTicketsSelect')">
-                                        <span class="value"><i class="fas fa-layer-group"></i> <span id="maxTicketsText">3 tickets</span></span>
+                                        <span class="value">🎫 <span id="maxTicketsText">3 Tickets</span></span>
                                         <span class="arrow"><i class="fas fa-chevron-down"></i></span>
                                     </button>
                                     <div class="visual-select-dropdown">
-                                        <div class="visual-select-option" data-value="1" onclick="selectVisualOption('maxTicketsSelect', '1', '1 ticket')">
-                                            <span class="option-icon"><i class="fas fa-1"></i></span>
-                                            1 ticket
+                                        <div class="visual-select-option" data-value="1" onclick="selectVisualOption('maxTicketsSelect', '1', '1 Ticket')">
+                                            <span class="option-icon">🎫</span>
+                                            1 Ticket
                                         </div>
-                                        <div class="visual-select-option" data-value="2" onclick="selectVisualOption('maxTicketsSelect', '2', '2 tickets')">
-                                            <span class="option-icon"><i class="fas fa-2"></i></span>
-                                            2 tickets
+                                        <div class="visual-select-option" data-value="2" onclick="selectVisualOption('maxTicketsSelect', '2', '2 Tickets')">
+                                            <span class="option-icon">🎫</span>
+                                            2 Tickets
                                         </div>
-                                        <div class="visual-select-option selected" data-value="3" onclick="selectVisualOption('maxTicketsSelect', '3', '3 tickets')">
-                                            <span class="option-icon"><i class="fas fa-3"></i></span>
-                                            3 tickets
+                                        <div class="visual-select-option selected" data-value="3" onclick="selectVisualOption('maxTicketsSelect', '3', '3 Tickets')">
+                                            <span class="option-icon">🎫</span>
+                                            3 Tickets
                                         </div>
-                                        <div class="visual-select-option" data-value="5" onclick="selectVisualOption('maxTicketsSelect', '5', '5 tickets')">
-                                            <span class="option-icon"><i class="fas fa-5"></i></span>
-                                            5 tickets
+                                        <div class="visual-select-option" data-value="5" onclick="selectVisualOption('maxTicketsSelect', '5', '5 Tickets')">
+                                            <span class="option-icon">🎫</span>
+                                            5 Tickets
                                         </div>
-                                        <div class="visual-select-option" data-value="10" onclick="selectVisualOption('maxTicketsSelect', '10', '10 tickets')">
-                                            <span class="option-icon"><i class="fas fa-10"></i></span>
-                                            10 tickets
+                                        <div class="visual-select-option" data-value="10" onclick="selectVisualOption('maxTicketsSelect', '10', '10 Tickets')">
+                                            <span class="option-icon">🎟️</span>
+                                            10 Tickets
                                         </div>
                                     </div>
                                 </div>
@@ -3483,7 +3483,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         function initVisualSelects() {
             // Map of select IDs to their corresponding hidden input IDs
             const selectMappings = {
-                'maxTicketsSelect': { input: 'max_tickets', textMap: { '1': '1 ticket', '2': '2 tickets', '3': '3 tickets', '5': '5 tickets', '10': '10 tickets' }},
+                'maxTicketsSelect': { input: 'max_tickets', textMap: { '1': '1 Ticket', '2': '2 Tickets', '3': '3 Tickets', '5': '5 Tickets', '10': '10 Tickets' }},
                 'globalLimitSelect': { input: 'global_ticket_limit', textMap: { '0': 'Sin límite', '25': '25 tickets', '50': '50 tickets', '100': '100 tickets', '500': '500 tickets' }},
                 'cooldownSelect': { input: 'cooldown_minutes', textMap: { '0': 'Desactivado', '5': '5 minutos', '15': '15 minutos', '30': '30 minutos', '60': '1 hora', '1440': '24 horas' }},
                 'minDaysSelect': { input: 'min_days', textMap: { '0': 'Sin requisito', '1': '1 día', '7': '7 días', '30': '30 días' }},
