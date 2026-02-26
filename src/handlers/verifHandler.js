@@ -2,7 +2,7 @@ const {
   EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits,
 } = require("discord.js");
-const { verifSettings, verifCodes, verifLogs, welcomeSettings } = require("../utils/database");
+const { verifSettings, verifCodes, verifLogs, welcomeSettings, settings } = require("../utils/database");
 const { applyVerification } = require("../commands/verify");
 const E = require("../utils/embeds");
 
@@ -38,20 +38,29 @@ async function handleVerifyStart(interaction) {
   const guild = interaction.guild;
   const user  = interaction.user;
   const vs    = await verifSettings.get(guild.id);
+  const s     = await settings.get(guild.id); // Obtener settings para verify_role
 
   if (!vs || !vs.enabled) {
     return interaction.reply({ embeds: [E.errorEmbed("El sistema de verificación no está activo.")], ephemeral: true });
   }
 
-  // Verificar si ya tiene el rol
-  if (vs.verified_role) {
-    const member = await guild.members.fetch(user.id).catch(() => null);
-    if (member?.roles.cache.has(vs.verified_role)) {
-      return interaction.reply({
-        embeds: [new EmbedBuilder().setColor(E.Colors.SUCCESS).setDescription("✅ ¡Ya estás verificado/a en este servidor!")],
-        ephemeral: true,
-      });
-    }
+  // Verificar si ya tiene el rol (primero verificar desde settings, luego desde verifSettings)
+  const member = await guild.members.fetch(user.id).catch(() => null);
+  
+  // Verificar verify_role desde settings (fuente centralizada)
+  if (s.verify_role && s.verify_role !== null && member?.roles.cache.has(s.verify_role)) {
+    return interaction.reply({
+      embeds: [new EmbedBuilder().setColor(E.Colors.SUCCESS).setDescription("✅ ¡Ya estás verificado/a en este servidor!")],
+      ephemeral: true,
+    });
+  }
+  
+  // Verificar verified_role desde verifSettings (compatibilidad hacia atrás)
+  if (vs.verified_role && member?.roles.cache.has(vs.verified_role)) {
+    return interaction.reply({
+      embeds: [new EmbedBuilder().setColor(E.Colors.SUCCESS).setDescription("✅ ¡Ya estás verificado/a en este servidor!")],
+      ephemeral: true,
+    });
   }
 
   // ── Modo BOTÓN: verificación directa
@@ -270,7 +279,18 @@ async function completeVerification(interaction, guild, vs, user) {
   const member = await guild.members.fetch(user.id).catch(() => null);
   if (!member) return interaction.reply({ embeds: [E.errorEmbed("No se encontró tu perfil en el servidor.")], ephemeral: true });
 
-  // Aplicar roles
+  // Obtener verify_role desde settings (fuente centralizada de verdad)
+  const s = await settings.get(guild.id);
+  
+  // Aplicar verify_role desde settings si existe
+  if (s.verify_role && s.verify_role !== null) {
+    const verifyRole = guild.roles.cache.get(s.verify_role);
+    if (verifyRole) {
+      await member.roles.add(verifyRole).catch(() => {});
+    }
+  }
+
+  // Aplicar roles adicionales desde verifSettings (para compatibilidad hacia atrás)
   await applyVerification(member, guild, vs, "Verificación completada");
   await verifLogs.add(guild.id, user.id, "verified");
 
