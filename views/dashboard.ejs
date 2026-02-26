@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
     <style>
         /* Elevar dinámicamente cualquier contenedor que tenga un dropdown abierto */
         div:has(.discord-ui-dropdown-container.is-open),
@@ -4119,5 +4120,201 @@ Swal.fire({
             <span class="spinner"></span>
         </button>
     </div>
+
+    <!-- Tom Select CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+    <!-- Tom Select Dark Mode CSS -->
+    <style>
+        /* ===== TOM SELECT DARK MODE - Premium Dashboard Theme ===== */
+
+        /* Wrapper principal */
+        .ts-wrapper {
+            background-color: #1e1f22 !important;
+            border: 1px solid #2b2d31 !important;
+            border-radius: 8px !important;
+            box-shadow: none !important;
+        }
+
+        .ts-wrapper:hover {
+            border-color: #404249 !important;
+        }
+
+        .ts-wrapper.focus {
+            border-color: #5865F2 !important;
+            box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.2) !important;
+        }
+
+        /* Control (el input visible) */
+        .ts-control {
+            background-color: transparent !important;
+            border: none !important;
+            color: #ffffff !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 14px !important;
+            padding: 12px 16px !important;
+            border-radius: 8px !important;
+        }
+
+        .ts-control input {
+            color: #ffffff !important;
+        }
+
+        .ts-control input::placeholder {
+            color: #72767d !important;
+        }
+
+        /* Dropdown (menú desplegable) */
+        .ts-dropdown {
+            background-color: #2b2d31 !important;
+            border: 1px solid #1e1f22 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+            padding: 6px 0 !important;
+            margin-top: 4px !important;
+            z-index: 999999 !important;
+        }
+
+        /* Opciones del dropdown */
+        .ts-dropdown .option {
+            padding: 10px 16px !important;
+            color: #dbdee1 !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+        }
+
+        .ts-dropdown .option:hover {
+            background-color: #35373c !important;
+            color: #ffffff !important;
+        }
+
+        .ts-dropdown .option.selected {
+            background-color: #404249 !important;
+            color: #ffffff !important;
+        }
+
+        .ts-dropdown .option.active {
+            background-color: #5865F2 !important;
+            color: #ffffff !important;
+        }
+
+        /* Categorías */
+        .ts-dropdown .optgroup-header {
+            padding: 8px 16px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            color: #72767d !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            background-color: transparent !important;
+            pointer-events: none !important;
+        }
+
+        /* Placeholder */
+        .ts-control input::placeholder,
+        .ts-wrapper.rtl .ts-control input::placeholder {
+            color: #72767d !important;
+        }
+
+        /* Single value (cuando hay una opción seleccionada) */
+        .ts-control .item {
+            background-color: #404249 !important;
+            color: #ffffff !important;
+            border-radius: 4px !important;
+            padding: 2px 8px !important;
+            margin-right: 4px !important;
+        }
+
+        /* Botón de清除 (X) */
+        .ts-control .remove {
+            color: #b9bbbe !important;
+            border: none !important;
+            padding: 0 4px !important;
+        }
+
+        .ts-control .remove:hover {
+            color: #ffffff !important;
+        }
+
+        /* Dropdown footer */
+        .ts-dropdown-footer {
+            border-top: 1px solid #202225 !important;
+            padding: 8px 12px !important;
+            background-color: #2b2d31 !important;
+        }
+
+        /* Spinner de carga */
+        .ts-loading-spinner {
+            border: 2px solid #404249 !important;
+            border-top-color: #5865F2 !important;
+        }
+
+        /* Focus dentro del dropdown */
+        .ts-dropdown-content {
+            max-height: 250px !important;
+        }
+
+        .ts-dropdown-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ts-dropdown-content::-webkit-scrollbar-track {
+            background: #2b2d31;
+        }
+
+        .ts-dropdown-content::-webkit-scrollbar-thumb {
+            background: #404249;
+            border-radius: 4px;
+        }
+
+        /* Soporte para emojis en opciones */
+        .ts-dropdown .option .emoji {
+            font-size: 16px !important;
+            line-height: 1 !important;
+        }
+
+        /*Icono del dropdown */
+        .ts-wrapper:not(.rtl) .ts-control:after {
+            border-color: #b9bbbe transparent transparent transparent !important;
+        }
+    </style>
+
+    <!-- Tom Select Initialization -->
+    <script>
+        // Inicializar Tom Select en todos los elementos <select>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Seleccionar todos los elementos select que no han sido inicializados
+            const selects = document.querySelectorAll('select:not(.ts-hidden-accessible)');
+
+            selects.forEach(function(selectElement) {
+                // Opciones de configuración para Tom Select
+                new TomSelect(selectElement, {
+                    create: false,
+                    sortField: {
+                        field: "text",
+                        direction: "asc"
+                    },
+                    plugins: ['clear_button'],
+                    placeholder: selectElement.getAttribute('data-placeholder') || 'Seleccionar...',
+                    allowEmptyOption: true,
+                    onItemAdd: function() {
+                        this.setText('');
+                    },
+                    onFocus: function() {
+                        this.wrapper.classList.add('focus');
+                    },
+                    onBlur: function() {
+                        this.wrapper.classList.remove('focus');
+                    }
+                });
+            });
+
+            console.log('✅ Tom Select inicializado en ' + selects.length + ' elementos');
+        });
+    </script>
 </body>
 </html>
