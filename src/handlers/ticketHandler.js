@@ -15,20 +15,26 @@ const ticketCategories = [
   { 
     id: "support", 
     label: "Soporte General", 
-    description: "Abre un ticket para ayuda general", 
-    emoji: "🎫" 
+    description: "Dudas generales, ayuda con el servidor o comandos.", 
+    emoji: "💬" 
+  },
+  { 
+    id: "billing", 
+    label: "Compras y Pagos", 
+    description: "Problemas con compras, rangos o donaciones.", 
+    emoji: "🛒" 
   },
   { 
     id: "report", 
-    label: "Reportes", 
-    description: "Reporta a un usuario o comportamiento inapropiado", 
-    emoji: "⚠️" 
+    label: "Reportes y Moderación", 
+    description: "Reportar a un usuario o apelar una sanción.", 
+    emoji: "🛡️" 
   },
   { 
-    id: "bug", 
-    label: "Reportar Bug", 
-    description: "Reporta un bug o error en el servidor", 
-    emoji: "🐛" 
+    id: "partnership", 
+    label: "Alianzas / Partners", 
+    description: "Propuestas de alianzas con nuestro servidor.", 
+    emoji: "🤝" 
   },
 ];
 
@@ -38,18 +44,36 @@ const ticketCategories = [
 async function sendPanel(channel, guild) {
   // Usamos las categorías hardcodeadas localmente
   const embed = new EmbedBuilder()
-    .setTitle("🎫 Sistema de Tickets")
-    .setDescription("Selecciona una categoría para crear tu ticket.\n\nNuestro equipo de staff te atenderá lo más pronto posible.")
+    .setAuthor({ 
+      name: "Centro de Soporte y Ayuda", 
+      iconURL: "https://cdn.discordapp.com/attachments/123456789/987654321/support_icon.png" 
+    })
+    .setTitle("🎫 Sistema de Tickets de Soporte")
+    .setDescription("¡Bienvenido al sistema de tickets de soporte! 🎫\n\n" +
+      "**📋 ¿Qué hacer?**\n" +
+      "Selecciona una categoría en el menú desplegable abajo para crear tu ticket.\n\n" +
+      "**⚠️ Reglas básicas:**\n" +
+      "• No etiquetas al staff sin motivo válido.\n" +
+      "• Detalla tu problema con claridad y paciencia.\n" +
+      "• Nuestro equipo te atenderá lo antes posible.\n\n" +
+      "**🕐 Horario de atención:**\n" +
+      "Estamos disponibles **24/7** para asistirte.\n\n" +
+      "¡Gracias por confiar en nosotros!")
     .setColor("#5865F2")
-    .setFooter({ text: "Pando Bot - Sistema de Tickets", iconURL: guild.iconURL({ dynamic: true }) })
+    .setFooter({ 
+      text: "Sistema protegido por Pando Bot • Selecciona una categoría abajo", 
+      iconURL: guild.iconURL({ dynamic: true }) 
+    })
     .setTimestamp();
+    // .setThumbnail('URL_AQUI') // 👈 Descomenta y pon tu URL de logo
+    // .setImage('URL_BANNER_AQUI') // 👈 Descomenta y pon tu URL de banner
 
   const openCount = await tickets.getAllOpen(guild.id);
   if (openCount.length > 0) embed.addFields({ name: "🎫 Tickets activos", value: `\`${openCount.length}\``, inline: true });
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId("ticket_category_select")
-    .setPlaceholder("📋 Selecciona el tipo de ticket...")
+    .setPlaceholder("Categorías de soporte disponibles...")
     .addOptions(ticketCategories.map(c => ({
       label: c.label, description: c.description, value: c.id, emoji: c.emoji,
     })));
