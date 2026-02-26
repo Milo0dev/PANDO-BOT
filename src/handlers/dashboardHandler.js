@@ -1,11 +1,17 @@
 const { tickets, settings, staffStatus, staffStats } = require("../utils/database");
 const { dashboardEmbed } = require("../utils/embeds");
+const { sendPanel } = require("./ticketHandler");
 const { 
+  ChannelType,
+  PermissionFlagsBits,
   ActionRowBuilder, 
   ButtonBuilder, 
   ButtonStyle, 
-  EmbedBuilder 
+  StringSelectMenuBuilder,
+  EmbedBuilder,
+  MessageFlags 
 } = require("discord.js");
+const config = require("../config");
 
 // Intervalo de actualización del dashboard (30 segundos)
 const DASHBOARD_UPDATE_INTERVAL = 30 * 1000;
@@ -62,6 +68,9 @@ async function updateDashboard(guild, isManual = false) {
 /**
  * Actualiza o crea el panel de tickets en el canal configurado desde el Dashboard web
  * Se ejecuta automáticamente cuando se guardan los settings desde la web
+ * 
+ * IMPORTANTE: Esta función replica EXACTAMENTE la lógica de sendPanel en ticketHandler.js
+ * para mantener consistencia entre /setup panel y la configuración desde la web
  */
 async function updateTicketPanel(guild) {
   console.log(`[TICKET PANEL] Intentando actualizar el panel de tickets para el servidor ${guild.name}...`);
@@ -103,26 +112,27 @@ async function updateTicketPanel(guild) {
       try {
         const existingMsg = await channel.messages.fetch(s.panel_message_id);
         if (existingMsg) {
-          // El mensaje ya existe, verificar si tiene los componentes correctos
+          // El mensaje ya existe - editarlo con la misma lógica que sendPanel
+          // Replicamos exactamente la lógica de sendPanel para mantener consistencia
+          const p = config.panel;
           const embed = new EmbedBuilder()
-            .setTitle("🎫 Sistema de Tickets")
-            .setDescription("¿Necesitas ayuda? ¡Abre un ticket y el staff te atenderá!")
-            .setColor(0x5865F2)
-            .addFields(
-              { name: "📝 Cómo funciona", value: "1. Haz clic en el botón de abajo\n2. Selecciona una categoría\n3. Describe tu problema\n4. Espera a que un staff te atienda", inline: false }
-            )
-            .setFooter({ text: "Pando Bot - Sistema de Tickets" })
+            .setTitle(p.title)
+            .setDescription(p.description)
+            .setColor(p.color)
+            .setFooter({ text: p.footer, iconURL: guild.iconURL({ dynamic: true }) })
             .setTimestamp();
 
-          const button = new ButtonBuilder()
-            .setCustomId("create_ticket")
-            .setLabel("Abrir Ticket")
-            .setEmoji("🎫")
-            .setStyle(ButtonStyle.Success);
+          const openCount = await tickets.getAllOpen(guild.id);
+          if (openCount.length > 0) embed.addFields({ name: "🎫 Tickets activos", value: `\`${openCount.length}\``, inline: true });
 
-          const actionRow = new ActionRowBuilder().addComponents(button);
+          const menu = new StringSelectMenuBuilder()
+            .setCustomId("ticket_category_select")
+            .setPlaceholder("📋 Selecciona el tipo de ticket...")
+            .addOptions(config.categories.map(c => ({
+              label: c.label, description: c.description, value: c.id, emoji: c.emoji,
+            })));
 
-          await existingMsg.edit({ embeds: [embed], components: [actionRow] });
+          await existingMsg.edit({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)] });
           console.log(`\x1b[32m[TICKET PANEL] ✅ Panel actualizado correctamente en el canal ${channel.name}\x1b[0m`);
           return;
         }
@@ -132,30 +142,11 @@ async function updateTicketPanel(guild) {
       }
     }
 
-    // Crear el Embed profesional para el panel de tickets
-    const embed = new EmbedBuilder()
-      .setTitle("🎫 Sistema de Tickets")
-      .setDescription("¿Necesitas ayuda? ¡Abre un ticket y el staff te atenderá!")
-      .setColor(0x5865F2)
-      .addFields(
-        { name: "📝 Cómo funciona", value: "1. Haz clic en el botón de abajo\n2. Selecciona una categoría\n3. Describe tu problema\n4. Espera a que un staff te atienda", inline: false }
-      )
-      .setFooter({ text: "Pando Bot - Sistema de Tickets" })
-      .setTimestamp();
-
-    // Crear el botón con el customId exacto requerido
-    const button = new ButtonBuilder()
-      .setCustomId("create_ticket")
-      .setLabel("Abrir Ticket")
-      .setEmoji("🎫")
-      .setStyle(ButtonStyle.Success);
-
-    const actionRow = new ActionRowBuilder().addComponents(button);
-
-    // Enviar el mensaje al canal
-    const msg = await channel.send({ embeds: [embed], components: [actionRow] });
+    // Si no existe mensaje o fue eliminado, usamos sendPanel existente para crear uno nuevo
+    // Esto asegura que la lógica sea exactamente la misma que /setup panel
+    const msg = await sendPanel(channel, guild);
     
-    // Guardar el ID del mensaje en la base de datos para evitar duplicados
+    // Guardar el ID del mensaje en la base de datos
     await settings.update(guild.id, { panel_message_id: msg.id });
     
     console.log(`\x1b[32m[TICKET PANEL] ✅ Panel de tickets creado correctamente en el canal ${channel.name}\x1b[0m`);

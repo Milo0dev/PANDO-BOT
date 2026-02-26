@@ -422,15 +422,35 @@ function iniciarServidorExpress(client) {
         }
       }
 
-      const updatedSettings = await settings.update(guildId, sanitizedUpdates);
+      // ============================================================
+      // A) PRIMERO: Actualizar la base de datos
+      // ============================================================
+      let updatedSettings;
+      try {
+        updatedSettings = await settings.update(guildId, sanitizedUpdates);
+        console.log("[DB] Configuración actualizada en base de datos para guild", guildId);
+      } catch (dbError) {
+        console.error("[DB] Error al guardar configuración:", dbError?.message || dbError);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Error al guardar en la base de datos',
+          details: dbError.message 
+        });
+      }
 
-      // Aplicar inmediatamente la nueva configuración al dashboard en Discord
+      // ============================================================
+      // B) SOLO SI A) FUE EXITOSO: Actualizar Discord
+      // (Solo se ejecuta si el guardado en DB fue exitoso)
+      // ============================================================
+      
+      // Actualizar dashboard de Discord
       try {
         console.log("[DASHBOARD] Forzando actualización de dashboard para guild", guildId);
         await forceUpdateDashboard(guildId);
         console.log("[DASHBOARD] Actualización de dashboard completada para guild", guildId);
       } catch (error) {
         console.error("[DASHBOARD] Error al forzar actualización después de guardar settings:", error?.message || error);
+        // No fallamos la respuesta, solo registramos el error
       }
       
       // Actualizar el panel de tickets si está configurado
@@ -440,8 +460,10 @@ function iniciarServidorExpress(client) {
         console.log("[TICKET PANEL] Actualización de panel completada para guild", guildId);
       } catch (error) {
         console.error("[TICKET PANEL] Error al actualizar el panel de tickets después de guardar settings:", error?.message || error);
+        // No fallamos la respuesta, solo registramos el error
       }
       
+      // Responder al cliente solo después de completar todas las operaciones
       res.status(200).json({ success: true, message: "Configuración guardada", settings: updatedSettings });
     } catch (error) {
       console.error("[API] Error en POST /api/settings/:guildId:", error);

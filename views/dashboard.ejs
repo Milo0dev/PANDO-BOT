@@ -3386,72 +3386,13 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             };
         }
 
-        // Debounce para no saturar la API al escribir o cambiar varias opciones seguidas
-        let realtimeSaveTimer = null;
-        const REALTIME_SAVE_DELAY_MS = 400;
-
-        // Se ejecuta cuando cambia cualquier valor de configuración.
-        // Hace un POST silencioso a la API (sin toast de éxito; solo toast si hay error).
-        function onConfigChanged(payload) {
-            if (!payload || !currentGuildId) return;
-
-            clearTimeout(realtimeSaveTimer);
-            realtimeSaveTimer = setTimeout(async () => {
-                realtimeSaveTimer = null;
-                try {
-                    console.log('[DASHBOARD] realtime save payload:', payload);
-                    const response = await fetch(`/api/settings/${currentGuildId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    let result;
-                    try {
-                        result = await response.json();
-                    } catch (e) {
-                        console.error('[DASHBOARD] Error parseando JSON en guardado en tiempo real:', e);
-                        result = { success: false, error: 'Respuesta inválida del servidor' };
-                    }
-
-                    console.log('[DASHBOARD] realtime save response:', {
-                        status: response.status,
-                        ok: response.ok,
-                        body: result
-                    });
-
-                    if (!result.success) {
-                        showToast(result.error || 'Error al guardar', 'error');
-                    }
-                } catch (err) {
-                    console.error('Error guardado en tiempo real:', err);
-                    showToast('Error al guardar configuración', 'error');
-                }
-            }, REALTIME_SAVE_DELAY_MS);
-        }
-
-        // Detecta cambios en switches, dropdowns e inputs y prepara los datos.
-        function setupRealtimeConfigListeners() {
-            const panel = document.getElementById('configPanel');
-            if (!panel) return;
-
-            // Delegación: cualquier checkbox (switch) dentro del panel de config
-            panel.addEventListener('change', function(e) {
-                if (e.target.matches('input[type="checkbox"]')) {
-                    onConfigChanged(getConfigPayload());
-                }
-            });
-
-            // Input de texto (razón de mantenimiento)
-            const maintenanceReason = document.getElementById('maintenance_reason');
-            if (maintenanceReason) {
-                maintenanceReason.addEventListener('input', function() {
-                    onConfigChanged(getConfigPayload());
-                });
-                maintenanceReason.addEventListener('change', function() {
-                    onConfigChanged(getConfigPayload());
-                });
-            }
-        }
+        // ============================================================
+        // GUARDADO EXPLÍCITO - SIN AUTOGUARDADO
+        // El único momento en que se envían datos al backend es cuando
+        // el usuario hace clic en el botón "Guardar Configuración"
+        // ============================================================
+        
+        // NO hay funciones de autoguardado - todo se maneja en saveSettings()
 
         // Tab switching
         function switchTab(tabName) {
@@ -3501,11 +3442,8 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
 
             // Close dropdown
             select.classList.remove('open');
-
-            // Guardado en tiempo real: preparar datos al cambiar un visual-select
-            if (typeof onConfigChanged === 'function') {
-                onConfigChanged(getConfigPayload());
-            }
+            
+            // NO AUTO-SAVE - Los cambios se guardan solo al presionar "Guardar Configuración"
         }
 
         // Visual Toggle Functions
@@ -3758,10 +3696,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     // Cerrar el menú
                     wrapper.classList.remove('is-open');
 
-                    // Guardado en tiempo real: preparar datos al cambiar rol
-                    if (typeof onConfigChanged === 'function') {
-                        onConfigChanged(getConfigPayload());
-                    }
+                    // NO AUTO-SAVE - Los cambios se guardan solo al presionar "Guardar Configuración"
                 }
             });
 
@@ -4006,10 +3941,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     // Cerrar el menú
                     wrapper.classList.remove('is-open');
 
-                    // Guardado en tiempo real: preparar datos al cambiar canal
-                    if (typeof onConfigChanged === 'function') {
-                        onConfigChanged(getConfigPayload());
-                    }
+                    // NO AUTO-SAVE - Los cambios se guardan solo al presionar "Guardar Configuración"
                 }
             });
 
@@ -4107,9 +4039,6 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             await loadAndRenderChannelDropdowns(guildId, currentSettings);
             await loadAndRenderRoleDropdowns(guildId, currentSettings);
         };
-
-        // Activar detección de cambios para guardado en tiempo real
-        setupRealtimeConfigListeners();
     </script>
 </body>
 </html>
