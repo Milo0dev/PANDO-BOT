@@ -1045,6 +1045,24 @@
             margin-top: 20px;
         }
 
+        /* ===== BARRA FLOTANTE DE GUARDADO - SOLUCIÓN DEFINITIVA ===== */
+        /* Este contenedor se coloca FUERA de todo layout principal, antes de </body> */
+        .floating-save-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(30, 31, 34, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 999999;
+            display: flex;
+            justify-content: center; /* Centra el botón en medio de la pantalla */
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+
         /* ===== NUEVO DISEÑO VISUAL - TARJETAS Y MENÚS ===== */
         
         /* Visual Cards para configuración - MODERN DARK UI */
@@ -2195,6 +2213,23 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2) !important;
             border-color: rgba(88, 101, 242, 0.4) !important;
         }
+        /* ===== BARRA FLOTANTE DE GUARDADO - SOLUCIÓN DEFINITIVA ===== */
+        /* Este contenedor está FUERA de todo layout principal, antes de </body> */
+        .floating-save-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(30, 31, 34, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 999999;
+            display: flex;
+            justify-content: center; /* Centra el botón en medio de la pantalla */
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -2237,7 +2272,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         </div>
     </nav>
 
-    <main class="main-content">
+    <main class="main-content" style="padding-bottom: 80px;">
         <div class="container">
             <!-- Home Section -->
             <div id="homeSection">
@@ -3085,13 +3120,6 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                         </div>
                     </div>
 
-                    <!-- Contenedor Sticky para el botón de guardar (Efecto Cristal Premium) -->
-                    <div class="save-btn-container">
-                        <button class="save-btn" onclick="saveSettings()">
-                            <span class="btn-text"><i class="fas fa-save"></i> Guardar Configuración</span>
-                            <span class="spinner"></span>
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Empty State -->
@@ -4074,5 +4102,14 @@ Swal.fire({
             await loadAndRenderRoleDropdowns(guildId, currentSettings);
         };
     </script>
+
+    <!-- ===== BARRA FLOTANTE DE GUARDADO - SOLUCIÓN DEFINITIVA ===== -->
+    <!-- Este contenedor está FUERA de todo layout principal, antes de </body> -->
+    <div class="floating-save-bar">
+        <button class="save-btn" onclick="saveSettings()">
+            <span class="btn-text"><i class="fas fa-save"></i> Guardar Configuración</span>
+            <span class="spinner"></span>
+        </button>
+    </div>
 </body>
 </html>
