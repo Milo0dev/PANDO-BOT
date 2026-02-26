@@ -175,11 +175,19 @@ async function createTicket(interaction, categoryId, answers = []) {
       { id: interaction.client.user.id,allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageMessages] },
     ];
 
-    if (s.support_role) perms.push({ id: s.support_role, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ManageMessages] });
-    if (s.admin_role && s.admin_role !== s.support_role) perms.push({ id: s.admin_role, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageMessages] });
+    // Solo agregar roles si existen en la base de datos
+    if (s.support_role) {
+      perms.push({ id: s.support_role, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles, PermissionFlagsBits.ManageMessages] });
+    }
+    if (s.admin_role && s.admin_role !== s.support_role) {
+      perms.push({ id: s.admin_role, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageMessages] });
+    }
 
+    // Agregar roles de ping solo si existen
     category.pingRoles?.forEach(r => {
-      if (!perms.find(p => p.id === r)) perms.push({ id: r, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] });
+      if (r && !perms.find(p => p.id === r)) {
+        perms.push({ id: r, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] });
+      }
     });
 
     const chOpts = {
@@ -188,7 +196,11 @@ async function createTicket(interaction, categoryId, answers = []) {
       topic: `Ticket de ${user.tag} | ${category.label} | #${ticketId}`,
       permissionOverwrites: perms,
     };
-    if (category.categoryId) chOpts.parent = category.categoryId;
+    
+    // Solo asignar categoría si existe un categoryId válido (por ahora sin categoría para evitar errores)
+    // TODO: Implementar lectura de categoría desde base de datos cuando esté disponible
+    // if (category.categoryId) chOpts.parent = category.categoryId;
+    chOpts.parent = null; // Crear sin categoría temporalmente
 
     const channel = await guild.channels.create(chOpts);
 
@@ -235,7 +247,7 @@ async function createTicket(interaction, categoryId, answers = []) {
 
     await interaction.editReply({ embeds: [E.successEmbed(`Ticket creado: <#${channel.id}> | **#${ticketId}**`)] });
   } catch (err) {
-    console.error("[CREATE TICKET]", err);
+    console.error("[TICKET ERROR]", err);
     await interaction.editReply({ embeds: [E.errorEmbed("Error al crear el ticket. Verifica mis permisos.")] });
   }
 }
@@ -347,10 +359,63 @@ async function claimTicket(interaction) {
   if (ticket.claimed_by) return replyError(interaction, `Ya reclamado por <@${ticket.claimed_by}>.`);
 
   const guild = interaction.guild;
+  const s = await settings.get(guild.id);
   
+  // Actualizar en base de datos
   await tickets.update(interaction.channel.id, { claimed_by: interaction.user.id });
   await staffStats.incrementClaimed(guild.id, interaction.user.id);
+  
+  // Actualizar topic del canal
   await interaction.channel.setTopic(`${interaction.channel.topic || ""} | Staff: ${interaction.user.tag}`).catch(() => {});
+
+  // ===== LÓGICA DE PERMISOS =====
+  // Quitar permisos de escritura a otros staff (solo mantener lectura)
+  if (s.support_role) {
+    await interaction.channel.permissionOverwrites.edit(s.support_role, {
+      SendMessages: false,
+      ManageMessages: false,
+    }).catch(() => {});
+  }
+  if (s.admin_role && s.admin_role !== s.support_role) {
+    await interaction.channel.permissionOverwrites.edit(s.admin_role, {
+      SendMessages: false,
+      ManageMessages: false,
+    }).catch(() => {});
+  }
+  
+  // Dar permisos completos al staff que reclamó el ticket
+  await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
+    ViewChannel: true,
+    SendMessages: true,
+    ReadMessageHistory: true,
+    AttachFiles: true,
+    ManageMessages: true,
+  }).catch(() => {});
+  // =================================
+
+  // Actualizar el embed del ticket para mostrar quién lo reclamó
+  try {
+    const msgs = await interaction.channel.messages.fetch({ limit: 10 });
+    const ticketMsg = msgs.find(m => 
+      m.author.id === interaction.client.user.id && 
+      m.embeds.length > 0 &&
+      m.embeds[0].title?.includes("Ticket")
+    );
+    
+    if (ticketMsg) {
+      const oldEmbed = ticketMsg.embeds[0];
+      // Verificar si ya existe el campo "Reclamado por"
+      const hasClaimedField = oldEmbed.fields?.some(f => f.name === "Reclamado por");
+      
+      if (!hasClaimedField) {
+        const newEmbed = new EmbedBuilder(oldEmbed)
+          .addFields({ name: "Reclamado por", value: `<@${interaction.user.id}>`, inline: true });
+        await ticketMsg.edit({ embeds: [newEmbed] });
+      }
+    }
+  } catch (e) {
+    console.error("[CLAIM UPDATE EMBED]", e.message);
+  }
 
   let dmEnviado = false;
   try {
@@ -379,7 +444,7 @@ async function claimTicket(interaction) {
     embeds: [new EmbedBuilder()
       .setColor(E.Colors.PRIMARY)
       .setDescription(
-        `👋 Has rechazado el ticket **#${ticket.ticket_id}** correctamente.\n` +
+        `✅ **Has reclamado** el ticket **#${ticket.ticket_id}** correctamente.\n` +
         (dmEnviado ? "📩 Se notificó al usuario por DM." : "📩 No se pudo notificar al usuario (DMs desactivados).")
       )
       .setTimestamp()],
