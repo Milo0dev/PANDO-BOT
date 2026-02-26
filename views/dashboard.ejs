@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* Elevar dinámicamente cualquier contenedor que tenga un dropdown abierto */
         div:has(.discord-ui-dropdown-container.is-open),
@@ -1028,6 +1029,19 @@
 
         @keyframes spin {
             to { transform: rotate(360deg); }
+        }
+
+        /* Contenedor Sticky para el botón de guardar (Efecto Cristal Premium) */
+        .save-btn-container {
+            position: sticky;
+            bottom: 0;
+            padding: 20px;
+            z-index: 100;
+            background: rgba(30, 31, 34, 0.85);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0 0 12px 12px;
+            margin-top: 20px;
         }
 
         /* ===== NUEVO DISEÑO VISUAL - TARJETAS Y MENÚS ===== */
@@ -3070,10 +3084,13 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                         </div>
                     </div>
 
-                    <button class="save-btn" onclick="saveSettings()">
-                        <span class="btn-text"><i class="fas fa-save"></i> Guardar Configuración</span>
-                        <span class="spinner"></span>
-                    </button>
+                    <!-- Contenedor Sticky para el botón de guardar (Efecto Cristal Premium) -->
+                    <div class="save-btn-container">
+                        <button class="save-btn" onclick="saveSettings()">
+                            <span class="btn-text"><i class="fas fa-save"></i> Guardar Configuración</span>
+                            <span class="spinner"></span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Empty State -->
@@ -3307,7 +3324,16 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                 });
                 
                 if (response.ok && result.success) {
-                    showToast('Configuración guardada correctamente', 'success');
+Swal.fire({
+                        title: '¡Guardado!',
+                        text: 'La configuración se sincronizó con Pando Bot.',
+                        icon: 'success',
+                        background: '#2b2d31',
+                        color: '#ffffff',
+                        confirmButtonColor: '#5865F2',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
                     const btnText = btn.querySelector('.btn-text');
                     if (btnText) {
                         const originalHtml = btnText.innerHTML;
@@ -3321,7 +3347,14 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                         }, 3000);
                     }
                 } else {
-                    showToast(result.error || 'Error al guardar', 'error');
+Swal.fire({
+                        title: 'Error',
+                        text: result.error || 'Hubo un problema al guardar los cambios.',
+                        icon: 'error',
+                        background: '#2b2d31',
+                        color: '#ffffff',
+                        confirmButtonColor: '#ED4245'
+                    });
                 }
             } catch (error) {
                 console.error('Error en saveSettings:', error);
