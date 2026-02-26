@@ -15,11 +15,7 @@ const { generateTranscript } = require("../utils/transcript");
 const config = require("../../config");
 const handleMusicButtons = require('../handlers/musicButtonHandler');
 
-// ══════════════════════════════════════════════════════════════
-//   ALIASES DE COMANDOS
-// ══════════════════════════════════════════════════════════════
 const COMMAND_ALIASES = {
-  // Alias en español
   "ayuda": "help",
   "soporte": "help",
   "ayudaplay": "help",
@@ -31,24 +27,20 @@ const COMMAND_ALIASES = {
   "verificacion": "verify",
   "configurar": "setup",
   "panel": "setup",
-  // Comandos en inglés comunes
   "rank": "rank",
   "ping": "ping",
 };
 
 function resolveCommand(commandName, client) {
-  // 1. Buscar comando exacto
   let cmd = client.commands.get(commandName);
   if (cmd) return cmd;
   
-  // 2. Buscar por alias
   const alias = COMMAND_ALIASES[commandName.toLowerCase()];
   if (alias) {
     cmd = client.commands.get(alias);
     if (cmd) return cmd;
   }
   
-  // 3. Buscar subcomandos (ej: "stats server" → "stats")
   const parts = commandName.split(" ");
   if (parts.length > 1) {
     cmd = client.commands.get(parts[0]);
@@ -62,38 +54,21 @@ module.exports = {
   name: "interactionCreate",
   async execute(interaction, client) {
     try {
-
-      // ══════════════════════════════════════════════════════════════
-      //   SLASH COMMANDS (con soporte para aliases)
-      // ══════════════════════════════════════════════════════════════
       if (interaction.isChatInputCommand()) {
         const cmd = resolveCommand(interaction.commandName, client);
         if (cmd) {
-          // Manejar subcomandos con aliases
-          const fullName = interaction.commandName;
-          const parts = fullName.split(" ");
-          
-          // Si es un subcomando, ejecutarlo normalmente
           await cmd.execute(interaction, client);
         }
         return;
       }
 
-      // ══════════════════════════════════════════════════════════════
-      //   AUTOCOMPLETE
-      // ══════════════════════════════════════════════════════════════
       if (interaction.isAutocomplete()) {
         const cmd = resolveCommand(interaction.commandName, client);
         if (cmd?.autocomplete) await cmd.autocomplete(interaction);
         return;
       }
 
-      // ══════════════════════════════════════════════════════════════
-      //   SELECT MENUS
-      // ══════════════════════════════════════════════════════════════
       if (interaction.isStringSelectMenu()) {
-
-        // ── Selección de categoría de ticket
         if (interaction.customId === "ticket_category_select") {
           const catId    = interaction.values[0];
           const category = config.categories.find(c => c.id === catId);
@@ -113,13 +88,12 @@ module.exports = {
           return interaction.showModal(TH.buildModal(category));
         }
 
-        // ── Rating de ticket (viene por DM)
         if (interaction.customId.startsWith("ticket_rating_")) {
           const parts     = interaction.customId.split("_");
           const staffId   = parts[parts.length - 1];
           const channelId = parts[parts.length - 2];
           const ticketId  = parts[parts.length - 3];
-          const rating    = parseInt(interaction.values[0]);
+          const rating    = parseInt(parts[parts.length - 1]);
 
           await tickets.setRating(channelId, rating);
           await staffRatings.add(interaction.guildId || "dm", staffId, rating, ticketId, interaction.user.id);
@@ -140,18 +114,12 @@ module.exports = {
           return interaction.update({ embeds: [embed], components: [disabled] });
         }
 
-        // ── Selector de mover categoría
         if (interaction.customId === "ticket_move_select") {
           return TH.moveTicket(interaction, interaction.values[0]);
         }
       }
 
-      // ══════════════════════════════════════════════════════════════
-      //   MODALS
-      // ══════════════════════════════════════════════════════════════
       if (interaction.isModalSubmit()) {
-
-        // ── Formulario de ticket
         if (interaction.customId.startsWith("ticket_modal_")) {
           const catId    = interaction.customId.replace("ticket_modal_", "");
           const category = config.categories.find(c => c.id === catId);
@@ -163,7 +131,6 @@ module.exports = {
           return TH.createTicket(interaction, catId, answers);
         }
 
-        // ── Modal de cierre de ticket
         if (interaction.customId === "ticket_close_modal") {
           const s = await settings.get(interaction.guild.id);
           if (!checkStaff(interaction.member, s)) {
@@ -173,7 +140,6 @@ module.exports = {
           return TH.closeTicket(interaction, reason || null);
         }
 
-        // ── Modal de nota de ticket
         if (interaction.customId === "ticket_note_modal") {
           const content = interaction.fields.getTextInputValue("note_content");
           const ticket  = await tickets.get(interaction.channel.id);
@@ -190,14 +156,12 @@ module.exports = {
           });
         }
 
-        // ── Modal de rename de ticket
         if (interaction.customId === "ticket_rename_modal") {
           const name = interaction.fields.getTextInputValue("new_name").toLowerCase().replace(/[^a-z0-9-]/g, "-").substring(0, 32);
           await interaction.channel.setName(name);
           return interaction.reply({ embeds: [E.successEmbed("Canal renombrado a **" + name + "**")], flags: MessageFlags.Ephemeral });
         }
 
-        // ── Modal de auto-respuesta
         if (interaction.customId === "autoresponse_create_modal") {
           const trigger  = interaction.fields.getTextInputValue("trigger");
           const response = interaction.fields.getTextInputValue("response");
@@ -209,20 +173,15 @@ module.exports = {
           }
         }
 
-        // ── Modals de EMBED (crear / editar)
         if (interaction.customId.startsWith("embed_create_") || interaction.customId.startsWith("embed_edit_")) {
           return handleEmbedModal(interaction);
         }
 
-        // ── Modals de VERIFICACIÓN
         if (interaction.customId === "verify_code_modal" || interaction.customId === "verify_question_modal") {
           return handleVerif(interaction);
         }
       }
 
-      // ══════════════════════════════════════════════════════════════
-      //   BOTONES
-      // ══════════════════════════════════════════════════════════════
       if (interaction.isButton()) {
         const { customId } = interaction;
         if (interaction.customId.startsWith('music_')) {
@@ -230,23 +189,19 @@ module.exports = {
           return;
         }
         
-        // Botones de Giveaway
         if (customId === "giveaway_join") {
           const giveaway = require("../commands/giveaway");
           await giveaway.handleGiveawayJoin(interaction, client);
           return;
         }
 
-        // ── Verificación
         const verifIds = ["verify_start", "verify_help", "verify_enter_code", "verify_resend_code"];
         if (verifIds.includes(customId)) {
           return handleVerif(interaction);
         }
 
-        // ── Help navigation (tiene su propio collector)
         if (customId.startsWith("help_")) return;
 
-        // ── Botones de ENCUESTA
         if (customId.startsWith("poll_vote_")) {
           const parts  = customId.split("_");
           const pollId = parts[2];
@@ -267,7 +222,6 @@ module.exports = {
           return;
         }
 
-        // ── Botones de SUGERENCIAS
         if (customId.startsWith("suggest_upvote_") || customId.startsWith("suggest_downvote_")) {
           const type  = customId.startsWith("suggest_upvote_") ? "up" : "down";
           const sugId = customId.replace("suggest_upvote_", "").replace("suggest_downvote_", "");
@@ -288,7 +242,6 @@ module.exports = {
           return;
         }
 
-        // ── Botones de TICKET (requieren staff)
         const s = await settings.get(interaction.guild.id);
         const staffOnlyButtons = ["ticket_close", "ticket_claim", "ticket_reopen", "ticket_transcript"];
         if (staffOnlyButtons.includes(customId) && !checkStaff(interaction.member, s)) {
@@ -296,6 +249,39 @@ module.exports = {
             embeds: [E.errorEmbed("❌ Solo el **staff** puede usar estos botones.")],
             flags: MessageFlags.Ephemeral,
           });
+        }
+
+        // ── Botón para crear ticket desde el panel (público)
+        if (customId === "create_ticket") {
+          if (s.maintenance_mode) {
+            return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], flags: MessageFlags.Ephemeral });
+          }
+          const banned = await blacklist.check(interaction.user.id, interaction.guild.id);
+          if (banned) {
+            return interaction.reply({ embeds: [E.errorEmbed("Estás en la lista negra.\n**Razón:** " + (banned.reason || "Sin razón"))], flags: MessageFlags.Ephemeral });
+          }
+          const open = await tickets.getByUser(interaction.user.id, interaction.guild.id);
+          if (open.length >= (s.max_tickets || 3)) {
+            return interaction.reply({ embeds: [E.errorEmbed("Ya tienes **" + open.length + "/" + (s.max_tickets || 3) + "** tickets abiertos.")], flags: MessageFlags.Ephemeral });
+          }
+          const categoryOptions = config.categories.map(c => ({
+            label: c.label,
+            description: c.description?.substring(0, 100),
+            value: c.id,
+            emoji: c.emoji,
+          }));
+          const selectMenu = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+              .setCustomId("ticket_category_select")
+              .setPlaceholder("📋 Selecciona el tipo de ticket...")
+              .addOptions(categoryOptions)
+          );
+          const embed = new EmbedBuilder()
+            .setTitle("🎫 Abrir un Ticket")
+            .setDescription("Selecciona una categoría para tu ticket:")
+            .setColor(E.Colors.PRIMARY)
+            .setTimestamp();
+          return interaction.reply({ embeds: [embed], components: [selectMenu], flags: MessageFlags.Ephemeral });
         }
 
         if (customId === "ticket_close") {

@@ -9,7 +9,7 @@ const express = require("express");
 const { setupSession, setupAuthRoutes, checkAuth, checkOwner, injectUser } = require("./src/middleware/auth");
 
 // Handlers de dashboard y música (usados tanto por el bot como por el servidor Express)
-const { startDashboardAutoUpdate, forceUpdateDashboard } = require("./src/handlers/dashboardHandler");
+const { startDashboardAutoUpdate, forceUpdateDashboard, updateTicketPanel } = require("./src/handlers/dashboardHandler");
 const { startOrphanCleanup } = require("./src/handlers/musicHandler");
 
 // Variable para almacenar el cliente de Discord
@@ -431,6 +431,15 @@ function iniciarServidorExpress(client) {
         console.log("[DASHBOARD] Actualización de dashboard completada para guild", guildId);
       } catch (error) {
         console.error("[DASHBOARD] Error al forzar actualización después de guardar settings:", error?.message || error);
+      }
+      
+      // Actualizar el panel de tickets si está configurado
+      try {
+        console.log("[TICKET PANEL] Actualizando panel de tickets para guild", guildId);
+        await updateTicketPanel(guild);
+        console.log("[TICKET PANEL] Actualización de panel completada para guild", guildId);
+      } catch (error) {
+        console.error("[TICKET PANEL] Error al actualizar el panel de tickets después de guardar settings:", error?.message || error);
       }
       
       res.status(200).json({ success: true, message: "Configuración guardada", settings: updatedSettings });
