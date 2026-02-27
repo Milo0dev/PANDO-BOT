@@ -82,7 +82,7 @@ module.exports = {
         name: interaction.guild.name, 
         iconURL: interaction.guild.iconURL({ dynamic: true }) 
       })
-      .setTitle("🌟 SOPORTE")
+      .setTitle("🧷 TICKET DE SOPORTE")
       .setDescription(
         "Bienvenido a nuestro sistema de asistencia personalizada. Estamos aquí para ayudarte con cualquier consulta o problema que puedas tener.\n\n" +
         "**¿Cómo podemos ayudarte hoy?**\n" +
