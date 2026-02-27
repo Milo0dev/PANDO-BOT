@@ -4291,123 +4291,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
             border-color: #b9bbbe transparent transparent transparent !important;
         }
     </style>
-
-    <!-- ========================================== -->
-    <!-- TOM SELECT - INICIALIZACIÓN CORREGIDA -->
-    <!-- ========================================== -->
-    <script>
-        // FUNCIÓN PRINCIPAL: Inicializa Tom Select en todos los <select> de la página
-        function inicializarTomSelect() {
-            // Seleccionar TODOS los elementos <select> que NO han sido inicializados con Tom Select
-            // Excluimos los que ya tienen la clase 'ts-hidden-accessible' (ya inicializados)
-            const selects = document.querySelectorAll('select:not(.ts-hidden-accessible)');
-            
-            console.log('[TomSelect] Encontrados ' + selects.length + ' elementos <select> para inicializar');
-            
-            selects.forEach(function(selectElement) {
-                // Verificar que el elemento existe y está visible (o es un hidden pero procesable)
-                if (!selectElement) return;
-                
-                // NO inicializar selects que son usados por custom dropdowns de Discord UI
-                // Estos tienen un input hidden asociado y su propio sistema de UI
-                const parentId = selectElement.parentElement?.id || '';
-                if (parentId.includes('discord-ui-dropdown') || selectElement.closest('.discord-ui-dropdown-container')) {
-                    console.log('[TomSelect] Omitiendo select en contenedor de Discord UI:', selectElement.id || selectElement.name);
-                    return;
-                }
-                
-                // Verificar si ya fue inicializado previamente
-                if (selectElement.classList.contains('ts-hidden-accessible')) {
-                    console.log('[TomSelect] Select ya inicializado:', selectElement.id || selectElement.name);
-                    return;
-                }
-                
-                try {
-                    // Inicializar Tom Select con la configuración solicitada
-                    new TomSelect(selectElement, {
-                        create: false,          // No permitir crear nuevas opciones
-                        maxOptions: null,       // Sin límite de opciones en el dropdown
-                        sortField: {
-                            field: "text",
-                            direction: "asc"
-                        },
-                        plugins: ['clear_button'],
-                        placeholder: selectElement.getAttribute('data-placeholder') || 'Seleccionar...',
-                        allowEmptyOption: true,
-                        onItemAdd: function() {
-                            this.setText('');
-                        },
-                        onFocus: function() {
-                            if (this.wrapper) {
-                                this.wrapper.classList.add('focus');
-                            }
-                        },
-                        onBlur: function() {
-                            if (this.wrapper) {
-                                this.wrapper.classList.remove('focus');
-                            }
-                        }
-                    });
-                    
-                    console.log('[TomSelect] ✅ Inicializado:', selectElement.id || selectElement.name);
-                } catch (error) {
-                    console.error('[TomSelect] ❌ Error al inicializar:', selectElement.id || selectElement.name, error);
-                }
-            });
-            
-            console.log('[TomSelect] 🎉 Inicialización completada');
-        }
-
-        // ESPERAR A QUE EL DOM ESTÉ COMPLETAMENTE CARGADO
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[TomSelect] DOM cargado, iniciando Tom Select...');
-            
-            // Pequeño timeout para asegurar que todos los scripts anteriores hayan terminado
-            setTimeout(function() {
-                inicializarTomSelect();
-            }, 100);
-        });
-
-        // ALSO: Observar cambios en el DOM para inicializar selects que aparecen dinámicamente
-        // Esto es útil cuando los selects se cargan después de seleccionar un servidor
-        const observer = new MutationObserver(function(mutations) {
-            let debeReinicializar = false;
-            
-            mutations.forEach(function(mutation) {
-                if (mutation.addedNodes.length > 0) {
-                    mutation.addedNodes.forEach(function(node) {
-                        // Verificar si se agregó un elemento <select>
-                        if (node.nodeName === 'SELECT') {
-                            debeReinicializar = true;
-                        }
-                        // O si se agregó un contenedor que podría tener selects dentro
-                        else if (node.nodeType === 1) {
-                            const selects = node.querySelectorAll('select');
-                            if (selects.length > 0) {
-                                debeReinicializar = true;
-                            }
-                        }
-                    });
-                }
-            });
-            
-            if (debeReinicializar) {
-                console.log('[TomSelect] Detectados nuevos elementos en el DOM, reinicializando...');
-                // Pequeño delay para asegurar que el elemento esté completamente renderizado
-                setTimeout(inicializarTomSelect, 50);
-            }
-        });
-
-        // Iniciar el observador cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', function() {
-            // Observar todo el documento por si aparecen nuevos selects
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        });
-    </script>
-
+    
     <!-- ========================================== -->
     <!-- MUTATIONOBSERVER DEFINITIVO PARA TOM SELECT -->
     <!-- Solución para selects renderizados dinámicamente -->
@@ -4418,6 +4302,8 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
          * MUTATIONOBSERVER PARA TOM SELECT
          * Inicializa dinámicamente elementos <select>
          * que aparecen tras seleccionar un servidor
+         * 
+         * CORRECCIÓN: Ignora selects de SweetAlert2
          * ==========================================
          */
 
@@ -4433,6 +4319,34 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                 console.log('[TomSelect Observer] ⏭️  Omitido (ya inicializado):', selectElement.id || selectElement.name || selectElement.className);
                 return;
             }
+
+            // ============================================================
+            // INICIO DE CORRECCIÓN - IGNORAR SWEETALERT2
+            // ============================================================
+            
+            // 1. Ignorar si el select tiene la clase 'swal2-select'
+            if (selectElement.classList.contains('swal2-select')) {
+                console.log('[TomSelect Observer] ⏭️  Omitido (SweetAlert2 swal2-select):', selectElement.id || selectElement.name);
+                return;
+            }
+
+            // 2. Ignorar si el select está dentro de un contenedor .swal2-container
+            const closestSwalContainer = selectElement.closest('.swal2-container');
+            if (closestSwalContainer) {
+                console.log('[TomSelect Observer] ⏭️  Omitido (dentro de .swal2-container):', selectElement.id || selectElement.name);
+                return;
+            }
+
+            // 3. Ignorar si el select está dentro de cualquier modal/popup de SweetAlert2
+            const closestSwalPopup = selectElement.closest('.swal2-popup');
+            if (closestSwalPopup) {
+                console.log('[TomSelect Observer] ⏭️  Omitido (dentro de .swal2-popup):', selectElement.id || selectElement.name);
+                return;
+            }
+            
+            // ============================================================
+            // FIN DE CORRECCIÓN - IGNORAR SWEETALERT2
+            // ============================================================
 
             // NO inicializar selects que son usados por custom dropdowns de Discord UI
             // Estos tienen su propio sistema de UI y no necesitan Tom Select
