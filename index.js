@@ -3,10 +3,8 @@ const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js"
 const chalk   = require("chalk");
 const fs      = require("fs");
 const path    = require("path");
-
 // Limpieza de música (solo tareas del bot)
 const { startOrphanCleanup } = require("./src/handlers/musicHandler");
-
 // ── Conectar a MongoDB
 const { connectDB } = require("./src/utils/database");
 
@@ -19,7 +17,6 @@ async function startBot() {
     console.error(chalk.red("❌ Error fatal: No se pudo conectar a MongoDB"));
     process.exit(1);
   }
-
   // ── Cliente de Discord
   const client = new Client({
     intents: [
@@ -35,7 +32,6 @@ async function startBot() {
   });
 
   client.commands = new Collection();
-
   // ── Cargar comandos dinámicamente
   function loadCommands(dir) {
     const commandFiles = fs.readdirSync(dir, { withFileTypes: true });
@@ -57,7 +53,6 @@ async function startBot() {
     }
   }
   loadCommands(path.join(__dirname, "src/commands"));
-
   // ── Cargar eventos automáticamente
   const eventsDir   = path.join(__dirname, "src/events");
   const eventFiles  = fs.readdirSync(eventsDir).filter(f => f.endsWith(".js"));
@@ -70,10 +65,8 @@ async function startBot() {
       client.on(event.name, (...args) => event.execute(...args, client));
     }
   }
-
   // Tareas de mantenimiento de música
   startOrphanCleanup(client);
-
   // ── Manejo de errores global
   process.on("unhandledRejection", err => console.error(chalk.red("[ERROR]"), err?.message || err));
   process.on("uncaughtException",  err => console.error(chalk.red("[EXCEPTION]"), err?.message || err));
@@ -82,10 +75,9 @@ async function startBot() {
   console.log(chalk.blue(`
 ╔══════════════════════════════════════════╗
 ║        🐼  PANDO BOT (DISCORD)           ║
-║      Ejecutándose Independiente           ║
+║      Ejecutándose Independiente          ║
 ╚══════════════════════════════════════════╝
 `));
-
   // ── Iniciar sesión en Discord
   client.login(process.env.DISCORD_TOKEN).catch(err => {
     console.error(chalk.red("\n❌ Error al iniciar:"), err.message);
@@ -93,7 +85,6 @@ async function startBot() {
     process.exit(1);
   });
 }
-
 // Función para registrar comandos de slash
 async function registrarComandos(client) {
   try {
@@ -110,6 +101,5 @@ async function registrarComandos(client) {
     console.error(chalk.red("❌ Error al registrar comandos:"), error.message);
   }
 }
-
 // Iniciar el bot
 startBot();

@@ -5,22 +5,24 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
 } = require("discord.js");
 
 const { settings } = require("../utils/database");
 const E = require("../utils/embeds");
+const { categories } = require("../../config");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("setup-tickets")
-    .setDescription("🎫 Enviar el panel de tickets al canal configurado en el Dashboard")
+    .setDescription("🎫 Configura el sistema premium de tickets en el canal designado")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
     await interaction.deferReply({ ephemeral: true });
 
     const gid = interaction.guild.id;
-    const s   = await settings.get(gid);
+    const s = await settings.get(gid);
 
     // ── 1. Validar que el canal de tickets esté configurado
     if (!s.panel_channel_id) {
@@ -54,7 +56,7 @@ module.exports = {
     }
 
     // ── 3. Verificar permisos del bot en el canal
-    const botMember      = interaction.guild.members.me;
+    const botMember = interaction.guild.members.me;
     const permsInChannel = channel.permissionsFor(botMember);
     if (
       !permsInChannel.has(PermissionFlagsBits.ViewChannel) ||
@@ -74,39 +76,75 @@ module.exports = {
       });
     }
 
-    // ── 4. Construir el embed elegante del panel
+    // ── 4. Construir el embed premium del panel
     const embed = new EmbedBuilder()
-      .setTitle("🎫 Centro de Soporte")
+      .setAuthor({ 
+        name: interaction.guild.name, 
+        iconURL: interaction.guild.iconURL({ dynamic: true }) 
+      })
+      .setTitle("🌟 CENTRO DE SOPORTE PREMIUM")
       .setDescription(
-        "¿Necesitas ayuda o tienes algún problema? ¡Estamos aquí para ayudarte!\n\n" +
-        "Haz clic en el botón de abajo para **abrir un ticket privado** con nuestro equipo de soporte.\n\n" +
-        "**📋 Antes de abrir un ticket:**\n" +
-        "▸ Describe tu problema con el mayor detalle posible.\n" +
-        "▸ Adjunta capturas de pantalla si es necesario.\n" +
-        "▸ Sé respetuoso con el equipo de soporte.\n\n" +
-        "**🕐 Tiempo de respuesta:**\n" +
-        "Nuestro equipo te atenderá lo antes posible."
+        "Bienvenido a nuestro sistema de asistencia personalizada. Estamos aquí para ayudarte con cualquier consulta o problema que puedas tener.\n\n" +
+        "**¿Cómo podemos ayudarte hoy?**\n" +
+        "Selecciona la categoría que mejor se adapte a tu consulta en el menú desplegable a continuación."
+      )
+      .addFields(
+        { 
+          name: "📋 Antes de abrir un ticket", 
+          value: "• Revisa nuestras **FAQ** para soluciones rápidas\n" +
+                 "• Prepara capturas de pantalla si son necesarias\n" +
+                 "• Describe tu problema con el mayor detalle posible", 
+          inline: false 
+        },
+        { 
+          name: "⏱️ Tiempo de respuesta", 
+          value: "Nuestro equipo de soporte está disponible y responderá a tu ticket lo antes posible.", 
+          inline: false 
+        },
+        { 
+          name: "🔒 Privacidad garantizada", 
+          value: "Tu ticket será visible únicamente para ti y nuestro equipo de soporte.", 
+          inline: false 
+        }
       )
       .setColor(0x5865F2)
-      .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+      // BANNER PERSONALIZABLE - Descomenta la siguiente línea y añade tu URL
+      .setImage("https://i.imgur.com/YourBannerImage.png") // PON TU URL AQUÍ - Banner recomendado: 1500x300px
+      .setThumbnail(interaction.guild.iconURL({ dynamic: true, size: 256 }))
       .setFooter({
-        text: `${interaction.guild.name} • Sistema de Soporte`,
+        text: `${interaction.guild.name} • Sistema Premium de Soporte`,
         iconURL: interaction.guild.iconURL({ dynamic: true }),
       })
       .setTimestamp();
 
-    // ── 5. Botón azul "🎫 Crear Ticket"
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("ticket_open_simple")
-        .setLabel("Crear Ticket")
-        .setEmoji("🎫")
-        .setStyle(ButtonStyle.Primary)
-    );
+    // ── 5. Crear el menú de categorías
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId("ticket_category_select")
+      .setPlaceholder("✨ Selecciona una categoría de soporte...")
+      .addOptions(categories.map(c => ({
+        label: c.label,
+        description: c.description?.substring(0, 100) || "Selecciona esta categoría para recibir ayuda",
+        value: c.id,
+        emoji: c.emoji,
+      })));
 
-    // ── 6. Enviar el panel al canal configurado
+    // ── 6. Botón alternativo para crear ticket (opcional)
+    const button = new ButtonBuilder()
+      .setCustomId("create_ticket")
+      .setLabel("Crear Ticket")
+      .setEmoji("🎫")
+      .setStyle(ButtonStyle.Primary);
+
+    // ── 7. Enviar el panel al canal configurado
     try {
-      const msg = await channel.send({ embeds: [embed], components: [row] });
+      // Primero enviamos el menú de selección
+      const msg = await channel.send({ 
+        embeds: [embed], 
+        components: [
+          new ActionRowBuilder().addComponents(menu),
+          new ActionRowBuilder().addComponents(button)
+        ] 
+      });
 
       // Guardar el ID del mensaje del panel en la DB
       await settings.update(gid, { panel_message_id: msg.id });
@@ -115,10 +153,10 @@ module.exports = {
         embeds: [
           new EmbedBuilder()
             .setColor(E.Colors.SUCCESS)
-            .setTitle("✅ Panel enviado correctamente")
+            .setTitle("✅ Panel Premium configurado correctamente")
             .setDescription(
               `El panel de tickets ha sido enviado a ${channel}.\n\n` +
-              `Los usuarios pueden hacer clic en **🎫 Crear Ticket** para abrir un ticket privado.\n\n` +
+              `Los usuarios pueden seleccionar una categoría para abrir un ticket privado.\n\n` +
               (s.support_role
                 ? `👥 Rol de soporte activo: <@&${s.support_role}>`
                 : "⚠️ **Nota:** No hay un rol de soporte configurado.\n" +
