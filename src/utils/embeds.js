@@ -10,7 +10,7 @@ const Colors = {
 // ─────────────────────────────────────────────────────
 //   TICKET EMBEDS
 // ─────────────────────────────────────────────────────
-function ticketOpen(ticketData, user, category, answers) {
+function ticketOpen(ticketData, user, category, answers, client) {
   const embed = new EmbedBuilder()
     .setTitle(`🎫 Ticket #${ticketData.ticket_id}`)
     .setColor(category.color || Colors.PRIMARY)
@@ -24,7 +24,10 @@ function ticketOpen(ticketData, user, category, answers) {
       { name: "🕐 Creado",    value: `<t:${Math.floor(Date.now()/1000)}:R>`, inline: true }
     )
     .setThumbnail(user.displayAvatarURL({ dynamic: true }))
-    .setFooter({ text: `ID de usuario: ${user.id}` })
+    .setFooter({ 
+      text: `ID de usuario: ${user.id}`,
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 
   if (answers?.length) {
@@ -35,7 +38,7 @@ function ticketOpen(ticketData, user, category, answers) {
   return embed;
 }
 
-function ticketClosed(ticket, closedBy, reason) {
+function ticketClosed(ticket, closedBy, reason, client) {
   return new EmbedBuilder()
     .setTitle("🔒 Ticket Cerrado")
     .setColor(Colors.ERROR)
@@ -46,19 +49,27 @@ function ticketClosed(ticket, closedBy, reason) {
       { name: "⏱️ Duración",    value: duration(ticket.created_at),      inline: true },
       { name: "💬 Mensajes",    value: `${ticket.message_count}`,        inline: true },
     )
+    .setFooter({
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
-function ticketReopened(ticket, reopenedBy) {
+function ticketReopened(ticket, reopenedBy, client) {
   return new EmbedBuilder()
     .setTitle("🔓 Ticket Reabierto")
     .setColor(Colors.SUCCESS)
     .setDescription(`<@${reopenedBy}> ha reabierto este ticket.\nUn miembro del staff retomará la atención pronto.`)
     .addFields({ name: "🔄 Reaperturas", value: `${ticket.reopen_count}`, inline: true })
+    .setFooter({
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
-function ticketInfo(ticket) {
+function ticketInfo(ticket, client) {
   const fields = [
     { name: "👤 Creador",       value: `<@${ticket.user_id}>`,           inline: true },
     { name: "📁 Categoría",     value: ticket.category,                  inline: true },
@@ -80,10 +91,14 @@ function ticketInfo(ticket) {
     .setTitle(`ℹ️ Ticket #${ticket.ticket_id}`)
     .setColor(Colors.PRIMARY)
     .addFields(...fields)
+    .setFooter({
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
-function ticketLog(ticket, user, action, details = {}) {
+function ticketLog(ticket, user, action, details = {}, client) {
   const map = {
     open:       { title: "🎫 Ticket Abierto",          color: Colors.SUCCESS },
     close:      { title: "🔒 Ticket Cerrado",          color: Colors.ERROR   },
@@ -113,7 +128,10 @@ function ticketLog(ticket, user, action, details = {}) {
       { name: "👤 Por",    value: `<@${user.id}>`,                                  inline: true },
       { name: "📁 Cat.",   value: ticket.category,                                  inline: true },
     )
-    .setFooter({ text: `UID: ${user.id}` })
+    .setFooter({ 
+      text: `UID: ${user.id}`,
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
   Object.entries(details).forEach(([k, v]) => embed.addFields({ name: k, value: String(v).substring(0, 200), inline: true }));
   return embed;
@@ -122,7 +140,7 @@ function ticketLog(ticket, user, action, details = {}) {
 // ─────────────────────────────────────────────────────
 //   DASHBOARD
 // ─────────────────────────────────────────────────────
-function dashboardEmbed(stats, guild, awayStaff, leaderboard) {
+function dashboardEmbed(stats, guild, awayStaff, leaderboard, client) {
   const rating    = stats.avg_rating     ? `${stats.avg_rating.toFixed(1)}/5 ⭐`    : "Sin datos";
   const respTime  = stats.avg_response_minutes ? formatMinutes(stats.avg_response_minutes)  : "Sin datos";
   const closeTime = stats.avg_close_minutes    ? formatMinutes(stats.avg_close_minutes)     : "Sin datos";
@@ -159,14 +177,17 @@ function dashboardEmbed(stats, guild, awayStaff, leaderboard) {
       { name: "━━━ 🏆 Top Staff ━━━",             value: topStaff, inline: false },
       { name: "━━━ 😴 Staff Ausente ━━━",          value: awayText, inline: false },
     )
-    .setFooter({ text: `Última actualización` })
+    .setFooter({ 
+      text: `Última actualización`,
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
 // ─────────────────────────────────────────────────────
 //   STATS
 // ─────────────────────────────────────────────────────
-function statsEmbed(stats, guildName) {
+function statsEmbed(stats, guildName, client) {
   return new EmbedBuilder()
     .setTitle(`📊 Estadísticas — ${guildName}`)
     .setColor(Colors.PRIMARY)
@@ -180,10 +201,14 @@ function statsEmbed(stats, guildName) {
       { name: "⚡ T. Respuesta",    value: stats.avg_response_minutes ? `\`${formatMinutes(stats.avg_response_minutes)}\`` : "`Sin datos`", inline: true },
       { name: "⏱️ T. Cierre",      value: stats.avg_close_minutes ? `\`${formatMinutes(stats.avg_close_minutes)}\`` : "`Sin datos`", inline: true },
     )
+    .setFooter({
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
-function weeklyReportEmbed(stats, guild, leaderboard) {
+function weeklyReportEmbed(stats, guild, leaderboard, client) {
   const topStaff = leaderboard.slice(0, 5).map((s, i) =>
     `${["🥇","🥈","🥉","4️⃣","5️⃣"][i]} <@${s.staff_id}> — **${s.tickets_closed}** cerrados`
   ).join("\n") || "Sin actividad esta semana";
@@ -204,11 +229,14 @@ function weeklyReportEmbed(stats, guild, leaderboard) {
       { name: "🏆 Staff Destacado",    value: topStaff,  inline: false },
       { name: "📁 Categorías Activas", value: topCats,   inline: false },
     )
-    .setFooter({ text: "Reporte automático semanal" })
+    .setFooter({ 
+      text: "Reporte automático semanal",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
-function leaderboardEmbed(lb, guild) {
+function leaderboardEmbed(lb, guild, client) {
   const medals  = ["🥇","🥈","🥉"];
   const desc = lb.length
     ? lb.map((s, i) =>
@@ -220,24 +248,32 @@ function leaderboardEmbed(lb, guild) {
     .setColor(Colors.GOLD)
     .setDescription(desc)
     .setThumbnail(guild.iconURL({ dynamic: true }))
+    .setFooter({
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
 // ─────────────────────────────────────────────────────
 //   MANTENIMIENTO
 // ─────────────────────────────────────────────────────
-function maintenanceEmbed(reason) {
+function maintenanceEmbed(reason, client) {
   return new EmbedBuilder()
     .setTitle("🔧 Sistema en Mantenimiento")
     .setColor(Colors.WARNING)
     .setDescription(`El sistema de tickets está temporalmente desactivado.\n\n**Razón:** ${reason || "Mantenimiento programado"}\n\nPor favor vuelve más tarde.`)
+    .setFooter({
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
 // ─────────────────────────────────────────────────────
 //   RATING
 // ─────────────────────────────────────────────────────
-function ratingEmbed(user, ticket, staffId) {
+function ratingEmbed(user, ticket, staffId, client) {
   const ticketId = typeof ticket === "object" ? ticket.ticket_id : ticket;
   const category = typeof ticket === "object" ? ticket.category : null;
   return new EmbedBuilder()
@@ -251,7 +287,10 @@ function ratingEmbed(user, ticket, staffId) {
       `\n⭐ Selecciona una calificación del 1 al 5:`
     )
     .setThumbnail(user.displayAvatarURL({ dynamic: true }))
-    .setFooter({ text: "Tu opinión ayuda a mejorar la calidad del soporte • Expira en 10 minutos" });
+    .setFooter({ 
+      text: "Tu opinión ayuda a mejorar la calidad del soporte • Expira en 10 minutos",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    });
 }
 
 // ─────────────────────────────────────────────────────
@@ -329,11 +368,25 @@ function staffRatingProfile(staffUser, stats, guildName) {
 // ─────────────────────────────────────────────────────
 //   GENERALES
 // ─────────────────────────────────────────────────────
-function successEmbed(msg) { return new EmbedBuilder().setColor(Colors.SUCCESS).setDescription(`✅ ${msg}`); }
-function errorEmbed(msg)   { return new EmbedBuilder().setColor(Colors.ERROR).setDescription(`❌ **Error:** ${msg}`); }
-function warningEmbed(msg) { return new EmbedBuilder().setColor(Colors.WARNING).setDescription(`⚠️ ${msg}`); }
-function infoEmbed(title, desc) {
-  return new EmbedBuilder().setColor(Colors.INFO).setTitle(title).setDescription(desc).setTimestamp();
+function successEmbed(msg, client) { 
+  const embed = new EmbedBuilder().setColor(Colors.SUCCESS).setDescription(`✅ ${msg}`);
+  if (client) embed.setFooter({ iconURL: client.user.displayAvatarURL({ dynamic: true }) });
+  return embed;
+}
+function errorEmbed(msg, client) { 
+  const embed = new EmbedBuilder().setColor(Colors.ERROR).setDescription(`❌ **Error:** ${msg}`);
+  if (client) embed.setFooter({ iconURL: client.user.displayAvatarURL({ dynamic: true }) });
+  return embed;
+}
+function warningEmbed(msg, client) { 
+  const embed = new EmbedBuilder().setColor(Colors.WARNING).setDescription(`⚠️ ${msg}`);
+  if (client) embed.setFooter({ iconURL: client.user.displayAvatarURL({ dynamic: true }) });
+  return embed;
+}
+function infoEmbed(title, desc, client) {
+  const embed = new EmbedBuilder().setColor(Colors.INFO).setTitle(title).setDescription(desc).setTimestamp();
+  if (client) embed.setFooter({ iconURL: client.user.displayAvatarURL({ dynamic: true }) });
+  return embed;
 }
 
 // ─────────────────────────────────────────────────────

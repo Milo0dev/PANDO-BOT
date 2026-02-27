@@ -52,7 +52,7 @@ async function sendPanel(channel, guild) {
     .setThumbnail(guild.iconURL({ dynamic: true, size: 256 }))
     .setFooter({
       text: `${guild.name} • Sistema Premium de Soporte`,
-      iconURL: guild.iconURL({ dynamic: true }),
+      iconURL: channel.client.user.displayAvatarURL({ dynamic: true }),
     })
     .setTimestamp();
 
@@ -286,7 +286,7 @@ async function createTicket(interaction, categoryId, answers = []) {
       .setColor(category.color || 0x5865F2)
       .setFooter({ 
         text: `${guild.name} • Sistema Premium de Tickets`, 
-        iconURL: guild.iconURL({ dynamic: true }) 
+        iconURL: interaction.client.user.displayAvatarURL({ dynamic: true }) 
       })
       .setTimestamp();
 
@@ -338,7 +338,7 @@ async function createTicket(interaction, categoryId, answers = []) {
               .setThumbnail(guild.iconURL({ dynamic: true }))
               .setFooter({ 
                 text: `${guild.name} • Sistema Premium de Tickets`, 
-                iconURL: guild.iconURL({ dynamic: true }) 
+                iconURL: interaction.client.user.displayAvatarURL({ dynamic: true }) 
               })
               .setTimestamp()
           ] 
@@ -364,7 +364,7 @@ async function createTicket(interaction, categoryId, answers = []) {
           )
           .setFooter({ 
             text: `${guild.name} • Sistema Premium de Tickets`, 
-            iconURL: guild.iconURL({ dynamic: true }) 
+            iconURL: interaction.client.user.displayAvatarURL({ dynamic: true }) 
           })
           .setTimestamp()
       ] 
@@ -473,7 +473,7 @@ async function closeTicket(interaction, reason = null) {
         )
         .setFooter({ 
           text: "Gracias por confiar en nuestro soporte • Sistema Premium de Tickets", 
-          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+          iconURL: channel.client.user.displayAvatarURL({ dynamic: true })
         })
         .setTimestamp();
 
@@ -562,7 +562,10 @@ async function closeTicket(interaction, reason = null) {
           `Este ticket será eliminado en **5 segundos**...\n\n` +
           `Se ha enviado una transcripción completa al usuario por mensaje directo.`
         )
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: channel.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ]
   });
@@ -611,10 +614,11 @@ async function reopenTicket(interaction) {
               `Tu ticket **#${ticket.ticket_id}** en **${guild.name}** ha sido reabierto por <@${interaction.user.id}>.\n\n` +
               `Puedes volver al canal para continuar la conversación.`
             )
-            .setFooter({ 
-              text: `${guild.name} • Sistema Premium de Tickets`, 
-              iconURL: guild.iconURL({ dynamic: true }) 
-            })
+          .setFooter({ 
+            text: `${guild.name} • Sistema Premium de Tickets`, 
+            iconURL: interaction.client.user.displayAvatarURL({ dynamic: true }) 
+          })
+
             .setTimestamp()
         ] 
       });
@@ -633,7 +637,10 @@ async function reopenTicket(interaction) {
         .setColor(E.Colors.SUCCESS)
         .setTitle("🔓 Ticket Reabierto")
         .setDescription("El ticket ha sido reabierto correctamente.")
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ], 
     ephemeral: true 
@@ -835,7 +842,10 @@ async function claimTicket(interaction) {
         `Has reclamado el ticket **#${ticket.ticket_id}** correctamente.\n` +
         (dmEnviado ? "📩 Se notificó al usuario por DM." : "📩 No se pudo notificar al usuario (DMs desactivados).")
       )
-      .setFooter({ text: "Sistema Premium de Tickets" })
+      .setFooter({ 
+        text: "Sistema Premium de Tickets",
+        iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+      })
       .setTimestamp()],
   });
 }
@@ -912,7 +922,10 @@ async function unclaimTicket(interaction) {
         .setColor(E.Colors.WARNING)
         .setTitle("↩️ Ticket Liberado")
         .setDescription("El ticket ha sido liberado. Cualquier miembro del staff puede reclamarlo ahora.")
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ] 
   });
@@ -1000,7 +1013,10 @@ async function assignTicket(interaction, staffUser) {
         .setColor(E.Colors.INFO)
         .setTitle("📌 Ticket Asignado")
         .setDescription(`El ticket ha sido asignado a <@${staffUser.id}>.\nRecibirá acceso y notificación.`)
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ],
   });
@@ -1027,7 +1043,10 @@ async function addUser(interaction, user) {
         .setColor(E.Colors.SUCCESS)
         .setTitle("➕ Usuario Añadido")
         .setDescription(`<@${user.id}> ha sido añadido al ticket.`)
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ] 
   });
@@ -1047,7 +1066,10 @@ async function removeUser(interaction, user) {
         .setColor(E.Colors.SUCCESS)
         .setTitle("➖ Usuario Quitado")
         .setDescription(`<@${user.id}> ha sido quitado del ticket.`)
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ] 
   });
@@ -1125,7 +1147,10 @@ async function moveTicket(interaction, newCategoryId) {
         .setColor(E.Colors.INFO)
         .setTitle("📂 Categoría Cambiada")
         .setDescription(`Ticket movido de **${oldCategory}** → **${newCategory.label}**`)
-        .setFooter({ text: "Sistema Premium de Tickets" })
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
         .setTimestamp()
     ],
   });
@@ -1151,7 +1176,7 @@ async function sendRating(user, ticket, channel, staffId) {
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .setFooter({ 
         text: "Tu opinión es importante para nosotros • Esta calificación expira en 10 minutos",
-        iconURL: channel.client.user.displayAvatarURL({ dynamic: true })
+        iconURL: user.client?.user?.displayAvatarURL({ dynamic: true }) || channel.client.user.displayAvatarURL({ dynamic: true })
       })
       .setTimestamp();
 
@@ -1274,7 +1299,10 @@ function transcriptEmbed(ticket, closedByStaff = null, closedAt = null) {
       { name: "💬 Mensajes", value: `${ticket.message_count || 0}`, inline: true },
       { name: "⭐ Rating", value: ticket.rating ? `${ticket.rating}/5` : "Sin calificar", inline: true },
     )
-    .setFooter({ text: "Sistema Premium de Tickets" })
+    .setFooter({ 
+      text: "Sistema Premium de Tickets",
+      iconURL: client?.user?.displayAvatarURL({ dynamic: true })
+    })
     .setTimestamp();
 }
 
@@ -1296,8 +1324,12 @@ function replyError(interaction, msg) {
       new EmbedBuilder()
         .setColor(E.Colors.ERROR)
         .setDescription(`❌ **Error:** ${msg}`)
-        .setFooter({ text: "Sistema Premium de Tickets" })
-    ], 
+        .setFooter({ 
+          text: "Sistema Premium de Tickets",
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
+        })
+    ],
+
     ephemeral: true 
   };
   
