@@ -10,7 +10,6 @@ module.exports = {
     .setDescription("⚙️ Configurar el bot de tickets")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     // ── Canales
-    .addSubcommand(s => s.setName("panel").setDescription("Enviar panel de tickets al canal configurado").addChannelOption(o => o.setName("canal").setDescription("Canal (opcional si ya está configurado en el Dashboard)").addChannelTypes(ChannelType.GuildText).setRequired(false)))
     .addSubcommand(s => s.setName("logs").setDescription("Canal de logs").addChannelOption(o => o.setName("canal").setDescription("Canal").addChannelTypes(ChannelType.GuildText).setRequired(true)))
     .addSubcommand(s => s.setName("transcripts").setDescription("Canal de transcripciones").addChannelOption(o => o.setName("canal").setDescription("Canal").addChannelTypes(ChannelType.GuildText).setRequired(true)))
     .addSubcommand(s => s.setName("dashboard").setDescription("Canal del dashboard en tiempo real").addChannelOption(o => o.setName("canal").setDescription("Canal").addChannelTypes(ChannelType.GuildText).setRequired(true)))
@@ -43,43 +42,6 @@ module.exports = {
     const s   = await settings.get(gid);
 
     const ok  = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
-
-    if (sub === "panel") {
-      await interaction.deferReply({ ephemeral: true });
-
-      // Leer canal del argumento o, si no se proporcionó, desde la base de datos (configurado por el Dashboard)
-      const canalOption = interaction.options.getChannel("canal");
-      const channelId   = canalOption?.id || s.panel_channel_id;
-
-      if (!channelId) {
-        return interaction.editReply({
-          embeds: [E.errorEmbed(
-            "No hay canal de tickets configurado.\n\n" +
-            "▸ Especifica uno: `/setup panel #canal`\n" +
-            "▸ O configúralo desde el **Dashboard web** y vuelve a ejecutar `/setup panel`."
-          )],
-        });
-      }
-
-      const canal = canalOption ?? interaction.guild.channels.cache.get(channelId);
-      if (!canal) {
-        return interaction.editReply({
-          embeds: [E.errorEmbed(
-            `El canal <#${channelId}> no existe o fue eliminado.\n` +
-            "Reconfigúralo desde el **Dashboard web** o especifica uno nuevo."
-          )],
-        });
-      }
-
-      try {
-        const msg = await sendPanel(canal, interaction.guild);
-        await settings.update(gid, { panel_channel_id: canal.id, panel_message_id: msg.id });
-        return interaction.editReply({ embeds: [E.successEmbed(`Panel enviado a ${canal}.`)] });
-      } catch (err) {
-        console.error("[SETUP PANEL ERROR]", err);
-        return interaction.editReply({ embeds: [E.errorEmbed("Error al enviar el panel. Verifica mis permisos en ese canal.")] });
-      }
-    }
 
     const channelSubs = { logs: "log_channel", transcripts: "transcript_channel", dashboard: "dashboard_channel", "weekly-report": "weekly_report_channel" };
     if (channelSubs[sub]) {

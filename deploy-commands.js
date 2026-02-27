@@ -1,31 +1,33 @@
 require("dotenv").config();
-const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 const chalk = require("chalk");
 
-const setup   = require("./src/commands/setup");
-const ticket  = require("./src/commands/ticket");
-const admin   = require("./src/commands/admin");
-const staff   = require("./src/commands/staff");
-const welcome = require("./src/commands/welcome");
-const verify  = require("./src/commands/verify");
-const help    = require("./src/commands/help");
-const poll    = require("./src/commands/poll");
-const embed   = require("./src/commands/embed");
-const suggest = require("./src/commands/suggest");
-const remind  = require("./src/commands/remind");
-const rank    = require("./src/commands/rank");
-const levels  = require("./src/commands/levels");
-const modlogs = require("./src/commands/modlogs");
-const music   = require("./src/commands/music");
-const ping    = require("./src/commands/ping");
-const debug   = require("./src/commands/debug");
-const economy = require("./src/commands/economy");
-const games   = require("./src/commands/games");
-const giveaway = require("./src/commands/giveaway");
+// 1. Importamos todos tus comandos
+const setup        = require("./src/commands/setup");
+const setupTickets = require("./src/commands/setupTickets"); // <--- AÑADIMOS EL NUEVO COMANDO
+const ticket       = require("./src/commands/ticket");
+const admin        = require("./src/commands/admin");
+const staff        = require("./src/commands/staff");
+const welcome      = require("./src/commands/welcome");
+const verify       = require("./src/commands/verify");
+const help         = require("./src/commands/help");
+const poll         = require("./src/commands/poll");
+const embed        = require("./src/commands/embed");
+const suggest      = require("./src/commands/suggest");
+const remind       = require("./src/commands/remind");
+const rank         = require("./src/commands/rank");
+const levels       = require("./src/commands/levels");
+const modlogs      = require("./src/commands/modlogs");
+const music        = require("./src/commands/music");
+const ping         = require("./src/commands/ping");
+const debug        = require("./src/commands/debug");
+const economy      = require("./src/commands/economy");
+const games        = require("./src/commands/games");
+const giveaway     = require("./src/commands/giveaway");
 
-// Recoger todos los comandos igual que en index.js
+// 2. Metemos setupTickets en la lista maestra
 const allCommands = [
-  setup, ping, debug,
+  setup, setupTickets, ping, debug, // <--- AÑADIDO AQUÍ TAMBIÉN
   ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
   ticket.assign, ticket.add, ticket.remove, ticket.rename,
   ticket.priority, ticket.move, ticket.note, ticket.transcript,
@@ -46,68 +48,23 @@ const allCommands = [
 
 const commands = allCommands.map(c => c.data);
 
-// Crear cliente temporal solo para acceder a application.commands
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
+const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.once("ready", async () => {
   try {
     console.log(chalk.yellow(`\n⏳ Registrando ${commands.length} comandos slash...\n`));
 
-    // 🔧 LIMPIEZA EXPLICITA: Eliminar TODOS los comandos existentes primero
-    // Esto asegura que no queden duplicados ni comandos huérfanos
-    console.log(chalk.gray("   🧹 Limpiando comandos existentes..."));
-    
+    // El método .set() reemplaza todo limpiamente en 1 segundo sin causar pausas (Rate Limits)
     if (process.env.GUILD_ID) {
-      // Por servidor (guild) - primero obtener el guild
       const guild = await client.guilds.fetch(process.env.GUILD_ID);
-      if (!guild) {
-        console.error(chalk.red("❌ No se pudo encontrar el servidor con ese GUILD_ID"));
-        process.exit(1);
-      }
-      
-      // Obtener comandos existentes del guild
-      const comandosRegistrados = await guild.commands.fetch();
-      
-      if (comandosRegistrados.size > 0) {
-        // Eliminar cada comando individualmente para asegurar limpieza total
-        for (const [, cmd] of comandosRegistrados) {
-          try {
-            await guild.commands.delete(cmd.id);
-          } catch (e) {
-            // Ignorar errores al eliminar (puede ser que ya fue eliminado)
-          }
-        }
-        console.log(chalk.gray(`   🗑️ ${comandosRegistrados.size} comandos antiguos eliminados`));
-      }
-      
-      // Registrar los comandos limpio (sin duplicados)
       await guild.commands.set(commands);
-      console.log(chalk.green(`✅ Comandos registrados en el servidor ${guild.name} (duplicados eliminados)`));
+      console.log(chalk.green(`✅ Comandos sincronizados en el servidor ${guild.name}`));
     } else {
-      // Global - obtener comandos existentes
-      const comandosRegistrados = await client.application.commands.fetch();
-      
-      if (comandosRegistrados.size > 0) {
-        // Eliminar cada comando individualmente para asegurar limpieza total
-        for (const [, cmd] of comandosRegistrados) {
-          try {
-            await client.application.commands.delete(cmd.id);
-          } catch (e) {
-            // Ignorar errores al eliminar (puede ser que ya fue eliminado)
-          }
-        }
-        console.log(chalk.gray(`   🗑️ ${comandosRegistrados.size} comandos antiguos eliminados`));
-      }
-      
-      // Registrar los comandos limpio (sin duplicados)
       await client.application.commands.set(commands);
-      console.log(chalk.green("✅ Comandos registrados globalmente (duplicados eliminados)"));
+      console.log(chalk.green("✅ Comandos sincronizados globalmente"));
     }
 
     console.log(chalk.blue(`\n📋 Comandos registrados (${commands.length}):`));
-    commands.forEach(c => console.log(chalk.gray(`   /${c.name}`)));
     console.log(chalk.green("\n🚀 Deployment completado!\n"));
     
     client.destroy();
