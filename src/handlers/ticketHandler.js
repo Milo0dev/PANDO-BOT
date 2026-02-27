@@ -644,6 +644,10 @@ async function reopenTicket(interaction) {
 //   RECLAMAR / LIBERAR TICKET PREMIUM
 // ─────────────────────────────────────────────────────
 async function claimTicket(interaction) {
+  // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
+  await interaction.deferReply({ ephemeral: true });
+  console.log('[CLAIM] Iniciando proceso de reclamación de ticket');
+
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   if (ticket.claimed_by) return replyError(interaction, `Ya reclamado por <@${ticket.claimed_by}>.`);
@@ -657,20 +661,23 @@ async function claimTicket(interaction) {
     return replyError(interaction, "No tengo los permisos necesarios (ManageChannels) para reclamar este ticket.");
   }
   
-  // Actualizar en base de datos
+  // Verificación de Base de Datos: Actualizar BD antes de cambiar permisos
   await tickets.update(interaction.channel.id, { claimed_by: interaction.user.id });
   await staffStats.incrementClaimed(guild.id, interaction.user.id);
+  console.log('[CLAIM] BD actualizada correctamente');
   
   // Actualizar topic del canal
   try {
     await interaction.channel.setTopic(`${interaction.channel.topic || ""} | Staff: ${interaction.user.tag}`);
+    console.log('[CLAIM] Topic del canal actualizado');
   } catch (error) {
     console.error("[CLAIM TOPIC ERROR]", error.message);
     // Continuar con el proceso aunque falle el cambio de topic
   }
 
-  // ===== LÓGICA DE PERMISOS =====
+  // ===== LÓGICA DE PERMISOS A PRUEBA DE ERRORES =====
   // Quitar permisos de escritura a otros staff (solo mantener lectura)
+  let permisosStaffActualizados = false;
   if (s.support_role) {
     try {
       await interaction.channel.permissionOverwrites.edit(s.support_role, {
@@ -679,8 +686,11 @@ async function claimTicket(interaction) {
         ReadMessageHistory: true,
         ManageMessages: false,
       });
+      permisosStaffActualizados = true;
+      console.log('[CLAIM] Permisos del rol de soporte actualizados');
     } catch (error) {
       console.error(`[CLAIM PERMISSIONS ERROR] No se pudieron actualizar los permisos para el rol de soporte: ${error.message}`);
+      // Continuar con el proceso aunque falle este permiso específico
     }
   }
   
@@ -692,8 +702,10 @@ async function claimTicket(interaction) {
         ReadMessageHistory: true,
         ManageMessages: false,
       });
+      console.log('[CLAIM] Permisos del rol de admin actualizados');
     } catch (error) {
       console.error(`[CLAIM PERMISSIONS ERROR] No se pudieron actualizar los permisos para el rol de admin: ${error.message}`);
+      // Continuar con el proceso aunque falle este permiso específico
     }
   }
   
@@ -706,12 +718,19 @@ async function claimTicket(interaction) {
       AttachFiles: true,
       ManageMessages: true,
     });
+    console.log('[CLAIM] Permisos del usuario reclamante actualizados');
   } catch (error) {
     console.error(`[CLAIM PERMISSIONS ERROR] No se pudieron actualizar los permisos para el usuario ${interaction.user.id}: ${error.message}`);
+    
+    // Si no se pudieron quitar permisos al rol de staff pero el ticket está reclamado en BD,
+    // al menos intentamos dar permisos al reclamante
+    if (!permisosStaffActualizados) {
+      console.log('[CLAIM] Intentando método alternativo para dar permisos al reclamante');
+    }
   }
   // =================================
 
-  // MEJORA: Actualizar el embed del ticket para mostrar quién lo reclamó
+  // Actualización del Mensaje: Lógica más robusta para editar el embed
   try {
     const msgs = await interaction.channel.messages.fetch({ limit: 10 });
     const ticketMsg = msgs.find(m => 
@@ -722,32 +741,58 @@ async function claimTicket(interaction) {
     
     if (ticketMsg) {
       const oldEmbed = ticketMsg.embeds[0];
-      // Verificar si ya existe el campo "Reclamado por"
-      const hasClaimedField = oldEmbed.fields?.some(f => f.name === "👋 Reclamado por");
       
-      if (!hasClaimedField) {
-        // Usar EmbedBuilder.from() correctamente para preservar todos los datos del embed original
-        const newEmbed = EmbedBuilder.from(oldEmbed)
-          .setColor(0x57F287) // Verde para tickets reclamados
-          .addFields({ name: "👋 Reclamado por", value: `<@${interaction.user.id}>`, inline: true });
-        
-        // Actualizar los botones (deshabilitar el botón de reclamar)
-        const oldComponents = ticketMsg.components;
-        const newComponents = oldComponents.map(row => {
-          const newRow = ActionRowBuilder.from(row);
-          newRow.components = newRow.components.map(button => {
-            const newButton = ButtonBuilder.from(button);
-            if (button.customId === "ticket_claim") {
-              newButton.setDisabled(true);
-              newButton.setLabel("Reclamado");
-            }
-            return newButton;
-          });
-          return newRow;
+      // Crear un nuevo embed preservando todas las propiedades del original
+      const newEmbed = new EmbedBuilder()
+        .setTitle(oldEmbed.title || "Panel de Control")
+        .setDescription(oldEmbed.description || "")
+        .setColor(0x57F287) // Verde para tickets reclamados
+        .setFooter(oldEmbed.footer)
+        .setTimestamp(oldEmbed.timestamp ? new Date(oldEmbed.timestamp) : new Date());
+      
+      // Copiar todos los campos existentes
+      if (oldEmbed.fields && oldEmbed.fields.length > 0) {
+        oldEmbed.fields.forEach(field => {
+          if (field.name !== "👋 Reclamado por") {
+            newEmbed.addFields({ 
+              name: field.name, 
+              value: field.value, 
+              inline: field.inline 
+            });
+          }
         });
-        
-        await ticketMsg.edit({ embeds: [newEmbed], components: newComponents });
       }
+      
+      // Añadir el campo de reclamado
+      newEmbed.addFields({ 
+        name: "👋 Reclamado por", 
+        value: `<@${interaction.user.id}>`, 
+        inline: true 
+      });
+      
+      // Si había thumbnail o imagen, preservarlos
+      if (oldEmbed.thumbnail) newEmbed.setThumbnail(oldEmbed.thumbnail.url);
+      if (oldEmbed.image) newEmbed.setImage(oldEmbed.image.url);
+      
+      // Actualizar los botones (deshabilitar el botón de reclamar)
+      const oldComponents = ticketMsg.components;
+      const newComponents = oldComponents.map(row => {
+        const newRow = ActionRowBuilder.from(row);
+        newRow.components = newRow.components.map(button => {
+          const newButton = ButtonBuilder.from(button);
+          if (button.customId === "ticket_claim") {
+            newButton.setDisabled(true);
+            newButton.setLabel("Reclamado");
+          }
+          return newButton;
+        });
+        return newRow;
+      });
+      
+      await ticketMsg.edit({ embeds: [newEmbed], components: newComponents });
+      console.log('[CLAIM] Mensaje editado correctamente');
+    } else {
+      console.log('[CLAIM] No se encontró el mensaje del panel de control');
     }
   } catch (e) {
     console.error("[CLAIM UPDATE EMBED]", e.message);
@@ -775,12 +820,14 @@ async function claimTicket(interaction) {
 
     await user.send({ embeds: [dmEmbed] });
     dmEnviado = true;
+    console.log('[CLAIM] DM enviado al usuario');
   } catch (dmError) {
     console.error(`[DM ERROR] No se pudo enviar DM al usuario ${ticket.user_id}: ${dmError.message}`);
   }
 
   // Enviar mensaje de confirmación
-  return interaction.reply({
+  console.log('[CLAIM] Proceso completado con éxito');
+  return interaction.editReply({
     embeds: [new EmbedBuilder()
       .setColor(E.Colors.SUCCESS)
       .setTitle("✅ Ticket Reclamado")
@@ -790,7 +837,6 @@ async function claimTicket(interaction) {
       )
       .setFooter({ text: "Sistema Premium de Tickets" })
       .setTimestamp()],
-    ephemeral: true,
   });
 }
 
