@@ -5,6 +5,7 @@ const chalk = require("chalk");
 // 1. Importamos todos tus comandos
 const setup        = require("./src/commands/setup");
 const setupTickets = require("./src/commands/setupTickets"); // <--- AÑADIMOS EL NUEVO COMANDO
+const staffRanking = require("./src/commands/staffRanking");
 const ticket       = require("./src/commands/ticket");
 const admin        = require("./src/commands/admin");
 const staff        = require("./src/commands/staff");
@@ -27,7 +28,7 @@ const giveaway     = require("./src/commands/giveaway");
 
 // 2. Metemos setupTickets en la lista maestra
 const allCommands = [
-  setup, setupTickets, ping, debug, // <--- AÑADIDO AQUÍ TAMBIÉN
+  setup, setupTickets, ping, debug, staffRanking, // <--- AÑADIDO AQUÍ TAMBIÉN
   ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
   ticket.assign, ticket.add, ticket.remove, ticket.rename,
   ticket.priority, ticket.move, ticket.note, ticket.transcript,
