@@ -473,7 +473,7 @@ async function closeTicket(interaction, reason = null) {
         )
         .setFooter({ 
           text: "Gracias por confiar en nuestro soporte • Sistema Premium de Tickets", 
-          iconURL: "https://i.imgur.com/YourLogoIcon.png" // PON TU URL AQUÍ
+          iconURL: interaction.client.user.displayAvatarURL({ dynamic: true })
         })
         .setTimestamp();
 
@@ -1151,7 +1151,7 @@ async function sendRating(user, ticket, channel, staffId) {
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .setFooter({ 
         text: "Tu opinión es importante para nosotros • Esta calificación expira en 10 minutos",
-        iconURL: "https://i.imgur.com/YourLogoIcon.png" // PON TU URL AQUÍ
+        iconURL: channel.client.user.displayAvatarURL({ dynamic: true })
       })
       .setTimestamp();
 
