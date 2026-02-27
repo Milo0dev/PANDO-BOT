@@ -21,7 +21,7 @@ async function sendPanel(channel, guild) {
       name: "Centro de Soporte Premium", 
       iconURL: guild.iconURL({ dynamic: true }) 
     })
-    .setTitle("🌟 SISTEMA DE TICKETS PREMIUM")
+    .setTitle("🧷 TICKET DE SOPORTE")
     .setDescription(
       "Bienvenido a nuestro sistema de asistencia personalizada. Estamos aquí para ayudarte con cualquier consulta o problema que puedas tener.\n\n" +
       "**¿Cómo podemos ayudarte hoy?**\n" +
