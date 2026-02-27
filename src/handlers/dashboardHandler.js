@@ -1,6 +1,5 @@
 const { tickets, settings, staffStatus, staffStats } = require("../utils/database");
 const { dashboardEmbed } = require("../utils/embeds");
-const { sendPanel } = require("./ticketHandler");
 const { 
   ChannelType,
   PermissionFlagsBits,
@@ -186,11 +185,51 @@ async function updateTicketPanel(guild) {
       }
     }
 
-    // Si no existe mensaje o fue eliminado, usamos sendPanel existente para crear uno nuevo
-    // Esto asegura que la lógica sea exactamente la misma que /setup panel
-    const msg = await sendPanel(channel, guild);
-    
-    // Guardar el ID del mensaje en la base de datos
+    // Si no existe mensaje o fue eliminado, crear uno nuevo
+    // (lógica inline para evitar dependencia circular con ticketHandler.js)
+    const newEmbed = new EmbedBuilder()
+      .setAuthor({
+        name: "Centro de Soporte y Ayuda",
+        iconURL: "https://cdn.discordapp.com/attachments/123456789/987654321/support_icon.png",
+      })
+      .setTitle("🎫 Sistema de Tickets de Soporte")
+      .setDescription(
+        "¡Bienvenido al sistema de tickets de soporte! 🎫\n\n" +
+        "**📋 ¿Qué hacer?**\n" +
+        "Selecciona una categoría en el menú desplegable abajo para crear tu ticket.\n\n" +
+        "**⚠️ Reglas básicas:**\n" +
+        "• No etiquetas al staff sin motivo válido.\n" +
+        "• Detalla tu problema con claridad y paciencia.\n" +
+        "• Nuestro equipo te atenderá lo antes posible.\n\n" +
+        "**🕐 Horario de atención:**\n" +
+        "Estamos disponibles **24/7** para asistirte.\n\n" +
+        "¡Gracias por confiar en nosotros!"
+      )
+      .setColor("#5865F2")
+      .setFooter({
+        text: "Sistema protegido por Pando Bot • Selecciona una categoría abajo",
+        iconURL: guild.iconURL({ dynamic: true }),
+      })
+      .setTimestamp();
+
+    const newOpenCount = await tickets.getAllOpen(guild.id);
+    if (newOpenCount.length > 0) {
+      newEmbed.addFields({ name: "🎫 Tickets activos", value: `\`${newOpenCount.length}\``, inline: true });
+    }
+
+    const newMenu = new StringSelectMenuBuilder()
+      .setCustomId("ticket_category_select")
+      .setPlaceholder("Categorías de soporte disponibles...")
+      .addOptions(
+        ticketCategories.map(c => ({
+          label: c.label, description: c.description, value: c.id, emoji: c.emoji,
+        }))
+      );
+
+    const msg = await channel.send({
+      embeds: [newEmbed],
+      components: [new ActionRowBuilder().addComponents(newMenu)],
+    });
     await settings.update(guild.id, { panel_message_id: msg.id });
     
     console.log(`\x1b[32m[TICKET PANEL] ✅ Panel de tickets creado correctamente en el canal ${channel.name}\x1b[0m`);
