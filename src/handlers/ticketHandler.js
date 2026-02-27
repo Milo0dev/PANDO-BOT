@@ -645,36 +645,64 @@ async function claimTicket(interaction) {
   const guild = interaction.guild;
   const s = await settings.get(guild.id);
   
+  // Verificar que el bot tenga permisos de ManageChannels
+  const botMember = await guild.members.fetch(interaction.client.user.id).catch(() => null);
+  if (!botMember || !interaction.channel.permissionsFor(botMember).has(PermissionFlagsBits.ManageChannels)) {
+    return replyError(interaction, "No tengo los permisos necesarios (ManageChannels) para reclamar este ticket.");
+  }
+  
   // Actualizar en base de datos
   await tickets.update(interaction.channel.id, { claimed_by: interaction.user.id });
   await staffStats.incrementClaimed(guild.id, interaction.user.id);
   
   // Actualizar topic del canal
-  await interaction.channel.setTopic(`${interaction.channel.topic || ""} | Staff: ${interaction.user.tag}`).catch(() => {});
+  try {
+    await interaction.channel.setTopic(`${interaction.channel.topic || ""} | Staff: ${interaction.user.tag}`);
+  } catch (error) {
+    console.error("[CLAIM TOPIC ERROR]", error.message);
+    // Continuar con el proceso aunque falle el cambio de topic
+  }
 
   // ===== LÓGICA DE PERMISOS =====
   // Quitar permisos de escritura a otros staff (solo mantener lectura)
   if (s.support_role) {
-    await interaction.channel.permissionOverwrites.edit(s.support_role, {
-      SendMessages: false,
-      ManageMessages: false,
-    }).catch(() => {});
+    try {
+      await interaction.channel.permissionOverwrites.edit(s.support_role, {
+        ViewChannel: true,
+        SendMessages: false,
+        ReadMessageHistory: true,
+        ManageMessages: false,
+      });
+    } catch (error) {
+      console.error(`[CLAIM PERMISSIONS ERROR] No se pudieron actualizar los permisos para el rol de soporte: ${error.message}`);
+    }
   }
+  
   if (s.admin_role && s.admin_role !== s.support_role) {
-    await interaction.channel.permissionOverwrites.edit(s.admin_role, {
-      SendMessages: false,
-      ManageMessages: false,
-    }).catch(() => {});
+    try {
+      await interaction.channel.permissionOverwrites.edit(s.admin_role, {
+        ViewChannel: true,
+        SendMessages: false,
+        ReadMessageHistory: true,
+        ManageMessages: false,
+      });
+    } catch (error) {
+      console.error(`[CLAIM PERMISSIONS ERROR] No se pudieron actualizar los permisos para el rol de admin: ${error.message}`);
+    }
   }
   
   // Dar permisos completos al staff que reclamó el ticket
-  await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
-    ViewChannel: true,
-    SendMessages: true,
-    ReadMessageHistory: true,
-    AttachFiles: true,
-    ManageMessages: true,
-  }).catch(() => {});
+  try {
+    await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
+      ViewChannel: true,
+      SendMessages: true,
+      ReadMessageHistory: true,
+      AttachFiles: true,
+      ManageMessages: true,
+    });
+  } catch (error) {
+    console.error(`[CLAIM PERMISSIONS ERROR] No se pudieron actualizar los permisos para el usuario ${interaction.user.id}: ${error.message}`);
+  }
   // =================================
 
   // MEJORA: Actualizar el embed del ticket para mostrar quién lo reclamó
@@ -692,6 +720,7 @@ async function claimTicket(interaction) {
       const hasClaimedField = oldEmbed.fields?.some(f => f.name === "👋 Reclamado por");
       
       if (!hasClaimedField) {
+        // Usar EmbedBuilder.from() correctamente para preservar todos los datos del embed original
         const newEmbed = EmbedBuilder.from(oldEmbed)
           .setColor(0x57F287) // Verde para tickets reclamados
           .addFields({ name: "👋 Reclamado por", value: `<@${interaction.user.id}>`, inline: true });
