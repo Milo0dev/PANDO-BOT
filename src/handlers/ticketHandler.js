@@ -48,7 +48,7 @@ async function sendPanel(channel, guild) {
     )
     .setColor(0x5865F2)
     // BANNER PERSONALIZABLE - Descomenta la siguiente línea y añade tu URL
-    .setImage("https://i.imgur.com/YourBannerImage.png") // PON TU URL AQUÍ - Banner recomendado: 1500x300px
+    .setImage("https://media.discordapp.net/attachments/756736685387022417/1477017203378225182/PANDOBOT_TICKET.PNG?ex=69a33af6&is=69a1e976&hm=d0e7ada6689e3ea4a8f81c2bbb701b0904c42f8d06e9b1d7de1eba4f59d8ced6&=&format=webp&quality=lossless&width=1211&height=429") // PON TU URL AQUÍ - Banner recomendado: 1500x300px
     .setThumbnail(guild.iconURL({ dynamic: true, size: 256 }))
     .setFooter({
       text: `${guild.name} • Sistema Premium de Soporte`,
