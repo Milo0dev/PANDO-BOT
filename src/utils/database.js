@@ -527,6 +527,7 @@ const settings = {
     return {
       guild_id: guildId,
       log_channel: null,
+      logsChannelId: null,
       transcript_channel: null,
       dashboard_channel: null,
       dashboard_message_id: null,

@@ -2558,7 +2558,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                                     <span>▼</span>
                                 </div>
                                 <div class="discord-ui-dropdown-menu" id="log_channel_menu"></div>
-                                <input type="hidden" id="log_channel" value="">
+                                <input type="hidden" id="log_channel" name="logsChannelId" value="">
                             </div>
                         </div>
 
@@ -3280,7 +3280,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     const s = data.settings;
                     
                     // Channels
-                    document.getElementById('log_channel').value = s.log_channel || '';
+                    document.getElementById('log_channel').value = s.logsChannelId || s.log_channel || '';
                     document.getElementById('transcript_channel').value = s.transcript_channel || '';
                     document.getElementById('dashboard_channel').value = s.dashboard_channel || '';
                     document.getElementById('weekly_report_channel').value = s.weekly_report_channel || '';
@@ -3442,7 +3442,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
         function getConfigPayload() {
             if (!currentGuildId) return null;
             return {
-                log_channel: parseId(document.getElementById('log_channel')?.value),
+                logsChannelId: parseId(document.getElementById('log_channel')?.value),
                 transcript_channel: parseId(document.getElementById('transcript_channel')?.value),
                 dashboard_channel: parseId(document.getElementById('dashboard_channel')?.value),
                 weekly_report_channel: parseId(document.getElementById('weekly_report_channel')?.value),
@@ -4052,7 +4052,7 @@ animation: discordDropdownFadeIn 0.15s ease-out both !important;
                     { 
                         containerId: 'log_channel_dropdown', 
                         inputId: 'log_channel', 
-                        settingKey: 'log_channel' 
+                        settingKey: 'logsChannelId' 
                     },
                     { 
                         containerId: 'transcript_channel_dropdown', 

@@ -1,78 +1,113 @@
 const { EmbedBuilder } = require("discord.js");
-const { tickets, settings, ticketLogs, modlogSettings } = require("../utils/database");
+const { tickets, settings } = require("../utils/database");
 
 module.exports = {
   name: "messageDelete",
   async execute(message, client) {
-    // ── MEDIDA DE SEGURIDAD 1: Filtrar bots
+    // ── Filtrar bots y mensajes fuera de un servidor
     if (!message.guild || message.author?.bot) return;
 
     const guild = message.guild;
 
-    // ── 1. Log en tickets (sistema original)
+    // ── Obtener configuración del servidor UNA sola vez
+    const s = await settings.get(guild.id);
+
+    // ── 1. Log en canal de ticket (prioridad — no genera log global)
     const ticket = await tickets.get(message.channel.id);
     if (ticket) {
-      const s = await settings.get(guild.id);
+      // Solo loguear si log_deletes está activo y hay canal configurado
       if (s && s.log_deletes && s.log_channel) {
         const logCh = guild.channels.cache.get(s.log_channel);
         if (logCh) {
-          await ticketLogs.add(guild.id, message.channel.id, "delete", {
-            author_id: message.author?.id, content: message.content?.substring(0, 500), message_id: message.id,
-          });
           await logCh.send({
-            embeds: [new EmbedBuilder().setTitle("🗑️ Mensaje Eliminado en Ticket").setColor(0xED4245)
-              .addFields(
-                { name: "🎫 Ticket",    value: `#${ticket.ticket_id} (<#${ticket.channel_id}>)`, inline: true },
-                { name: "👤 Autor",     value: message.author ? `<@${message.author.id}>` : "Desconocido", inline: true },
-                { name: "📝 Contenido", value: (message.content || "*(adjunto)*").substring(0, 800) },
-              ).setTimestamp()],
+            embeds: [
+              new EmbedBuilder()
+                .setColor(0xED4245)
+                .setTitle("🗑️ Mensaje Eliminado en Ticket")
+                .addFields(
+                  {
+                    name: "🎫 Ticket",
+                    value: `#${ticket.ticket_id} (<#${ticket.channel_id}>)`,
+                    inline: true,
+                  },
+                  {
+                    name: "👤 Autor",
+                    value: message.author
+                      ? `${message.author.tag} (<@${message.author.id}>)`
+                      : "Desconocido",
+                    inline: true,
+                  },
+                  {
+                    name: "📍 Canal",
+                    value: `<#${message.channel.id}>`,
+                    inline: true,
+                  },
+                  {
+                    name: "📝 Contenido",
+                    value: (message.content || "*(sin texto — posible adjunto)*").substring(0, 800),
+                    inline: false,
+                  },
+                )
+                .setFooter({ text: `ID mensaje: ${message.id}` })
+                .setTimestamp(),
+            ],
           }).catch(() => {});
         }
       }
+      // Mensaje de ticket → no continuar al log global
+      return;
     }
 
-    // ── 2. Log GLOBAL de moderación (usando log_channel de settings)
+    // ── 2. Log GLOBAL de moderación
     try {
-      const s = await settings.get(guild.id);
-      
       // Verificar que log_channel existe en la base de datos
       if (!s || !s.log_channel) return;
-      
-      // Obtener el canal de logs
+
+      // Verificar que log_deletes está habilitado en los settings
+      if (!s.log_deletes) return;
+
+      // Obtener el canal de logs del servidor
       const logCh = guild.channels.cache.get(s.log_channel);
       if (!logCh) return;
-      
-      // Evitar doble log si ya se envió en el log de tickets
-      const ml = await modlogSettings.get(guild.id);
-      if (ml && ml.enabled && ml.log_msg_delete && ml.channel === s.log_channel && ticket) return;
 
-      // Evitar enviar si el canal de logs es el mismo que el del ticket
-      if (ticket && s.log_channel === (await tickets.get(message.channel.id))?.log_channel) return;
-
-      // MEDIDA DE SEGURIDAD 2: Verificar contenido antes de enviar
-      const content = message.content || null;
+      // Verificar que hay contenido o adjuntos que loguear
+      const content     = message.content || null;
       const attachments = message.attachments?.size > 0
         ? message.attachments.map(a => `[${a.name}](${a.url})`).join(", ")
         : null;
 
-      // Si no hay contenido ni adjuntos, no tiene sentido enviar el log
       if (!content && !attachments) return;
 
+      // Construir campos del embed
       const fields = [
-        { name: "👤 Autor",   value: message.author ? `${message.author.tag} <@${message.author.id}>` : "Desconocido", inline: true },
-        { name: "📌 Canal",   value: `<#${message.channel.id}>`, inline: true },
+        {
+          name:   "👤 Autor",
+          value:  message.author
+            ? `${message.author.tag} (<@${message.author.id}>)`
+            : "Desconocido",
+          inline: true,
+        },
+        {
+          name:   "📍 Canal",
+          value:  `<#${message.channel.id}>`,
+          inline: true,
+        },
       ];
-      if (content)     fields.push({ name: "📝 Contenido",   value: content.substring(0, 1000),  inline: false });
-      if (attachments) fields.push({ name: "📎 Adjuntos",     value: attachments.substring(0, 500), inline: false });
+
+      if (content)     fields.push({ name: "📝 Contenido", value: content.substring(0, 1000),     inline: false });
+      if (attachments) fields.push({ name: "📎 Adjuntos",  value: attachments.substring(0, 500),  inline: false });
 
       await logCh.send({
-        embeds: [new EmbedBuilder()
-          .setColor(0xED4245) // Rojo para borrado
-          .setTitle("🗑️ Mensaje Eliminado")
-          .addFields(fields)
-          .setFooter({ text: `ID mensaje: ${message.id} • ID canal: ${message.channel.id}` })
-          .setTimestamp()],
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0xED4245)
+            .setTitle("🗑️ Mensaje Eliminado")
+            .addFields(fields)
+            .setFooter({ text: `ID mensaje: ${message.id} • ID canal: ${message.channel.id}` })
+            .setTimestamp(),
+        ],
       }).catch(() => {});
+
     } catch (err) {
       console.error("[LOG_DELETE GLOBAL]", err.message);
     }
