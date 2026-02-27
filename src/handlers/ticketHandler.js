@@ -391,7 +391,8 @@ async function closeTicket(interaction, reason = null) {
   const s = await settings.get(guild.id);
   const user = await interaction.client.users.fetch(ticket.user_id).catch(() => null);
 
-  await interaction.deferReply();
+  // Verificar si la interacción ya fue respondida o diferida antes de llamar a deferReply
+  if (!interaction.deferred && !interaction.replied) await interaction.deferReply();
 
   // Actualizar el ticket en la base de datos
   await tickets.close(channel.id, interaction.user.id, reason);
@@ -529,7 +530,12 @@ async function closeTicket(interaction, reason = null) {
   }
 
   // Responder al comando de cierre
-  await interaction.editReply({ embeds: [E.ticketClosed(closed, interaction.user.id, reason)] });
+  // Usar editReply si la interacción fue diferida, o followUp si ya fue respondida
+  if (interaction.deferred) {
+    await interaction.editReply({ embeds: [E.ticketClosed(closed, interaction.user.id, reason)] });
+  } else if (interaction.replied) {
+    await interaction.followUp({ embeds: [E.ticketClosed(closed, interaction.user.id, reason)] });
+  }
 
   // Rating por DM (habilitado por defecto)
   if (user) {

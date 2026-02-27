@@ -61,8 +61,9 @@ module.exports = {
         await tickets.update(interaction.channel.id, { internal_notes: internalNotes });
       }
       
-      // Mostrar mensaje de cierre en el canal
-      await interaction.reply({ 
+      // Mostrar mensaje de cierre en el canal usando channel.send en lugar de interaction.reply
+      // Esto evita conflictos con la interacción cuando se llama a closeTicket
+      await interaction.channel.send({ 
         embeds: [
           new EmbedBuilder()
             .setColor(E.Colors.WARNING)
@@ -77,9 +78,21 @@ module.exports = {
         ]
       });
       
+      // Responder a la interacción de forma efímera para confirmar que se recibió
+      await interaction.reply({ 
+        embeds: [
+          new EmbedBuilder()
+            .setColor(E.Colors.SUCCESS)
+            .setTitle("✅ Procesando cierre")
+            .setDescription("El ticket se cerrará en 5 segundos.")
+        ], 
+        ephemeral: true 
+      });
+      
       // Esperar 5 segundos antes de cerrar el ticket
       setTimeout(async () => {
         try {
+          // Pasar la interacción y la razón a closeTicket
           await TH.closeTicket(interaction, reason || null);
         } catch (closeError) {
           console.error("[TICKET CLOSE DELAYED ERROR]", closeError);
