@@ -841,6 +841,9 @@ async function claimTicket(interaction) {
 }
 
 async function unclaimTicket(interaction) {
+  // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
+  await interaction.deferReply({ ephemeral: true });
+
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   if (!ticket.claimed_by) return replyError(interaction, "Este ticket no está reclamado.");
@@ -903,7 +906,7 @@ async function unclaimTicket(interaction) {
     console.error("[UNCLAIM UPDATE EMBED]", e.message);
   }
 
-  return interaction.reply({ 
+  return interaction.editReply({ 
     embeds: [
       new EmbedBuilder()
         .setColor(E.Colors.WARNING)
@@ -919,6 +922,9 @@ async function unclaimTicket(interaction) {
 //   ASIGNAR STAFF
 // ─────────────────────────────────────────────────────
 async function assignTicket(interaction, staffUser) {
+  // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
+  await interaction.deferReply({ ephemeral: true });
+
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
 
@@ -988,7 +994,7 @@ async function assignTicket(interaction, staffUser) {
     console.error(`[DM ERROR] No se pudo enviar DM al staff ${staffUser.id}: ${dmError.message}`);
   }
 
-  return interaction.reply({
+  return interaction.editReply({
     embeds: [
       new EmbedBuilder()
         .setColor(E.Colors.INFO)
@@ -1051,6 +1057,9 @@ async function removeUser(interaction, user) {
 //   MOVER CATEGORÍA
 // ─────────────────────────────────────────────────────
 async function moveTicket(interaction, newCategoryId) {
+  // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
+  await interaction.deferReply({ ephemeral: true });
+
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
   const newCategory = categories.find(c => c.id === newCategoryId);
@@ -1110,7 +1119,7 @@ async function moveTicket(interaction, newCategoryId) {
     "📂 Nueva": newCategory.label,
   });
 
-  return interaction.reply({
+  return interaction.editReply({
     embeds: [
       new EmbedBuilder()
         .setColor(E.Colors.INFO)
