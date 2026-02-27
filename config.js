@@ -17,7 +17,7 @@ module.exports = {
   categories: [
     {
       id: "support",
-      label: "🛠️ Soporte General",
+      label: "Soporte General",
       description: "Ayuda con problemas generales",
       emoji: "🛠️",
       color: 0x5865F2,
@@ -33,7 +33,7 @@ module.exports = {
     },
     {
       id: "billing",
-      label: "💳 Pagos",
+      label: "Pagos",
       description: "Problemas con pagos o reembolsos",
       emoji: "💳",
       color: 0x57F287,
@@ -49,7 +49,7 @@ module.exports = {
     },
     {
       id: "report",
-      label: "🚨 Reportar Usuario",
+      label: "Reportar Usuario",
       description: "Reporta comportamientos inapropiados",
       emoji: "🚨",
       color: 0xED4245,
@@ -65,7 +65,7 @@ module.exports = {
     },
     {
       id: "partnership",
-      label: "🤝 Asociaciones",
+      label: "Asociaciones",
       description: "Propuestas de colaboración",
       emoji: "🤝",
       color: 0xFEE75C,
@@ -81,7 +81,7 @@ module.exports = {
     },
     {
       id: "staff",
-      label: "⭐ Aplicación Staff",
+      label: "Aplicación Staff",
       description: "Aplica para ser parte del equipo",
       emoji: "⭐",
       color: 0xF1C40F,
@@ -98,7 +98,7 @@ module.exports = {
     },
     {
       id: "bug",
-      label: "🐛 Reportar Bug",
+      label: "Reportar Bug",
       description: "Reporta un error o fallo",
       emoji: "🐛",
       color: 0xE67E22,
@@ -114,7 +114,7 @@ module.exports = {
     },
     {
       id: "other",
-      label: "📩 Otro",
+      label: "Otro",
       description: "Cualquier otro asunto",
       emoji: "📩",
       color: 0x95A5A6,

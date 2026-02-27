@@ -90,7 +90,7 @@ async function sendPanel(channel, guild) {
 function buildModal(category) {
   const modal = new ModalBuilder()
     .setCustomId(`ticket_modal_${category.id}`)
-    .setTitle(`${category.emoji} ${category.label}`.substring(0, 45));
+    .setTitle(`${category.label}`.substring(0, 45));
 
   // Añadir preguntas al modal (máximo 5)
   const questions = (category.questions || ["¿En qué podemos ayudarte?"]).slice(0, 5);
