@@ -2,7 +2,7 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
   ActionRowBuilder, StringSelectMenuBuilder,
   ButtonBuilder, ButtonStyle, EmbedBuilder,
-  PermissionFlagsBits, MessageFlags,
+  PermissionFlagsBits, MessageFlags, ChannelType,
 } = require("discord.js");
 
 const TH = require("../handlers/ticketHandler");
@@ -294,6 +294,218 @@ module.exports = {
             embeds: [E.errorEmbed("❌ Solo el **staff** puede usar estos botones.")],
             flags: MessageFlags.Ephemeral,
           });
+        }
+
+        // ── Botón para crear ticket SIMPLE (desde panel de /setup-tickets)
+        if (customId === "ticket_open_simple") {
+          const s = await settings.get(interaction.guild.id);
+
+          // Verificar mantenimiento
+          if (s.maintenance_mode) {
+            return interaction.reply({
+              embeds: [E.maintenanceEmbed(s.maintenance_reason)],
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          // Verificar blacklist
+          const bannedSimple = await blacklist.check(interaction.user.id, interaction.guild.id);
+          if (bannedSimple) {
+            return interaction.reply({
+              embeds: [E.errorEmbed("Estás en la lista negra.\n**Razón:** " + (bannedSimple.reason || "Sin razón"))],
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          // Verificar si el usuario ya tiene un ticket simple abierto
+          const existingSimpleTicket = interaction.guild.channels.cache.find(
+            ch => ch.topic && ch.topic.includes(`uid:${interaction.user.id}`) && ch.topic.includes("simple-ticket")
+          );
+          if (existingSimpleTicket) {
+            return interaction.reply({
+              embeds: [
+                new EmbedBuilder()
+                  .setColor(E.Colors.WARNING)
+                  .setDescription(
+                    `⚠️ Ya tienes un ticket abierto: ${existingSimpleTicket}\n\n` +
+                    "Cierra tu ticket actual antes de abrir uno nuevo."
+                  ),
+              ],
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+          try {
+            // Sanitizar nombre de usuario para el nombre del canal
+            const safeName = interaction.user.username
+              .toLowerCase()
+              .replace(/[^a-z0-9]/g, "")
+              .substring(0, 20) || "usuario";
+            const channelName = `ticket-${safeName}`;
+
+            // Construir permisos del canal
+            const permOverwrites = [
+              {
+                id: interaction.guild.id, // @everyone — sin acceso
+                deny: [PermissionFlagsBits.ViewChannel],
+              },
+              {
+                id: interaction.user.id, // Creador del ticket
+                allow: [
+                  PermissionFlagsBits.ViewChannel,
+                  PermissionFlagsBits.SendMessages,
+                  PermissionFlagsBits.ReadMessageHistory,
+                  PermissionFlagsBits.AttachFiles,
+                  PermissionFlagsBits.EmbedLinks,
+                ],
+              },
+              {
+                id: interaction.client.user.id, // Bot
+                allow: [
+                  PermissionFlagsBits.ViewChannel,
+                  PermissionFlagsBits.SendMessages,
+                  PermissionFlagsBits.ManageChannels,
+                  PermissionFlagsBits.ReadMessageHistory,
+                  PermissionFlagsBits.ManageMessages,
+                ],
+              },
+            ];
+
+            // Añadir rol de soporte si está configurado
+            if (s.support_role) {
+              permOverwrites.push({
+                id: s.support_role,
+                allow: [
+                  PermissionFlagsBits.ViewChannel,
+                  PermissionFlagsBits.SendMessages,
+                  PermissionFlagsBits.ReadMessageHistory,
+                  PermissionFlagsBits.AttachFiles,
+                  PermissionFlagsBits.ManageMessages,
+                ],
+              });
+            }
+
+            // Buscar categoría "tickets" si existe en el servidor
+            const ticketCategory = interaction.guild.channels.cache.find(
+              ch => ch.type === ChannelType.GuildCategory &&
+                    ch.name.toLowerCase().includes("ticket")
+            );
+
+            // Crear el canal privado
+            const ticketChannel = await interaction.guild.channels.create({
+              name: channelName,
+              type: ChannelType.GuildText,
+              topic: `Ticket de ${interaction.user.tag} | uid:${interaction.user.id} | simple-ticket`,
+              parent: ticketCategory?.id || null,
+              permissionOverwrites: permOverwrites,
+            });
+
+            // Embed de bienvenida dentro del ticket
+            const welcomeEmbed = new EmbedBuilder()
+              .setTitle("🎫 Ticket Abierto")
+              .setDescription(
+                `¡Hola <@${interaction.user.id}>! 👋\n\n` +
+                "Tu ticket ha sido creado correctamente. Por favor, **describe tu problema** con el mayor detalle posible y nuestro equipo te atenderá lo antes posible.\n\n" +
+                (s.support_role ? `📢 El equipo de soporte <@&${s.support_role}> ha sido notificado.` : "")
+              )
+              .setColor(0x57F287)
+              .addFields(
+                { name: "👤 Usuario",  value: `<@${interaction.user.id}>`,                    inline: true },
+                { name: "📅 Abierto",  value: `<t:${Math.floor(Date.now() / 1000)}:R>`,       inline: true },
+              )
+              .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+              .setFooter({ text: "Usa el botón de abajo para cerrar el ticket cuando se resuelva tu problema." })
+              .setTimestamp();
+
+            // Botón rojo "🔒 Cerrar Ticket"
+            const closeRow = new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId("ticket_close_simple")
+                .setLabel("Cerrar Ticket")
+                .setEmoji("🔒")
+                .setStyle(ButtonStyle.Danger)
+            );
+
+            // Ping al rol de soporte (mensaje separado para que notifique)
+            if (s.support_role) {
+              await ticketChannel.send({ content: `<@&${s.support_role}>` });
+            }
+
+            // Mensaje de bienvenida con el botón de cierre
+            await ticketChannel.send({
+              content: `> 👋 <@${interaction.user.id}>, describe tu problema aquí y el staff te atenderá pronto.`,
+              embeds: [welcomeEmbed],
+              components: [closeRow],
+            });
+
+            return interaction.editReply({
+              embeds: [
+                new EmbedBuilder()
+                  .setColor(E.Colors.SUCCESS)
+                  .setDescription(`✅ Tu ticket ha sido creado: ${ticketChannel}\n\nHaz clic en el enlace para ir a tu ticket.`)
+                  .setTimestamp(),
+              ],
+            });
+          } catch (err) {
+            console.error("[TICKET OPEN SIMPLE ERROR]", err);
+            return interaction.editReply({
+              embeds: [E.errorEmbed("Error al crear el ticket. Verifica que el bot tenga los permisos necesarios (Gestionar Canales).")],
+            });
+          }
+        }
+
+        // ── Botón para cerrar ticket SIMPLE
+        if (customId === "ticket_close_simple") {
+          const s = await settings.get(interaction.guild.id);
+          const channelTopic = interaction.channel.topic || "";
+
+          // Verificar que es un canal de ticket simple
+          if (!channelTopic.includes("simple-ticket")) {
+            return interaction.reply({
+              embeds: [E.errorEmbed("Este botón solo funciona en canales de ticket simple.")],
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          // Extraer el ID del dueño del ticket desde el topic
+          const ownerMatch = channelTopic.match(/uid:(\d+)/);
+          const ownerId    = ownerMatch ? ownerMatch[1] : null;
+
+          // Verificar permisos: staff O dueño del ticket
+          const isStaffSimple = checkStaff(interaction.member, s);
+          const isOwnerSimple = ownerId && interaction.user.id === ownerId;
+
+          if (!isStaffSimple && !isOwnerSimple) {
+            return interaction.reply({
+              embeds: [E.errorEmbed("❌ Solo el **staff** o el creador del ticket puede cerrarlo.")],
+              flags: MessageFlags.Ephemeral,
+            });
+          }
+
+          // Mensaje de cierre
+          await interaction.reply({
+            embeds: [
+              new EmbedBuilder()
+                .setColor(E.Colors.ERROR)
+                .setTitle("🔒 Cerrando Ticket...")
+                .setDescription(
+                  `Este ticket ha sido cerrado por <@${interaction.user.id}>.\n\n` +
+                  "⏳ El canal será eliminado en **5 segundos**..."
+                )
+                .setTimestamp(),
+            ],
+          });
+
+          // Eliminar el canal tras 5 segundos
+          setTimeout(() => {
+            interaction.channel
+              .delete(`Ticket simple cerrado por ${interaction.user.tag}`)
+              .catch(err => console.error("[TICKET CLOSE SIMPLE ERROR]", err));
+          }, 5000);
+
+          return;
         }
 
         // ── Botón para crear ticket desde el panel (público)

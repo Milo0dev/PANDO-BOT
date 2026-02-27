@@ -58,7 +58,8 @@ async function startBot() {
   client.commands = new Collection();
 
   // ── Cargar todos los comandos
-  const setup   = require("./src/commands/setup");
+  const setup        = require("./src/commands/setup");
+  const setupTickets = require("./src/commands/setupTickets");
   const ticket  = require("./src/commands/ticket");
   const admin   = require("./src/commands/admin");
   const staff   = require("./src/commands/staff");
@@ -82,7 +83,7 @@ async function startBot() {
   const giveaway = require("./src/commands/giveaway");
 
   const allCommands = [
-    setup, ping, debug,
+    setup, setupTickets, ping, debug,
     ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
     ticket.assign, ticket.add, ticket.remove, ticket.rename,
     ticket.priority, ticket.move, ticket.note, ticket.transcript,
