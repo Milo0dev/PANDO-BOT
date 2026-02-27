@@ -57,57 +57,37 @@ async function startBot() {
 
   client.commands = new Collection();
 
-  // ── Cargar todos los comandos
-  const setup        = require("./src/commands/setup");
-  const setupTickets = require("./src/commands/setupTickets");
-  const ticket  = require("./src/commands/ticket");
-  const admin   = require("./src/commands/admin");
-  const staff   = require("./src/commands/staff");
-  const welcome = require("./src/commands/welcome");
-  const verify  = require("./src/commands/verify");
-  const help    = require("./src/commands/help");
-  const poll    = require("./src/commands/poll");
-  const embed   = require("./src/commands/embed");
-  const suggest = require("./src/commands/suggest");
-  const remind  = require("./src/commands/remind");
-  const rank    = require("./src/commands/rank");
-  const levels  = require("./src/commands/levels");
-  const modlogs = require("./src/commands/modlogs");
-  const music   = require("./src/commands/music");
-  const ping    = require("./src/commands/ping");
-  const debug   = require("./src/commands/debug");
-  
-  // Entretenimiento
-  const economy = require("./src/commands/economy");
-  const games   = require("./src/commands/games");
-  const giveaway = require("./src/commands/giveaway");
-
-  const allCommands = [
-    setup, setupTickets, ping, debug,
-    ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
-    ticket.assign, ticket.add, ticket.remove, ticket.rename,
-    ticket.priority, ticket.move, ticket.note, ticket.transcript,
-    ticket.info, ticket.history,
-    admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
-    admin.maintenance, admin.closeAll, admin.lockdown,
-    staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
-    welcome, verify, help,
-    poll, embed, suggest, remind, rank, levels, modlogs,
-    music.play, music.skip, music.stop, music.pause, music.resume, 
-    music.queue, music.nowplaying, music.shuffle, music.remove, 
-    music.clear, music.volume, music.loop,
-    // Economia
-    economy.balance, economy.daily, economy.pay, economy.deposit, economy.withdraw,
-    economy.shop, economy.buy, economy.work, economy.gamble, economy.leaderboard,
-    // Juegos
-    games.ahorcado, games.ttt, games.trivia,
-    // Giveaway
-    giveaway.create
-  ];
-
-  for (const cmd of allCommands) {
-    if (cmd?.data) client.commands.set(cmd.data.name, cmd);
+  // ── Cargar comandos dinámicamente
+  function loadCommands(dir) {
+    const commandFiles = fs.readdirSync(dir, { withFileTypes: true });
+    
+    for (const file of commandFiles) {
+      const filePath = path.join(dir, file.name);
+      
+      if (file.isDirectory()) {
+        // Si es un directorio, buscar recursivamente
+        loadCommands(filePath);
+      } else if (file.name.endsWith('.js')) {
+        // Si es un archivo JS, cargarlo como comando
+        const command = require(filePath);
+        
+        // Manejar comandos individuales
+        if (command?.data) {
+          client.commands.set(command.data.name, command);
+        }
+        
+        // Manejar módulos con múltiples comandos (como ticket.js, admin.js, etc.)
+        for (const key in command) {
+          if (command[key]?.data) {
+            client.commands.set(command[key].data.name, command[key]);
+          }
+        }
+      }
+    }
   }
+  
+  // Cargar todos los comandos desde la carpeta src/commands/
+  loadCommands(path.join(__dirname, "src/commands"));
 
   // ── Cargar eventos automáticamente
   const eventsDir   = path.join(__dirname, "src/events");

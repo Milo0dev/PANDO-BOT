@@ -12,6 +12,13 @@ const SpotifyWebApi = require("spotify-web-api-node");
 const { EmbedBuilder } = require("discord.js");
 
 // ══════════════════════════════════════════════════════════════
+//   CACHÉ EN MEMORIA
+// ══════════════════════════════════════════════════════════════
+const youtubeCache = new Map();
+const spotifyCache = new Map();
+const reconnectAttempts = new Map();
+
+// ══════════════════════════════════════════════════════════════
 //   CONFIGURACIÓN DE SPOTIFY
 // ══════════════════════════════════════════════════════════════
 const spotifyApi = new SpotifyWebApi({
@@ -197,8 +204,14 @@ function formatDuration(seconds) {
 // ══════════════════════════════════════════════════════════════
 async function getSpotifyTrackInfo(trackId) {
   try {
+    // Verificar si está en caché
+    if (spotifyCache.has(trackId)) {
+      console.log(`🔄 [CACHE HIT] Spotify track: ${trackId}`);
+      return spotifyCache.get(trackId);
+    }
+
     const track = await spotifyApi.getTrack(trackId);
-    return {
+    const trackInfo = {
       title: track.body.name,
       artist: track.body.artists.map(a => a.name).join(", "),
       duration: formatDuration(track.body.duration_ms / 1000),
@@ -206,6 +219,11 @@ async function getSpotifyTrackInfo(trackId) {
       thumbnail: track.body.album.images[0]?.url || null,
       url: track.body.external_urls.spotify,
     };
+    
+    // Guardar en caché
+    spotifyCache.set(trackId, trackInfo);
+    
+    return trackInfo;
   } catch (error) {
     console.error("Error obteniendo info de Spotify:", error);
     return null;
@@ -275,10 +293,18 @@ async function getSpotifyAlbumTracks(albumId) {
 // ══════════════════════════════════════════════════════════════
 async function getYoutubeInfo(query) {
   try {
+    // Verificar si está en caché
+    if (youtubeCache.has(query)) {
+      console.log(`🔄 [CACHE HIT] YouTube query: ${query.substring(0, 30)}...`);
+      return youtubeCache.get(query);
+    }
+    
+    let videoInfo;
+    
     // Si es una URL de YouTube
     if (query.includes("youtube.com") || query.includes("youtu.be")) {
       const info = await play.video_info(query);
-      return {
+      videoInfo = {
         title: info.video_details.title,
         artist: info.video_details.channel.name,
         duration: formatDuration(info.video_details.durationInSec),
@@ -286,25 +312,30 @@ async function getYoutubeInfo(query) {
         thumbnail: info.video_details.thumbnails[0].url,
         url: info.video_details.url,
       };
+    } else {
+      // Buscar en YouTube
+      const clientID = await play.getFreeClientID();
+      play.setToken({ soundcloud: { client_id: clientID } });
+      const searched = await play.search(query, { limit: 1, source: { soundcloud: "tracks" } });
+      if (searched.length === 0) {
+          return null;
+      }
+
+      const video = searched[0];
+      videoInfo = {
+          title: video.title || video.name,
+          artist: video.user?.name || video.channel?.name || "Desconocido",
+          duration: formatDuration(video.durationInSec),
+          durationSeconds: video.durationInSec,
+          thumbnail: video.thumbnail || (video.thumbnails ? video.thumbnails[0].url : ""),
+          url: video.url,
+      };
     }
     
-    // Buscar en YouTube
-    const clientID = await play.getFreeClientID();
-    play.setToken({ soundcloud: { client_id: clientID } });
-    const searched = await play.search(query, { limit: 1, source: { soundcloud: "tracks" } });
-    if (searched.length === 0) {
-        return null;
-    }
-
-    const video = searched[0];
-    return {
-        title: video.title || video.name,
-        artist: video.user?.name || video.channel?.name || "Desconocido",
-        duration: formatDuration(video.durationInSec),
-        durationSeconds: video.durationInSec,
-        thumbnail: video.thumbnail || (video.thumbnails ? video.thumbnails[0].url : ""),
-        url: video.url,
-    };
+    // Guardar en caché
+    youtubeCache.set(query, videoInfo);
+    
+    return videoInfo;
   } catch (error) {
     console.error("Error obteniendo info de YouTube:", error);
     return null;
@@ -590,6 +621,80 @@ async function playNextSong(guildId) {
       });
 
       await entersState(queue.connection, VoiceConnectionStatus.Ready, 30000);
+      
+      // Reiniciar contador de reconexiones
+      reconnectAttempts.set(queue.guildId, 0);
+      
+      // Configurar listener para desconexiones
+      queue.connection.on(VoiceConnectionStatus.Disconnected, async () => {
+        try {
+          // Obtener el número actual de intentos
+          const attempts = reconnectAttempts.get(queue.guildId) || 0;
+          
+          // Si ya intentamos 2 veces, destruir la cola
+          if (attempts >= 2) {
+            console.log(`❌ [MUSIC] Desconexión persistente en ${queue.guildId}, destruyendo cola después de ${attempts} intentos`);
+            deleteQueue(queue.guildId);
+            return;
+          }
+          
+          // Incrementar contador de intentos
+          reconnectAttempts.set(queue.guildId, attempts + 1);
+          console.log(`🔄 [MUSIC] Intento de reconexión ${attempts + 1}/3 para ${queue.guildId}`);
+          
+          // Intentar reconectar
+          await Promise.race([
+            entersState(queue.connection, VoiceConnectionStatus.Signalling, 5_000),
+            entersState(queue.connection, VoiceConnectionStatus.Connecting, 5_000),
+          ]);
+          
+          // Si llegamos aquí, estamos reconectando
+          console.log(`🔄 [MUSIC] Reconectando a ${queue.voiceChannel.name}...`);
+        } catch (error) {
+          // Si falla la reconexión, intentar unirse de nuevo
+          try {
+            // Destruir la conexión actual
+            queue.connection.destroy();
+            
+            // Crear una nueva conexión
+            queue.connection = joinVoiceChannel({
+              channelId: queue.voiceChannel.id,
+              guildId: queue.guildId,
+              adapterCreator: queue.voiceChannel.guild.voiceAdapterCreator,
+              selfDeaf: true,
+            });
+            
+            // Suscribir el reproductor a la nueva conexión
+            if (queue.player) {
+              queue.connection.subscribe(queue.player);
+            }
+            
+            // Esperar a que esté listo
+            await entersState(queue.connection, VoiceConnectionStatus.Ready, 10_000);
+            console.log(`✅ [MUSIC] Reconexión exitosa a ${queue.voiceChannel.name}`);
+            
+            // Reiniciar contador si la reconexión fue exitosa
+            reconnectAttempts.set(queue.guildId, 0);
+          } catch (err) {
+            // Si falla la reconexión manual, registrar el error
+            console.error(`❌ [MUSIC] Error en reconexión manual:`, err);
+            
+            // Si este era el último intento, destruir la cola
+            const attempts = reconnectAttempts.get(queue.guildId) || 0;
+            if (attempts >= 2) {
+              console.log(`❌ [MUSIC] Desconexión persistente, destruyendo cola después de ${attempts + 1} intentos`);
+              deleteQueue(queue.guildId);
+            }
+          }
+        }
+      });
+      
+      // Listener para cuando la conexión está lista
+      queue.connection.on(VoiceConnectionStatus.Ready, () => {
+        console.log(`✅ [MUSIC] Conexión lista en ${queue.voiceChannel.name}`);
+        // Reiniciar contador de reconexiones
+        reconnectAttempts.set(queue.guildId, 0);
+      });
     }
 
     // Crear player si no existe

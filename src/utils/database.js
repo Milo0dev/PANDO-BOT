@@ -1,6 +1,7 @@
 const { MongoClient, ObjectId } = require("mongodb");
 const chalk = require("chalk");
 const fs = require("fs");
+const fsPromises = require("fs/promises");
 const path = require("path");
 
 // ─────────────────────────────────────────────────────
@@ -76,7 +77,7 @@ function uid() { return Date.now().toString(36) + Math.random().toString(36).sli
 // ─────────────────────────────────────────────────────
 //   HELPERS CON VALIDACIÓN Y ERRORES
 // ─────────────────────────────────────────────────────
-function logError(context, error, extra = {}) {
+async function logError(context, error, extra = {}) {
   const errorLog = {
     context,
     message: error.message || String(error),
@@ -91,16 +92,24 @@ function logError(context, error, extra = {}) {
   // Guardar en archivo de logs si se desea
   try {
     const logsDir = path.join(__dirname, "../../data/logs");
-    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+    await fsPromises.mkdir(logsDir, { recursive: true }).catch(() => {});
     
     const logFile = path.join(logsDir, `errors_${new Date().toISOString().split("T")[0]}.json`);
-    const logs = fs.existsSync(logFile) ? JSON.parse(fs.readFileSync(logFile, "utf8")) : [];
+    let logs = [];
+    
+    try {
+      const fileContent = await fsPromises.readFile(logFile, "utf8");
+      logs = JSON.parse(fileContent);
+    } catch (readError) {
+      // Archivo no existe o no se puede leer, usar array vacío
+    }
+    
     logs.push(errorLog);
     
     // Mantener solo últimos 1000 errores
     if (logs.length > 1000) logs.splice(0, logs.length - 1000);
     
-    fs.writeFileSync(logFile, JSON.stringify(logs, null, 2));
+    await fsPromises.writeFile(logFile, JSON.stringify(logs, null, 2));
   } catch (e) {
     // Silencioso si falla el logging
   }

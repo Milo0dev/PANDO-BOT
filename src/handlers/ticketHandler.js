@@ -9,40 +9,12 @@ const { tickets, settings, blacklist, staffStats, staffRatings, cooldowns } = re
 const { generateTranscript }  = require("../utils/transcript");
 const { updateDashboard }     = require("./dashboardHandler");
 const E = require("../utils/embeds");
-
-// Categorías hardcodeadas para el panel de tickets (mismas que en dashboardHandler.js)
-const ticketCategories = [
-  { 
-    id: "support", 
-    label: "Soporte General", 
-    description: "Dudas generales, ayuda con el servidor o comandos.", 
-    emoji: "💬" 
-  },
-  { 
-    id: "billing", 
-    label: "Compras y Pagos", 
-    description: "Problemas con compras, rangos o donaciones.", 
-    emoji: "🛒" 
-  },
-  { 
-    id: "report", 
-    label: "Reportes y Moderación", 
-    description: "Reportar a un usuario o apelar una sanción.", 
-    emoji: "🛡️" 
-  },
-  { 
-    id: "partnership", 
-    label: "Alianzas / Partners", 
-    description: "Propuestas de alianzas con nuestro servidor.", 
-    emoji: "🤝" 
-  },
-];
+const { categories } = require("../../config");
 
 // ─────────────────────────────────────────────────────
 //   PANEL
 // ─────────────────────────────────────────────────────
 async function sendPanel(channel, guild) {
-  // Usamos las categorías hardcodeadas localmente
   const embed = new EmbedBuilder()
     .setAuthor({ 
       name: "Centro de Soporte y Ayuda", 
@@ -74,7 +46,7 @@ async function sendPanel(channel, guild) {
   const menu = new StringSelectMenuBuilder()
     .setCustomId("ticket_category_select")
     .setPlaceholder("Categorías de soporte disponibles...")
-    .addOptions(ticketCategories.map(c => ({
+    .addOptions(categories.map(c => ({
       label: c.label, description: c.description, value: c.id, emoji: c.emoji,
     })));
 
@@ -111,7 +83,7 @@ async function createTicket(interaction, categoryId, answers = []) {
   const guild    = interaction.guild;
   const user     = interaction.user;
   const s        = await settings.get(guild.id);
-  const category = ticketCategories.find(c => c.id === categoryId);
+  const category = categories.find(c => c.id === categoryId);
   if (!category) return replyError(interaction, "Categoría no encontrada.");
 
   // ═══════════════════════════════════════════════════════
@@ -604,7 +576,7 @@ async function removeUser(interaction, user) {
 async function moveTicket(interaction, newCategoryId) {
   const ticket      = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
-  const newCategory = ticketCategories.find(c => c.id === newCategoryId);
+  const newCategory = categories.find(c => c.id === newCategoryId);
   if (!newCategory) return replyError(interaction, "Categoría no encontrada.");
 
   const oldCategory = ticket.category;
