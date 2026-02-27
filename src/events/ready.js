@@ -293,6 +293,40 @@ module.exports = {
       }
     });
 
+// === TRANSMISOR DE DATOS PARA LA WEB ===
+    const guardarStats = async () => {
+      try {
+        const db = require("../utils/database").getDB();
+        
+        // 1. Calculamos el total de usuarios sumando los de cada servidor
+        const totalUsers = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
+
+        // 2. Enviamos todo el paquete completo a MongoDB
+        await db.collection("botStats").updateOne(
+          { id: "main" },
+          {
+            $set: {
+              botName: client.user.username,
+              botAvatar: client.user.displayAvatarURL({ format: "png", size: 256 }),
+              serverCount: client.guilds.cache.size,
+              userCount: totalUsers, // <-- Aquí agregamos los usuarios totales
+              ping: client.ws.ping,
+              uptime: process.uptime()
+            }
+          },
+          { upsert: true }
+        );
+        console.log("📊 Stats del bot actualizados en la BD.");
+      } catch (error) {
+        console.error("Error al guardar stats:", error.message);
+      }
+    };
+
+    // Guardar inmediatamente y luego cada minuto
+    guardarStats();
+    setInterval(guardarStats, 60000);
+    // =======================================
+
     console.log(chalk.green("✅ Todos los cron jobs activos"));
   },
 };
