@@ -155,9 +155,10 @@ function dashboardEmbed(stats, guild, awayStaff, leaderboard, client) {
   const medals = ["🥇", "🥈", "🥉"];
   let topStaffField;
   if (leaderboard && leaderboard.length > 0) {
-    topStaffField = bt + "yml\n" + leaderboard.slice(0, 3).map((s, i) => 
-      medals[i] + " #" + (i + 1) + " <@" + s.staff_id + "> :: " + s.tickets_closed + " cerrados"
-    ).join("\n") + "\n" + bt;
+    topStaffField = bt + "yml\n" + leaderboard.slice(0, 3).map((s, i) => {
+      const name = guild.members.cache.get(s.staff_id)?.user?.username || "Usuario";
+      return medals[i] + " #" + (i + 1) + " " + name + " :: " + s.tickets_closed + " cerrados";
+    }).join("\n") + "\n" + bt;
   } else {
     topStaffField = bt + "diff\n- Aún no hay datos\n" + bt;
   }
@@ -165,9 +166,10 @@ function dashboardEmbed(stats, guild, awayStaff, leaderboard, client) {
   // Campo 3: Staff Ausente
   let awayField;
   if (awayStaff && awayStaff.length > 0) {
-    awayField = bt + "yml\n" + awayStaff.map(s => 
-      "⏸️ <@" + s.staff_id + "> :: " + (s.away_reason || "Sin razón")
-    ).join("\n") + "\n" + bt;
+    awayField = bt + "yml\n" + awayStaff.map(s => {
+      const name = guild.members.cache.get(s.staff_id)?.user?.username || "Usuario";
+      return "⏸️ " + name + " :: " + (s.away_reason || "Sin razón");
+    }).join("\n") + "\n" + bt;
   } else {
     awayField = bt + "diff\n+ Todo el equipo está activo ✅\n" + bt;
   }
