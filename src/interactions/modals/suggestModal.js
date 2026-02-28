@@ -125,6 +125,9 @@ module.exports = {
   customId: "suggest_modal",
 
   async execute(interaction, client) {
+    // Deferir la respuesta para ganar tiempo antes de operaciones pesadas
+    await interaction.deferReply({ flags: 64 });
+
     try {
       const gid = interaction.guild.id;
       const ss = await suggestSettings.get(gid);
@@ -135,7 +138,7 @@ module.exports = {
 
       // Validar que al menos tenga algo
       if (!title && !description) {
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setColor(0xed4245)
@@ -148,7 +151,7 @@ module.exports = {
 
       // Verificar que el sistema esté activado
       if (!ss?.enabled) {
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setColor(0xed4245)
@@ -165,7 +168,7 @@ module.exports = {
       const targetChannelId = ss?.channel || interaction.channel.id;
       const ch = interaction.guild.channels.cache.get(targetChannelId);
       if (!ch) {
-        return interaction.reply({
+        return interaction.editReply({
           embeds: [
             new EmbedBuilder()
               .setColor(0xed4245)
@@ -196,7 +199,7 @@ module.exports = {
             (Date.now() - new Date(recentSug.created_at).getTime()) / 60000
           );
           const remaining = ss.cooldown_minutes - minutesAgo;
-          return interaction.reply({
+          return interaction.editReply({
             embeds: [
               new EmbedBuilder()
                 .setColor(0xfee75c)
@@ -274,7 +277,7 @@ module.exports = {
       }
 
       // Responder al usuario
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setColor(0x57f287)
@@ -290,7 +293,7 @@ module.exports = {
 
     } catch (error) {
       console.error("[SUGGEST MODAL ERROR]", error);
-      return interaction.reply({
+      return interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setColor(0xed4245)
