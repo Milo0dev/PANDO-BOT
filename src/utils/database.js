@@ -1771,8 +1771,11 @@ const suggestions = {
         guild_id: guildId,
         user_id: userId,
         text: sanitizeString(text, 1000),
+        title: null,
+        description: null,
         message_id: messageId,
         channel_id: channelId,
+        thread_id: null,
         status: "pending",
         upvotes: [],
         downvotes: [],
@@ -1785,6 +1788,38 @@ const suggestions = {
       return suggestion;
     } catch (error) {
       logError("suggestions.create", error, { guildId, userId });
+      throw error;
+    }
+  },
+
+  // Nueva función para crear sugerencias con título y descripción (para Modal)
+  async createWithDetails(guildId, userId, title, description, messageId, channelId) {
+    try {
+      const count = await this.collection().countDocuments({ guild_id: guildId });
+      
+      const suggestion = {
+        _id: ObjectId(),
+        num: count + 1,
+        guild_id: guildId,
+        user_id: userId,
+        text: title || description || "", // Mantener compatibility con campo original
+        title: sanitizeString(title, 200),
+        description: sanitizeString(description, 2000),
+        message_id: messageId,
+        channel_id: channelId,
+        thread_id: null,
+        status: "pending",
+        upvotes: [],
+        downvotes: [],
+        staff_comment: null,
+        reviewed_by: null,
+        created_at: now()
+      };
+      
+      await this.collection().insertOne(suggestion);
+      return suggestion;
+    } catch (error) {
+      logError("suggestions.createWithDetails", error, { guildId, userId, title });
       throw error;
     }
   },

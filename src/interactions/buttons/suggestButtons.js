@@ -24,7 +24,7 @@ const STATUS_EMOJI = {
   rejected: "❌",
 };
 
-// ── Construir el embed actualizado
+// ── Construir el embed actualizado con título y descripción
 function buildSuggestEmbed(sug, guild, anonymous = false) {
   const up = sug.upvotes?.length || 0;
   const down = sug.downvotes?.length || 0;
@@ -34,10 +34,23 @@ function buildSuggestEmbed(sug, guild, anonymous = false) {
   const filled = Math.round((pct / 100) * barLen);
   const bar = "🟢".repeat(filled) + "⚫".repeat(barLen - filled);
 
+  // Construir descripción con título y detalles
+  let description = "";
+  if (sug.title) {
+    description += `**${sug.title}**\n\n`;
+  }
+  if (sug.description) {
+    description += `> ${sug.description}`;
+  }
+  // Fallback para sugerencias antiguas que solo tienen "text"
+  if (!sug.title && !sug.description && sug.text) {
+    description = `> ${sug.text}`;
+  }
+
   const embed = new EmbedBuilder()
     .setColor(STATUS_COLOR[sug.status] || 0x5865f2)
     .setTitle(`${STATUS_EMOJI[sug.status]} Sugerencia #${sug.num}`)
-    .setDescription(`> ${sug.text}`)
+    .setDescription(description || "> (Sin descripción)")
     .addFields(
       {
         name: "👤 Autor",
@@ -62,6 +75,7 @@ function buildSuggestEmbed(sug, guild, anonymous = false) {
     )
     .setTimestamp();
 
+  // Agregar comentario del staff si existe
   if (sug.staff_comment && sug.status !== "pending") {
     embed.addFields({
       name: `💬 Comentario del staff`,
@@ -70,6 +84,7 @@ function buildSuggestEmbed(sug, guild, anonymous = false) {
     });
   }
 
+  // Footer con revisor si existe
   if (sug.reviewed_by && sug.status !== "pending") {
     embed.setFooter({
       text: `Revisada por ${sug.reviewed_by} • ${STATUS_LABEL[sug.status]}`,
@@ -97,12 +112,12 @@ function buildButtons(sugId, status, isAdmin = false) {
   const voteRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`sug_up_${sugId}`)
-      .setLabel("👍 Upvote")
+      .setLabel("👍 Votar a Favor")
       .setStyle(ButtonStyle.Success)
       .setDisabled(disabled),
     new ButtonBuilder()
       .setCustomId(`sug_down_${sugId}`)
-      .setLabel("👎 Downvote")
+      .setLabel("👎 Votar en Contra")
       .setStyle(ButtonStyle.Danger)
       .setDisabled(disabled)
   );
@@ -224,6 +239,19 @@ module.exports = {
 
         await interaction.message.edit({ embeds: [embed], components });
 
+        // Cerrar el hilo de debate si existe
+        if (suggestion.thread_id) {
+          try {
+            const thread = interaction.guild.channels.cache.get(suggestion.thread_id);
+            if (thread && thread.isThread()) {
+              await thread.setLocked(true, `Sugerencia ${newStatus} por ${interaction.user.tag}`);
+              await thread.setArchived(true, `Sugerencia ${newStatus} por ${interaction.user.tag}`);
+            }
+          } catch (threadError) {
+            console.error("[SUGGEST THREAD CLOSE ERROR]", threadError.message);
+          }
+        }
+
         // ── Mover al canal correspondiente si está configurado ──
         const targetChId =
           newStatus === "approved"
@@ -261,7 +289,7 @@ module.exports = {
               )
               .addFields({
                 name: "📝 Tu sugerencia",
-                value: updated.text.substring(0, 500),
+                value: updated.title ? `**${updated.title}**\n${updated.description || ""}`.substring(0, 500) : updated.text.substring(0, 500),
                 inline: false,
               })
               .setTimestamp();

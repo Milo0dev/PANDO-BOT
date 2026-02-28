@@ -6,6 +6,9 @@ const {
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
   MessageFlags,
 } = require("discord.js");
 const { suggestSettings, suggestions } = require("../utils/database");
@@ -38,10 +41,23 @@ function buildSuggestEmbed(sug, guild, anonymous = false) {
   const filled = Math.round((pct / 100) * barLen);
   const bar = "🟢".repeat(filled) + "⚫".repeat(barLen - filled);
 
+  // Construir descripción con título y detalles
+  let description = "";
+  if (sug.title) {
+    description += `**${sug.title}**\n\n`;
+  }
+  if (sug.description) {
+    description += `> ${sug.description}`;
+  }
+  // Fallback para sugerencias antiguas que solo tienen "text"
+  if (!sug.title && !sug.description && sug.text) {
+    description = `> ${sug.text}`;
+  }
+
   const embed = new EmbedBuilder()
     .setColor(STATUS_COLOR[sug.status] || 0x5865f2)
     .setTitle(`${STATUS_EMOJI[sug.status]} Sugerencia #${sug.num}`)
-    .setDescription(`> ${sug.text}`)
+    .setDescription(description || "> (Sin descripción)")
     .addFields(
       {
         name: "👤 Autor",
@@ -86,12 +102,12 @@ function buildButtons(sugId, status, isAdmin = false) {
   const voteRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`sug_up_${sugId}`)
-      .setLabel("👍 Upvote")
+      .setLabel("👍 Votar a Favor")
       .setStyle(ButtonStyle.Success)
       .setDisabled(disabled),
     new ButtonBuilder()
       .setCustomId(`sug_down_${sugId}`)
-      .setLabel("👎 Downvote")
+      .setLabel("👎 Votar en Contra")
       .setStyle(ButtonStyle.Danger)
       .setDisabled(disabled)
   );
@@ -117,14 +133,7 @@ function buildButtons(sugId, status, isAdmin = false) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("suggest")
-    .setDescription("💡 Envía una sugerencia para el servidor")
-    .addStringOption((option) =>
-      option
-        .setName("sugerencia")
-        .setDescription("Escribe tu sugerencia")
-        .setRequired(true)
-        .setMaxLength(1000)
-    ),
+    .setDescription("💡 Envía una sugerencia para el servidor"),
 
   buildSuggestEmbed,
   buildButtons,
@@ -200,49 +209,35 @@ module.exports = {
       }
     }
 
-    const texto = interaction.options.getString("sugerencia");
+    // ── MOSTRAR MODAL CON TÍTULO Y DESCRIPCIÓN ──
+    const modal = new ModalBuilder()
+      .setCustomId("suggest_modal")
+      .setTitle("💡 Nueva Sugerencia");
 
-    // Enviar mensaje placeholder para obtener ID
-    const placeholder = await ch.send({
-      content: "⏳ Creando sugerencia...",
-    });
+    // Campo 1: Título de la sugerencia
+    const titleInput = new TextInputBuilder()
+      .setCustomId("suggest_title")
+      .setLabel("Título de la sugerencia")
+      .setPlaceholder("Ej: Añadir un canal de música")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setMaxLength(200);
 
-    // Crear en base de datos
-    const sug = await suggestions.create(
-      gid,
-      interaction.user.id,
-      texto,
-      placeholder.id,
-      ch.id
-    );
+    // Campo 2: Descripción detallada
+    const descriptionInput = new TextInputBuilder()
+      .setCustomId("suggest_description")
+      .setLabel("Descripción detallada")
+      .setPlaceholder("Explica tu idea con más detalle...")
+      .setStyle(TextInputStyle.Paragraph)
+      .setRequired(true)
+      .setMaxLength(2000);
 
-    // Construir embed y botones
-    const embed = buildSuggestEmbed(sug, interaction.guild, ss?.anonymous);
-    const components = buildButtons(sug._id.toString(), sug.status, isAdmin);
+    // Añadir filas al modal
+    const titleRow = new ActionRowBuilder().addComponents(titleInput);
+    const descRow = new ActionRowBuilder().addComponents(descriptionInput);
+    modal.addComponents(titleRow, descRow);
 
-    // Editar mensaje con el embed completo
-    await placeholder.edit({
-      content: null,
-      embeds: [embed],
-      components: components,
-    });
-
-    // Responder al usuario
-    return interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(0x57f287)
-          .setTitle("✅ Sugerencia Enviada")
-          .setDescription(
-            `Tu sugerencia **#${sug.num}** ha sido publicada en ${ch}.\n\n> ${texto.substring(
-              0,
-              200
-            )}${texto.length > 200 ? "..." : ""}`
-          )
-          .setFooter({ text: "¡Gracias por tu aporte!" })
-          .setTimestamp(),
-      ],
-      flags: MessageFlags.Ephemeral,
-    });
+    // Mostrar el modal al usuario
+    return interaction.showModal(modal);
   },
 };
