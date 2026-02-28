@@ -1,3 +1,4 @@
+const { EmbedBuilder } = require("discord.js");
 const { forceUpdateDashboard } = require("../../handlers/dashboardHandler");
 
 module.exports = {
@@ -9,7 +10,11 @@ module.exports = {
     // Forzar actualización del dashboard
     await forceUpdateDashboard(interaction.guild.id);
 
-    // Confirmar al usuario
-    await interaction.editReply("✅ El panel se actualizó con éxito.");
+    // Confirmar al usuario con Embed de éxito
+    const successEmbed = new EmbedBuilder()
+      .setColor(0x57F287)
+      .setDescription("✅ ¡Panel actualizado! Las estadísticas se han refrescado con éxito.");
+
+    await interaction.editReply({ embeds: [successEmbed] });
   },
 };
