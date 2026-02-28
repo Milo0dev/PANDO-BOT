@@ -1,105 +1,211 @@
-const { Events, AttachmentBuilder, EmbedBuilder } = require('discord.js');
-const Canvas = require('canvas');
-const { welcomeSettings } = require('../utils/database');
-
-// Función para registrar fuentes (si las tuvieras en una carpeta 'fonts')
-// Canvas.registerFont('./fonts/Roboto-Bold.ttf', { family: 'Roboto Bold' });
-// Canvas.registerFont('./fonts/Roboto-Regular.ttf', { family: 'Roboto' });
+const {
+  EmbedBuilder,
+  AttachmentBuilder,
+} = require("discord.js");
+const { createCanvas, loadImage } = require("canvas");
+const { welcomeSettings, modlogSettings } = require("../utils/database");
 
 module.exports = {
-  name: Events.GuildMemberRemove,
-  async execute(member) {
-    // 1. Obtener configuración
-    const ws = await welcomeSettings.get(member.guild.id);
-    if (!ws || !ws.goodbye_enabled || !ws.goodbye_channel) return;
-
-    // 2. Obtener canal y verificar permisos
-    const channel = member.guild.channels.cache.get(ws.goodbye_channel);
-    if (!channel || !channel.isTextBased()) return;
-
-    const permissions = channel.permissionsFor(member.guild.members.me);
-    if (!permissions.has(['ViewChannel', 'SendMessages', 'AttachFiles', 'EmbedLinks'])) {
-      console.error(`[Goodbye Error] Faltan permisos en el canal ${channel.id} para enviar despedidas.`);
-      return;
-    }
-
+  name: "guildMemberRemove",
+  async execute(member, client) {
+    const guild = member.guild;
     try {
-      // 3. Crear el Canvas (Lienzo) - Tamaño estándar de banner
-      const canvas = Canvas.createCanvas(700, 250);
-      const ctx = canvas.getContext('2d');
+      // Obtener configuración de despedidas
+      const ws = await welcomeSettings.get(guild.id);
 
-      // --- FONDO ---
-      ctx.fillStyle = '#23272A'; // Color de fondo oscuro de Discord
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Verificar si el sistema de despedidas está activo
+      if (!ws || !ws.goodbye_enabled || !ws.goodbye_channel) return;
 
-      // Opcional: Añadir un borde sutil
-      ctx.strokeStyle = ws.goodbye_color || '#ED4245'; // Color rojo o el configurado
-      ctx.lineWidth = 10;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+      // Obtener el canal de despedida
+      const ch = guild.channels.cache.get(ws.goodbye_channel);
 
-      // --- AVATAR (Círculo) ---
-      // Cargar la imagen del avatar
-      const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 256 });
-      const avatar = await Canvas.loadImage(avatarURL);
+      // Verificar que el canal existe
+      if (!ch) return;
 
-      // Configurar coordenadas y tamaño del avatar
-      const avatarSize = 150;
-      const avatarX = canvas.width / 2;
-      const avatarY = canvas.height / 2 - 20; // Un poco más arriba del centro
-
-      // Dibujar el círculo y recortar
-      ctx.beginPath();
-      ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2, true);
-      ctx.closePath();
-      ctx.clip();
-
-      // Dibujar la imagen del avatar dentro del círculo
-      ctx.drawImage(avatar, avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
-
-      // Restaurar el contexto para que lo siguiente no se recorte
-      ctx.restore(); // ¡Importante! Canvas no tiene restore() nativo después de clip() sin save() previo.
-                     // En este caso, simplemente dibujaremos encima.
-
-      // --- TEXTOS ---
-      ctx.fillStyle = '#FFFFFF'; // Color del texto (blanco)
-      ctx.textAlign = 'center';  // Alinear texto al centro horizontalmente
-
-      // Texto Principal: "¡Hasta luego!"
-      ctx.font = 'bold 40px sans-serif'; // Usa una fuente estándar si no tienes personalizadas
-      ctx.fillText('¡Hasta luego!', canvas.width / 2, avatarY + avatarSize / 2 + 50);
-
-      // Nombre del Usuario
-      ctx.font = '30px sans-serif';
-      // Limitar el nombre si es muy largo para que no se salga
-      let username = member.user.username;
-      if (username.length > 20) {
-        username = username.substring(0, 17) + '...';
+      // Verificar permisos del bot
+      const botPermissions = ch.permissionsFor(guild.members.me);
+      if (!botPermissions.has("SendMessages") || !botPermissions.has("AttachFiles")) {
+        return console.log(`[GOODBYE] No tengo permisos en el canal ${ch.id}`);
       }
-      ctx.fillText(username, canvas.width / 2, avatarY + avatarSize / 2 + 90);
-      
-      // Texto Secundario (Opcional)
-      ctx.fillStyle = '#AAAAAA'; // Color gris más claro
-      ctx.font = '20px sans-serif';
-      ctx.fillText('Esperamos verte pronto.', canvas.width / 2, canvas.height - 30);
 
+      // Generar imagen de despedida
+      try {
+        const goodbyeImage = await generateGoodbyeImage(member);
+        const attachment = new AttachmentBuilder(goodbyeImage, { name: "goodbye.png" });
 
-      // 4. Crear el Attachment y el Embed
-      const attachment = new AttachmentBuilder(canvas.toBuffer(), { name: 'goodbye.png' });
+        // Crear embed con la imagen
+        const color = parseInt(ws.goodbye_color || "ED4245", 16);
+        const embed = new EmbedBuilder()
+          .setColor(color)
+          .setTitle(fill(ws.goodbye_title || "👋 ¡Hasta luego!", member, guild))
+          .setDescription(fill(ws.goodbye_message || "¡Lamentamos verte partir **{user}**! Esperamos verte pronto.", member, guild))
+          .setImage("attachment://goodbye.png")
+          .setTimestamp();
 
-      const embed = new EmbedBuilder()
-        .setColor(ws.goodbye_color || '#ED4245') // Rojo por defecto para despedidas
-        .setImage('attachment://goodbye.png')
-        .setTimestamp()
-        .setFooter({ text: `ID: ${member.id}` });
-        
-      // Opcional: Si quieres un título o descripción en el embed además de la imagen
-      // embed.setTitle(`👋 ${member.user.tag} ha dejado el servidor.`);
+        if (ws.goodbye_footer) {
+          embed.setFooter({
+            text: fill(ws.goodbye_footer, member, guild),
+            iconURL: guild.iconURL({ dynamic: true })
+          });
+        }
 
-      // 5. Enviar al canal
-      await channel.send({ embeds: [embed], files: [attachment] });
+        await ch.send({ embeds: [embed], files: [attachment] }).catch(() => {});
+      } catch (canvasError) {
+        console.error("[CANVAS ERROR - GOODBYE]", canvasError);
+        // Fallback: enviar embed normal sin imagen
+        const color = parseInt(ws.goodbye_color || "ED4245", 16);
+        const embed = new EmbedBuilder()
+          .setColor(color)
+          .setTitle(fill(ws.goodbye_title || "👋 ¡Hasta luego!", member, guild))
+          .setDescription(fill(ws.goodbye_message, member, guild))
+          .setTimestamp();
 
-    } catch (error) {
-      console.error('[Goodbye Error] Error al generar o enviar la imagen de despedida:', error);
+        if (ws.goodbye_thumbnail !== false) embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
+        if (ws.goodbye_footer) embed.setFooter({ text: fill(ws.goodbye_footer, member, guild), iconURL: guild.iconURL({ dynamic: true }) });
+
+        const roles = member.roles.cache
+          .filter(r => r.id !== guild.id)
+          .sort((a, b) => b.position - a.position)
+          .map(r => `<@&${r.id}>`)
+          .slice(0, 5).join(", ") || "Ninguno";
+
+        embed.addFields(
+          { name: "👤 Usuario", value: `${member.user.tag}`, inline: true },
+          { name: "🆔 ID", value: `\`${member.id}\``, inline: true },
+          { name: "📅 Se unió", value: member.joinedAt ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : "?", inline: true },
+          { name: "👥 Quedamos", value: `\`${guild.memberCount}\` miembros`, inline: true },
+          { name: "🏷️ Tenía roles", value: roles, inline: false },
+        );
+
+        await ch.send({ embeds: [embed] }).catch(() => {});
+      }
+
+      // ── MODLOG DE SALIDA ──
+      const ml = await modlogSettings.get(guild.id);
+      if (ml && ml.enabled && ml.log_leaves && ml.channel) {
+        const logCh = guild.channels.cache.get(ml.channel);
+        if (logCh) {
+          const roles = member.roles.cache
+            .filter(r => r.id !== guild.id)
+            .sort((a, b) => b.position - a.position)
+            .map(r => `<@&${r.id}>`).slice(0, 5).join(", ") || "Ninguno";
+          await logCh.send({
+            embeds: [new EmbedBuilder()
+              .setColor(0xED4245)
+              .setTitle("📤 Miembro Salió")
+              .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+              .addFields(
+                { name: "👤 Usuario", value: `${member.user.tag} <@${member.id}>`, inline: true },
+                { name: "📅 Se unió", value: member.joinedAt ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : "?", inline: true },
+                { name: "👥 Quedamos", value: String(guild.memberCount), inline: true },
+                { name: "🏷️ Tenía roles", value: roles, inline: false },
+              )
+              .setFooter({ text: `ID: ${member.id}` })
+              .setTimestamp()],
+          }).catch(() => {});
+        }
+      }
+
+    } catch (err) {
+      console.error("[MEMBER REMOVE]", err.message);
     }
   },
 };
+
+/**
+ * Genera una imagen de despedida visual usando Canvas
+ * @param {GuildMember} member - El miembro que salió
+ * @returns {Buffer} - Buffer de la imagen PNG generada
+ */
+async function generateGoodbyeImage(member) {
+  // Dimensiones del canvas
+  const canvas = createCanvas(700, 250);
+  const ctx = canvas.getContext("2d");
+
+  // ═══ FONDO ═══
+  ctx.fillStyle = "#23272A";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // ═══ AVATAR ═══
+  const avatarSize = 150;
+  const avatarX = canvas.width / 2;
+  const avatarY = canvas.height / 2 - 20;
+
+  // Cargar avatar del usuario
+  const avatarURL = member.user.displayAvatarURL({
+    extension: "png",
+    size: 256,
+    forceStatic: false
+  });
+
+  try {
+    const avatar = await loadImage(avatarURL);
+
+    // Dibujar avatar con裁剪 circular
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+
+    // Dibujar avatar centrado
+    ctx.drawImage(avatar, avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
+    ctx.restore();
+
+    // Borde circular del avatar
+    ctx.beginPath();
+    ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+  } catch (avatarError) {
+    // Si falla la carga del avatar, dibujar un círculo con iniciales
+    ctx.beginPath();
+    ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#ED4245";
+    ctx.fill();
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 60px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const initials = member.user.username.slice(0, 2).toUpperCase();
+    ctx.fillText(initials, avatarX, avatarY);
+  }
+
+  // ═══ TEXTOS ═══
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FFFFFF";
+
+  // "¡Hasta luego!" - arriba del avatar
+  ctx.font = "bold 40px Arial, sans-serif";
+  ctx.fillText("¡Hasta luego!", canvas.width / 2, 45);
+
+  // Nombre de usuario - debajo del avatar
+  ctx.font = "30px Arial, sans-serif";
+  let username = member.user.username;
+  if (username.length > 17) {
+    username = username.slice(0, 14) + "...";
+  }
+  ctx.fillText(username, canvas.width / 2, canvas.height - 45);
+
+  // Footer - cerca de la parte inferior
+  ctx.font = "20px Arial, sans-serif";
+  ctx.fillStyle = "#AAAAAA";
+  ctx.fillText("Espero verte pronto.", canvas.width / 2, canvas.height - 15);
+
+  // Retornar buffer PNG
+  return canvas.toBuffer("image/png");
+}
+
+function fill(text, member, guild) {
+  if (!text) return "";
+  return text
+    .replace(/{mention}/g, `<@${member.id}>`)
+    .replace(/{user}/g, member.user.username)
+    .replace(/{tag}/g, member.user.tag)
+    .replace(/{server}/g, guild.name)
+    .replace(/{count}/g, String(guild.memberCount))
+    .replace(/{id}/g, member.id);
+}
