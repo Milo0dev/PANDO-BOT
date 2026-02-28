@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { resolveCommand } = require("../utils/commandUtils");
 const E = require("../utils/embeds");
+const { handleVerif } = require('../handlers/verifHandler');
 
 // Cargar handlers dinámicamente
 const buttons = new Collection();
@@ -88,6 +89,7 @@ module.exports = {
 
       // Manejar botones
       if (interaction.isButton()) {
+        if (interaction.customId.startsWith('verify_')) { await handleVerif(interaction); return; }
         const handler = findHandler(buttons, interaction.customId);
         if (handler) {
           await handler.execute(interaction, client);
@@ -106,6 +108,7 @@ module.exports = {
 
       // Manejar modals
       if (interaction.isModalSubmit()) {
+        if (interaction.customId.startsWith('verify_')) { await handleVerif(interaction); return; }
         const handler = findHandler(modals, interaction.customId);
         if (handler) {
           await handler.execute(interaction, client);
