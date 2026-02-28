@@ -72,8 +72,8 @@ module.exports = {
     const gid   = interaction.guild.id;
     const ws    = await welcomeSettings.get(gid);
 
-    const ok = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
-    const er = msg => interaction.reply({ embeds: [E.errorEmbed(msg)], ephemeral: true });
+    const ok = msg => interaction.reply({ embeds: [E.successEmbed(msg)], flags: 64 });
+    const er = msg => interaction.reply({ embeds: [E.errorEmbed(msg)], flags: 64 });
 
     // ──────────────────────────────────────────────
     //   /welcome info
@@ -110,7 +110,7 @@ module.exports = {
         .setFooter({ text: "Usa /welcome bienvenida o /welcome despedida para configurar" })
         .setTimestamp();
 
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      return interaction.reply({ embeds: [embed], flags: 64 });
     }
 
     // ──────────────────────────────────────────────
@@ -168,7 +168,7 @@ module.exports = {
         return ok(rol ? `Auto-rol configurado: ${rol}` : "Auto-rol **desactivado**.");
       }
       if (sub === "test") {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: 64 });
         const wsCurrent = await welcomeSettings.get(gid);
         if (!wsCurrent?.welcome_channel) return interaction.editReply({ embeds: [E.errorEmbed("Configura primero el canal con `/welcome bienvenida canal`")] });
         const ch = interaction.guild.channels.cache.get(wsCurrent.welcome_channel);
@@ -231,7 +231,7 @@ module.exports = {
         return ok(`Avatar en despedidas: **${interaction.options.getBoolean("mostrar") ? "✅ visible" : "❌ oculto"}**`);
       }
       if (sub === "test") {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: 64 });
         const wsCurrent = await welcomeSettings.get(gid);
         if (!wsCurrent?.goodbye_channel) return interaction.editReply({ embeds: [E.errorEmbed("Configura primero el canal con `/welcome despedida canal`")] });
         const ch = interaction.guild.channels.cache.get(wsCurrent.goodbye_channel);

@@ -19,7 +19,7 @@ module.exports = {
       if (s.maintenance_mode) {
         return interaction.reply({ 
           embeds: [E.maintenanceEmbed(s.maintenance_reason)], 
-          ephemeral: true 
+          flags: 64 
         });
       }
       
@@ -34,7 +34,7 @@ module.exports = {
               .setDescription(`No puedes crear tickets en este momento.\n**Razón:** ${banned.reason || "Sin razón especificada"}`)
               .setFooter({ text: "Si crees que esto es un error, contacta a un administrador" })
           ], 
-          ephemeral: true 
+          flags: 64 
         });
       }
       
@@ -58,7 +58,7 @@ module.exports = {
               .setFooter({ text: "Sistema Premium de Tickets" })
               .setTimestamp()
           ], 
-          ephemeral: true 
+          flags: 64 
         });
       }
       
@@ -102,13 +102,13 @@ module.exports = {
         embeds: [embed], 
         components: [selectMenu], 
         // files: banner ? [banner] : undefined, // Descomentar si usas un banner personalizado
-        ephemeral: true 
+        flags: 64 
       });
     } catch (error) {
       console.error("[CREATE TICKET ERROR]", error);
       return interaction.reply({ 
         embeds: [E.errorEmbed("Ha ocurrido un error al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde.")], 
-        ephemeral: true 
+        flags: 64 
       });
     }
   }

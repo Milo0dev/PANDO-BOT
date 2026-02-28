@@ -184,7 +184,7 @@ module.exports = {
       default:
         await interaction.reply({
           content: "❌ Subcomando no reconocido.",
-          ephemeral: true
+          flags: 64
         });
     }
   },
@@ -261,7 +261,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ No puedes enviar monedas a bots.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -270,7 +270,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ No puedes enviarte monedas a ti mismo.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -281,7 +281,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription(`❌ ${result.message}`)],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -322,7 +322,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription(`❌ Solo tienes ${eco.wallet} monedas en tu wallet.`)],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -353,7 +353,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription(`❌ ${result.message}`)],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -386,7 +386,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("No hay items en esta categoría.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -440,7 +440,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ Item no encontrado. Usa `/eco shop` para ver los items disponibles.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -451,7 +451,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription(`❌ ${result.message}`)],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -508,7 +508,7 @@ module.exports = {
           embeds: [new EmbedBuilder()
             .setColor(0xED4245)
             .setDescription("❌ Debes especificar un trabajo.")],
-          ephemeral: true
+          flags: 64
         });
       }
 
@@ -538,7 +538,7 @@ module.exports = {
           embeds: [new EmbedBuilder()
             .setColor(0xED4245)
             .setDescription(`❌ ${result.message}`)],
-          ephemeral: true
+          flags: 64
         });
       }
 
@@ -571,7 +571,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription(`❌ Solo tienes ${eco.wallet} monedas.`)],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -580,7 +580,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ Minimum bet is 10 coins.")],
-        ephemeral: true
+        flags: 64
       });
     }
 

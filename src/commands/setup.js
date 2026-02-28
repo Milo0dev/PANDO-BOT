@@ -41,7 +41,7 @@ module.exports = {
     const gid = interaction.guild.id;
     const s   = await settings.get(gid);
 
-    const ok  = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
+    const ok  = msg => interaction.reply({ embeds: [E.successEmbed(msg)], flags: 64 });
 
     const channelSubs = { logs: "log_channel", transcripts: "transcript_channel", dashboard: "dashboard_channel", "weekly-report": "weekly_report_channel" };
     if (channelSubs[sub]) {
@@ -95,7 +95,7 @@ module.exports = {
           { name: "🔧 Mant.",   value: s.maintenance_mode ? `🔴 ACTIVO — ${s.maintenance_reason || "Sin razón"}` : "🟢 Desactivado", inline: true },
         )
         .setTimestamp();
-      return interaction.reply({ embeds: [embed], ephemeral: true });
+      return interaction.reply({ embeds: [embed], flags: 64 });
     }
   },
 };

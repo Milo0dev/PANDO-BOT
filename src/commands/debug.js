@@ -26,7 +26,7 @@ module.exports = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ No tienes permiso para usar comandos de debug.")],
-        ephemeral: true 
+        flags: 64 
       });
     }
 
@@ -44,7 +44,7 @@ module.exports = {
       case "voice":
         return this.voice(interaction);
       default:
-        return interaction.reply({ content: "Subcomando desconocido", ephemeral: true });
+        return interaction.reply({ content: "Subcomando desconocido", flags: 64 });
     }
   },
 
@@ -71,7 +71,7 @@ module.exports = {
       )
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   },
 
   async memory(interaction) {
@@ -90,7 +90,7 @@ module.exports = {
       )
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   },
 
   async cache(interaction) {
@@ -115,7 +115,7 @@ module.exports = {
       )
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   },
 
   async guilds(interaction) {
@@ -129,7 +129,7 @@ module.exports = {
     if (guilds.length === 0) {
       return interaction.reply({ 
         content: "No hay servidores conectados",
-        ephemeral: true 
+        flags: 64 
       });
     }
 
@@ -151,7 +151,7 @@ module.exports = {
       })));
     }
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   },
 
   async voice(interaction) {
@@ -164,7 +164,7 @@ module.exports = {
       .setDescription("Las colas de música se gestionan por servidor.")
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   },
 };
 

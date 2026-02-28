@@ -43,7 +43,7 @@ async function handleVerifyStart(interaction) {
   const vs = await verifSettings.get(guild.id); // Solo para configuración del sistema (mode, channel, etc)
 
   if (!vs || !vs.enabled) {
-    return interaction.reply({ embeds: [E.errorEmbed("El sistema de verificación no está activo.")], ephemeral: true });
+    return interaction.reply({ embeds: [E.errorEmbed("El sistema de verificación no está activo.")], flags: 64 });
   }
 
   // Verificar si ya tiene el rol de verificación DESDE SETTINGS
@@ -53,7 +53,7 @@ async function handleVerifyStart(interaction) {
   if (s.verify_role && s.verify_role !== null && member?.roles.cache.has(s.verify_role)) {
     return interaction.reply({
       embeds: [new EmbedBuilder().setColor(E.Colors.SUCCESS).setDescription("✅ ¡Ya estás verificado/a en este servidor!")],
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -91,7 +91,7 @@ async function handleVerifyStart(interaction) {
           "❌ No pude enviarte el código por DM.\n\n" +
           "**Solución:** Ve a Configuración de usuario → Privacidad → activa **Mensajes directos** para este servidor, y vuelve a intentarlo."
         )],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -119,14 +119,14 @@ async function handleVerifyStart(interaction) {
           .setLabel("📩 Reenviar código")
           .setStyle(ButtonStyle.Secondary),
       )],
-      ephemeral: true,
+      flags: 64,
     });
   }
 
   // ── Modo PREGUNTA: mostrar modal con la pregunta
   if (vs.mode === "question") {
     if (!vs.question) {
-      return interaction.reply({ embeds: [E.errorEmbed("No hay pregunta configurada. Usa `/verify pregunta` para configurarla.")], ephemeral: true });
+      return interaction.reply({ embeds: [E.errorEmbed("No hay pregunta configurada. Usa `/verify pregunta` para configurarla.")], flags: 64 });
     }
     const modal = new ModalBuilder()
       .setCustomId("verify_question_modal")
@@ -166,7 +166,7 @@ async function handleVerifyHelp(interaction) {
         { name: "¿Sigues sin acceso?",    value: "Contacta con un administrador del servidor.", inline: false },
       )
       .setTimestamp()],
-    ephemeral: true,
+    flags: 64,
   });
 }
 
@@ -175,7 +175,7 @@ async function handleVerifyHelp(interaction) {
 // ─────────────────────────────────────────────────────
 async function handleEnterCode(interaction) {
   const vs = await verifSettings.get(interaction.guild.id);
-  if (!vs || !vs.enabled) return interaction.reply({ embeds: [E.errorEmbed("La verificación no está activa.")], ephemeral: true });
+  if (!vs || !vs.enabled) return interaction.reply({ embeds: [E.errorEmbed("La verificación no está activa.")], flags: 64 });
 
   const modal = new ModalBuilder()
     .setCustomId("verify_code_modal")
@@ -212,7 +212,7 @@ async function handleCodeModal(interaction) {
       wrong:    "Código **incorrecto**. Inténtalo de nuevo.",
     };
     await verifLogs.add(guild.id, user.id, "failed", `Código incorrecto: ${input}`);
-    return interaction.reply({ embeds: [E.errorEmbed(msgs[result.reason] || "Código inválido.")], ephemeral: true });
+    return interaction.reply({ embeds: [E.errorEmbed(msgs[result.reason] || "Código inválido.")], flags: 64 });
   }
 
   return completeVerification(interaction, guild, s, user);
@@ -234,7 +234,7 @@ async function handleQuestionModal(interaction) {
       embeds: [new EmbedBuilder()
         .setColor(E.Colors.ERROR)
         .setDescription("❌ Respuesta **incorrecta**. Inténtalo de nuevo.\n\n💡 Lee con atención la pregunta y las reglas del servidor.")],
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -250,7 +250,7 @@ async function handleResendCode(interaction) {
   const vs    = await verifSettings.get(guild.id);
 
   if (!vs || vs.mode !== "code") {
-    return interaction.reply({ embeds: [E.errorEmbed("Este modo no usa códigos.")], ephemeral: true });
+    return interaction.reply({ embeds: [E.errorEmbed("Este modo no usa códigos.")], flags: 64 });
   }
 
   const code = await verifCodes.generate(user.id, guild.id);
@@ -262,9 +262,9 @@ async function handleResendCode(interaction) {
         .setDescription(`Tu nuevo código es:\n\n# \`${code}\`\n\n⏱️ Expira en **10 minutos**.`)
         .setFooter({ text: guild.name }).setTimestamp()],
     });
-    return interaction.reply({ embeds: [E.successEmbed("Nuevo código enviado por DM.")], ephemeral: true });
+    return interaction.reply({ embeds: [E.successEmbed("Nuevo código enviado por DM.")], flags: 64 });
   } catch {
-    return interaction.reply({ embeds: [E.errorEmbed("No pude enviarte el DM. Activa los mensajes directos.")], ephemeral: true });
+    return interaction.reply({ embeds: [E.errorEmbed("No pude enviarte el DM. Activa los mensajes directos.")], flags: 64 });
   }
 }
 
@@ -273,7 +273,7 @@ async function handleResendCode(interaction) {
 // ─────────────────────────────────────────────────────
 async function completeVerification(interaction, guild, s, user) {
   const member = await guild.members.fetch(user.id).catch(() => null);
-  if (!member) return interaction.reply({ embeds: [E.errorEmbed("No se encontró tu perfil en el servidor.")], ephemeral: true });
+  if (!member) return interaction.reply({ embeds: [E.errorEmbed("No se encontró tu perfil en el servidor.")], flags: 64 });
 
   // OBTENER verify_role DESDE SETTINGS (ÚNICA FUENTE)
   // Aplicar verify_role desde settings si existe
@@ -299,7 +299,7 @@ async function completeVerification(interaction, guild, s, user) {
       .setDescription(`¡Bienvenido/a a **${guild.name}**, <@${user.id}>! 🎉\nYa tienes acceso completo al servidor.`)
       .setThumbnail(user.displayAvatarURL({ dynamic: true }))
       .setTimestamp()],
-    ephemeral: true,
+    flags: 64,
   });
 
   // DM de confirmación

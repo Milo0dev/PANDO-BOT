@@ -179,7 +179,7 @@ module.exports = {
           embeds: [new EmbedBuilder()
             .setColor(0xED4245)
             .setDescription("❌ Debes estar en un canal de voz para usar este comando.")],
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -189,7 +189,7 @@ module.exports = {
           embeds: [new EmbedBuilder()
             .setColor(0xED4245)
             .setDescription("❌ No tengo permisos para conectarme o hablar en ese canal.")],
-          ephemeral: true,
+          flags: 64,
         });
       }
     }
@@ -299,7 +299,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música reproduciéndose.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -308,7 +308,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -333,7 +333,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música reproduciéndose.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -342,7 +342,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -367,7 +367,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música reproduciéndose.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -376,7 +376,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -393,7 +393,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No se pudo pausar la reproducción.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
         break;
@@ -409,7 +409,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música en la cola.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -418,7 +418,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -435,7 +435,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No se pudo reanudar la reproducción.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
         break;
@@ -451,7 +451,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música en la cola.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -526,7 +526,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música reproduciéndose.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -583,7 +583,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Necesitas al menos 2 canciones en la cola para mezclar.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -592,7 +592,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -617,7 +617,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay canciones en la cola.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -627,7 +627,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription(`❌ Solo hay ${queue.songs.length} canciones en la cola.`)],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -652,7 +652,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ La cola ya está vacía.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -661,7 +661,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -687,7 +687,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música reproduciéndose.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -696,7 +696,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -724,7 +724,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ No hay música reproduciéndose.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -733,7 +733,7 @@ module.exports = {
             embeds: [new EmbedBuilder()
               .setColor(0xED4245)
               .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -760,7 +760,7 @@ module.exports = {
           embeds: [new EmbedBuilder()
             .setColor(0xED4245)
             .setDescription("❌ Subcomando no reconocido.")],
-          ephemeral: true,
+          flags: 64,
         });
     }
   },

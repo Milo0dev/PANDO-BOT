@@ -91,8 +91,8 @@ module.exports = {
     const gid  = interaction.guild.id;
     const vs   = await verifSettings.get(gid);
 
-    const ok = msg => interaction.reply({ embeds: [E.successEmbed(msg)],  ephemeral: true });
-    const er = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],    ephemeral: true });
+    const ok = msg => interaction.reply({ embeds: [E.successEmbed(msg)],  flags: 64 });
+    const er = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],    flags: 64 });
 
     // ──────────────────────────────────────────────
     //   /verify setup
@@ -126,7 +126,7 @@ module.exports = {
             { name: "⚙️ Modo",            value: modeLabels[modo],            inline: true },
             { name: "🔴 Rol no verificado",value: rolNoVerif ? `<@&${rolNoVerif.id}>` : "Ninguno", inline: true },
           ).setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -135,7 +135,7 @@ module.exports = {
     // ──────────────────────────────────────────────
     if (sub === "panel") {
       if (!vs?.channel) return er("Configura primero el canal con `/verify setup`.");
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 });
       await sendVerifPanel(interaction.guild, vs, interaction.client);
       return interaction.editReply({ embeds: [E.successEmbed("Panel de verificación enviado/actualizado.")] });
     }
@@ -305,7 +305,7 @@ module.exports = {
             { name: "📋 Total registros",value: `\`${stats.total}\``,    inline: true },
             { name: "🕐 Actividad reciente", value: recentText, inline: false },
           ).setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -342,7 +342,7 @@ module.exports = {
               { name: "✔️ Respuesta",         value: `\`${vs.question_answer || "?"}\``,           inline: true },
             ] : []),
           ).setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
   },

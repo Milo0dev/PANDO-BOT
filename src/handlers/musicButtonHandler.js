@@ -21,7 +21,7 @@ module.exports = async function handleMusicButtons(interaction) {
       embeds: [new EmbedBuilder()
         .setColor(0xED4245)
         .setDescription("❌ No hay música reproduciéndose.")],
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -32,7 +32,7 @@ module.exports = async function handleMusicButtons(interaction) {
       embeds: [new EmbedBuilder()
         .setColor(0xED4245)
         .setDescription("❌ Debes estar en el mismo canal de voz que el bot.")],
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -45,7 +45,7 @@ module.exports = async function handleMusicButtons(interaction) {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ No hay música reproduciéndose.")],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -91,7 +91,7 @@ module.exports = async function handleMusicButtons(interaction) {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ No hay música en la cola.")],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -189,7 +189,7 @@ module.exports = async function handleMusicButtons(interaction) {
 
     await interaction.reply({
       embeds: [embed],
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -202,7 +202,7 @@ module.exports = async function handleMusicButtons(interaction) {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ Necesitas al menos 2 canciones en la cola para mezclar.")],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -213,7 +213,7 @@ module.exports = async function handleMusicButtons(interaction) {
         .setColor(0x57F287)
         .setDescription(`🔀 Cola mezclada (${queue.songs.length} canciones)`)
         .setTimestamp()],
-      ephemeral: true,
+      flags: 64,
     });
   }
 };

@@ -4,7 +4,7 @@ const { EmbedBuilder } = require("discord.js");
 module.exports = {
   customId: "ticket_rating_*",
   async execute(interaction, client) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
     
     // El ID viene con el formato: ticket_rating_TICKETID_CHANNELID_STAFFID
     const parts = interaction.customId.split("_");

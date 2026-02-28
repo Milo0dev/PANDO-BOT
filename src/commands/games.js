@@ -230,7 +230,7 @@ async function executeAhorcado(interaction) {
 
     const letra = i.values[0];
     if (estado.letrasUsadas.has(letra)) {
-      await i.reply({ content: "¡Ya usaste esa letra! 🔄", ephemeral: true });
+      await i.reply({ content: "¡Ya usaste esa letra! 🔄", flags: 64 });
       return;
     }
     estado.letrasUsadas.add(letra);
@@ -516,7 +516,7 @@ module.exports = {
       default:
         return interaction.reply({
           content: "⚠️ Subcomando no reconocido.",
-          ephemeral: true
+          flags: 64
         });
     }
   }

@@ -46,8 +46,8 @@ module.exports = {
     const sub  = interaction.options.getSubcommand();
     const gid  = interaction.guild.id;
     const ml   = await modlogSettings.get(gid);
-    const ok   = msg => interaction.reply({ embeds: [E.successEmbed(msg)], ephemeral: true });
-    const er   = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],   ephemeral: true });
+    const ok   = msg => interaction.reply({ embeds: [E.successEmbed(msg)], flags: 64 });
+    const er   = msg => interaction.reply({ embeds: [E.errorEmbed(msg)],   flags: 64 });
 
     if (sub === "setup") {
       const canal = interaction.options.getChannel("canal");
@@ -58,7 +58,7 @@ module.exports = {
           .setTitle("✅ Logs de Moderación Activados")
           .setDescription(`Los logs se enviarán a ${canal}.\n\nPor defecto están activados: baneos, desbaneos, edición/eliminación de mensajes, cambios de roles y nicknames.\n\nUsa \`/modlogs config\` para personalizar qué eventos registrar.`)
           .setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -110,7 +110,7 @@ module.exports = {
             { name: "📥 Entradas",           value: yn(mlNow?.log_joins),      inline: true },
             { name: "📤 Salidas",            value: yn(mlNow?.log_leaves),     inline: true },
           ).setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
   },

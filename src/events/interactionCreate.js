@@ -118,7 +118,7 @@ module.exports = {
 
     } catch (err) {
       console.error("[INTERACTION ERROR]", err);
-      const payload = { embeds: [E.errorEmbed("Ocurrió un error inesperado.")], ephemeral: true };
+      const payload = { embeds: [E.errorEmbed("Ocurrió un error inesperado.")], flags: 64 };
       if (interaction.replied || interaction.deferred) await interaction.followUp(payload).catch(() => {});
       else await interaction.reply(payload).catch(() => {});
     }

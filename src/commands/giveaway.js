@@ -50,7 +50,7 @@ module.exports.create = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ Formato de tiempo inválido. Usa: 1s, 1m, 1h, 1d")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -109,7 +109,7 @@ module.exports.create = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ Giveaway no encontrado o no ha terminado.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -118,7 +118,7 @@ module.exports.create = {
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
           .setDescription("❌ No hay participantes para rerappear.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -241,7 +241,7 @@ module.exports.handleGiveawayJoin = async function(interaction, client) {
   if (!giveaway) {
     await interaction.reply({ 
       content: "Este giveaway ya ha terminado.", 
-      ephemeral: true 
+      flags: 64 
     });
     return true;
   }
@@ -249,7 +249,7 @@ module.exports.handleGiveawayJoin = async function(interaction, client) {
   if (giveaway.participants.includes(interaction.user.id)) {
     await interaction.reply({ 
       content: "Ya estás participando en este giveaway!", 
-      ephemeral: true 
+      flags: 64 
     });
     return true;
   }
@@ -258,7 +258,7 @@ module.exports.handleGiveawayJoin = async function(interaction, client) {
 
   await interaction.reply({ 
     content: "¡Estás participando en el giveaway! 🎉", 
-    ephemeral: true 
+    flags: 64 
   });
 
   // Actualizar contador

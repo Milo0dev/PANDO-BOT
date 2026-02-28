@@ -35,7 +35,7 @@ module.exports.stats = {
       const user  = interaction.options.getUser("usuario") || interaction.user;
       const s     = await staffStats.get(guild.id, user.id);
       const rData = await staffRatings.getStaffStats(guild.id, user.id);
-      if (!s && !rData.total) return interaction.reply({ embeds: [E.infoEmbed("📊 Sin datos", `<@${user.id}> no tiene estadísticas aún.`)], ephemeral: true });
+      if (!s && !rData.total) return interaction.reply({ embeds: [E.infoEmbed("📊 Sin datos", `<@${user.id}> no tiene estadísticas aún.`)], flags: 64 });
 
       const avgText = rData.avg ? `${"⭐".repeat(Math.floor(rData.avg))}${rData.avg - Math.floor(rData.avg) >= 0.5 ? "✨" : ""} **${rData.avg}/5** (${rData.total} calificaciones)` : "Sin calificaciones aún";
 
@@ -111,7 +111,7 @@ module.exports.blacklist = {
     if (sub === "add") {
       const user  = interaction.options.getUser("usuario");
       const razon = interaction.options.getString("razon") || "Sin razón";
-      if (user.id === interaction.user.id) return interaction.reply({ embeds: [E.errorEmbed("No puedes bloquearte a ti mismo.")], ephemeral: true });
+      if (user.id === interaction.user.id) return interaction.reply({ embeds: [E.errorEmbed("No puedes bloquearte a ti mismo.")], flags: 64 });
       await blacklist.add(user.id, interaction.guild.id, razon, interaction.user.id);
       return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.ERROR).setTitle("🚫 Usuario bloqueado").addFields({ name: "👤 Usuario", value: `${user.tag}`, inline: true }, { name: "📋 Razón", value: razon, inline: true }, { name: "🛡️ Por", value: `<@${interaction.user.id}>`, inline: true }).setTimestamp()] });
     }
@@ -122,15 +122,15 @@ module.exports.blacklist = {
     }
     if (sub === "list") {
       const bl = await blacklist.getAll(interaction.guild.id);
-      if (!bl.length) return interaction.reply({ embeds: [E.infoEmbed("🚫 Lista Negra", "No hay usuarios bloqueados.")], ephemeral: true });
+      if (!bl.length) return interaction.reply({ embeds: [E.infoEmbed("🚫 Lista Negra", "No hay usuarios bloqueados.")], flags: 64 });
       const list = bl.slice(0, 20).map((b, i) => `**${i+1}.** <@${b.user_id}> — ${b.reason || "Sin razón"}`).join("\n");
-      return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🚫 Lista Negra (${bl.length})`).setColor(E.Colors.ERROR).setDescription(list).setTimestamp()], ephemeral: true });
+      return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🚫 Lista Negra (${bl.length})`).setColor(E.Colors.ERROR).setDescription(list).setTimestamp()], flags: 64 });
     }
     if (sub === "check") {
       const user  = interaction.options.getUser("usuario");
       const entry = await blacklist.check(user.id, interaction.guild.id);
-      if (!entry) return interaction.reply({ embeds: [E.successEmbed(`<@${user.id}> **no** está en la lista negra.`)], ephemeral: true });
-      return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.ERROR).setTitle("🚫 En lista negra").addFields({ name: "📋 Razón", value: entry.reason || "Sin razón", inline: true }, { name: "🛡️ Por", value: `<@${entry.added_by}>`, inline: true }).setTimestamp()], ephemeral: true });
+      if (!entry) return interaction.reply({ embeds: [E.successEmbed(`<@${user.id}> **no** está en la lista negra.`)], flags: 64 });
+      return interaction.reply({ embeds: [new EmbedBuilder().setColor(E.Colors.ERROR).setTitle("🚫 En lista negra").addFields({ name: "📋 Razón", value: entry.reason || "Sin razón", inline: true }, { name: "🛡️ Por", value: `<@${entry.added_by}>`, inline: true }).setTimestamp()], flags: 64 });
     }
   },
 };
@@ -149,27 +149,27 @@ module.exports.tag = {
       const name = interaction.options.getString("nombre");
       const user = interaction.options.getUser("usuario");
       const t    = await tags.get(interaction.guild.id, name);
-      if (!t) return interaction.reply({ embeds: [E.errorEmbed(`Tag **${name}** no existe.`)], ephemeral: true });
+      if (!t) return interaction.reply({ embeds: [E.errorEmbed(`Tag **${name}** no existe.`)], flags: 64 });
       await tags.use(interaction.guild.id, name);
       return interaction.reply({ content: user ? `<@${user.id}>\n${t.content}` : t.content });
     }
     if (sub === "create") {
       try {
         await tags.create(interaction.guild.id, interaction.options.getString("nombre").toLowerCase(), interaction.options.getString("contenido"), interaction.user.id);
-        return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** creado.`)], ephemeral: true });
-      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe un tag con ese nombre.`)], ephemeral: true }); }
+        return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** creado.`)], flags: 64 });
+      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe un tag con ese nombre.`)], flags: 64 }); }
     }
     if (sub === "edit") {
       const r = await tags.update(interaction.guild.id, interaction.options.getString("nombre"), interaction.options.getString("contenido"));
-      return interaction.reply({ embeds: [r ? E.successEmbed(`Tag **${r.name}** actualizado.`) : E.errorEmbed("Tag no encontrado.")], ephemeral: true });
+      return interaction.reply({ embeds: [r ? E.successEmbed(`Tag **${r.name}** actualizado.`) : E.errorEmbed("Tag no encontrado.")], flags: 64 });
     }
     if (sub === "delete") {
       await tags.delete(interaction.guild.id, interaction.options.getString("nombre"));
-      return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** eliminado.`)], ephemeral: true });
+      return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** eliminado.`)], flags: 64 });
     }
     if (sub === "list") {
       const all = await tags.getAll(interaction.guild.id);
-      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🏷️ Tags", "No hay tags. Usa `/tag create` para crear uno.")], ephemeral: true });
+      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🏷️ Tags", "No hay tags. Usa `/tag create` para crear uno.")], flags: 64 });
       const list = all.slice(0, 25).map((t, i) => `**${i+1}.** \`${t.name}\` — ${t.uses} usos`).join("\n");
       return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🏷️ Tags (${all.length})`).setColor(E.Colors.PRIMARY).setDescription(list).setFooter({ text: "Usa /tag use [nombre] para enviar" }).setTimestamp()] });
     }
@@ -196,23 +196,23 @@ module.exports.autoresponse = {
       const respuesta = interaction.options.getString("respuesta");
       try {
         await autoResponses.create(interaction.guild.id, trigger, respuesta, interaction.user.id);
-        return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta para **"${trigger}"** creada.\nSe activará cuando un usuario mencione esa palabra en un ticket.`)], ephemeral: true });
-      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe una auto-respuesta para **"${trigger}"**.`)], ephemeral: true }); }
+        return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta para **"${trigger}"** creada.\nSe activará cuando un usuario mencione esa palabra en un ticket.`)], flags: 64 });
+      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe una auto-respuesta para **"${trigger}"**.`)], flags: 64 }); }
     }
     if (sub === "delete") {
       const trigger = interaction.options.getString("trigger");
       await autoResponses.delete(interaction.guild.id, trigger);
-      return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta **"${trigger}"** eliminada.`)], ephemeral: true });
+      return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta **"${trigger}"** eliminada.`)], flags: 64 });
     }
     if (sub === "toggle") {
       const trigger = interaction.options.getString("trigger");
       const r = await autoResponses.toggle(interaction.guild.id, trigger);
-      if (!r) return interaction.reply({ embeds: [E.errorEmbed("Auto-respuesta no encontrada.")], ephemeral: true });
-      return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta **"${trigger}"**: ${r.enabled ? "✅ Activada" : "❌ Desactivada"}`)], ephemeral: true });
+      if (!r) return interaction.reply({ embeds: [E.errorEmbed("Auto-respuesta no encontrada.")], flags: 64 });
+      return interaction.reply({ embeds: [E.successEmbed(`Auto-respuesta **"${trigger}"**: ${r.enabled ? "✅ Activada" : "❌ Desactivada"}`)], flags: 64 });
     }
     if (sub === "list") {
       const all = await autoResponses.getAll(interaction.guild.id);
-      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🤖 Auto-respuestas", "No hay auto-respuestas. Usa `/autoresponse add` para crear una.")], ephemeral: true });
+      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🤖 Auto-respuestas", "No hay auto-respuestas. Usa `/autoresponse add` para crear una.")], flags: 64 });
       const list = all.slice(0, 20).map((a, i) => `**${i+1}.** ${a.enabled ? "✅" : "❌"} \`${a.trigger}\` — ${a.uses} activaciones`).join("\n");
       return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🤖 Auto-respuestas (${all.length})`).setColor(E.Colors.PRIMARY).setDescription(list).setTimestamp()] });
     }
@@ -253,7 +253,7 @@ module.exports.closeAll = {
     .addStringOption(o => o.setName("razon").setDescription("Razón del cierre masivo").setRequired(false)),
   async execute(interaction) {
     const razon = interaction.options.getString("razon") || "Cierre masivo por administrador";
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
     const open = await tickets.getAllOpen(interaction.guild.id);
     let closed = 0;
     for (const t of open) {
@@ -309,7 +309,7 @@ module.exports.lockdown = {
       const canal  = interaction.options.getChannel("canal") || interaction.channel;
       const locking = sub === "lock";
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 });
 
       try {
         // Aplicar el permiso: deny SendMessages para lock, null (heredar) para unlock
@@ -349,7 +349,7 @@ module.exports.lockdown = {
       const accion  = interaction.options.getString("accion");
       const locking = accion === "lock";
 
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ flags: 64 });
 
       const textChannels = guild.channels.cache.filter(c =>
         c.type === 0 && // GuildText

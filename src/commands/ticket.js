@@ -275,7 +275,7 @@ module.exports = {
       default:
         return interaction.reply({
           embeds: [E.errorEmbed("Subcomando no reconocido.")],
-          ephemeral: true
+          flags: 64
         });
     }
   },
@@ -293,7 +293,7 @@ async function handleClose(interaction) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("Este no es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -301,7 +301,7 @@ async function handleClose(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el **staff** puede cerrar tickets.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -316,7 +316,7 @@ async function handleReopen(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede reabrir tickets.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -331,7 +331,7 @@ async function handleClaim(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede reclamar tickets.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -346,7 +346,7 @@ async function handleUnclaim(interaction) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -354,7 +354,7 @@ async function handleUnclaim(interaction) {
   if (!isStaff(interaction.member, s) && interaction.user.id !== t.claimed_by) {
     return interaction.reply({
       embeds: [E.errorEmbed("No tienes permiso para liberar este ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -369,7 +369,7 @@ async function handleAssign(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede asignar tickets.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -384,7 +384,7 @@ async function handleAdd(interaction) {
   if (!await getTicket(interaction.channel)) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -392,7 +392,7 @@ async function handleAdd(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el **staff** puede añadir usuarios al ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -406,7 +406,7 @@ async function handleRemove(interaction) {
   if (!await getTicket(interaction.channel)) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -414,7 +414,7 @@ async function handleRemove(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el **staff** puede quitar usuarios del ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -428,7 +428,7 @@ async function handleRename(interaction) {
   if (!await getTicket(interaction.channel)) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -436,7 +436,7 @@ async function handleRename(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede renombrar.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -459,7 +459,7 @@ async function handlePriority(interaction) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -467,7 +467,7 @@ async function handlePriority(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede cambiar la prioridad.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -504,7 +504,7 @@ async function handleMove(interaction) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -512,7 +512,7 @@ async function handleMove(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede mover tickets.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -527,7 +527,7 @@ async function handleMove(interaction) {
   if (!options.length) {
     return interaction.reply({
       embeds: [E.errorEmbed("No hay otras categorías disponibles.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -543,7 +543,7 @@ async function handleMove(interaction) {
         .setDescription("📂 Selecciona la categoría a la que mover el ticket:")
     ],
     components: [new ActionRowBuilder().addComponents(menu)],
-    ephemeral: true
+    flags: 64
   });
 }
 
@@ -555,7 +555,7 @@ async function handleTranscript(interaction) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -563,11 +563,11 @@ async function handleTranscript(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede generar transcripciones.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
 
   try {
     const { attachment } = await generateTranscript(interaction.channel, t, interaction.guild);
@@ -590,7 +590,7 @@ async function handleInfo(interaction) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -598,13 +598,13 @@ async function handleInfo(interaction) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el **staff** puede ver la información del ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
   return interaction.reply({
     embeds: [E.ticketInfo(t)],
-    ephemeral: true
+    flags: 64
   });
 }
 
@@ -618,7 +618,7 @@ async function handleHistory(interaction) {
   if (user.id !== interaction.user.id && !isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede ver el historial de otros usuarios.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -630,7 +630,7 @@ async function handleHistory(interaction) {
   if (!userTickets.length) {
     return interaction.reply({
       embeds: [E.infoEmbed("📜 Historial", `<@${user.id}> no tiene tickets en este servidor.`)],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -660,7 +660,7 @@ async function handleHistory(interaction) {
     embed.addFields({ name: "🔒 Últimos cerrados", value: lastClosed });
   }
 
-  return interaction.reply({ embeds: [embed], ephemeral: true });
+  return interaction.reply({ embeds: [embed], flags: 64 });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -671,7 +671,7 @@ async function handleNoteCommands(interaction, subcommand) {
   if (!t) {
     return interaction.reply({
       embeds: [E.errorEmbed("No es un canal de ticket.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -679,7 +679,7 @@ async function handleNoteCommands(interaction, subcommand) {
   if (!isStaff(interaction.member, s)) {
     return interaction.reply({
       embeds: [E.errorEmbed("Solo el staff puede ver/añadir notas.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -690,14 +690,14 @@ async function handleNoteCommands(interaction, subcommand) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
       return interaction.reply({
         embeds: [E.errorEmbed("Solo administradores pueden borrar todas las notas.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
     await notes.clear(t.ticket_id);
     return interaction.reply({
       embeds: [E.successEmbed("Todas las notas del ticket han sido borradas.")],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -713,7 +713,7 @@ async function handleNoteCommands(interaction, subcommand) {
           `Límite de notas alcanzado (**${MAX_NOTES_PER_TICKET}** notas máximo por ticket. ` +
           `Usa \`/ticket note clear\` para borrar si es necesario.)`
         )],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -731,7 +731,7 @@ async function handleNoteCommands(interaction, subcommand) {
           })
           .setTimestamp()
       ],
-      ephemeral: true
+      flags: 64
     });
   }
 
@@ -743,7 +743,7 @@ async function handleNoteCommands(interaction, subcommand) {
     if (!nl.length) {
       return interaction.reply({
         embeds: [E.infoEmbed("📝 Notas", "No hay notas en este ticket.")],
-        ephemeral: true
+        flags: 64
       });
     }
 
@@ -757,7 +757,7 @@ async function handleNoteCommands(interaction, subcommand) {
           .setDescription(txt)
           .setTimestamp()
       ],
-      ephemeral: true
+      flags: 64
     });
   }
 }

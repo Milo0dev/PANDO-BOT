@@ -173,7 +173,7 @@ async function createTicket(interaction, categoryId, answers = []) {
 
   // Mantenimiento
   if (s.maintenance_mode) {
-    return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], ephemeral: true });
+    return interaction.reply({ embeds: [E.maintenanceEmbed(s.maintenance_reason)], flags: 64 });
   }
 
   // Blacklist
@@ -189,7 +189,7 @@ async function createTicket(interaction, categoryId, answers = []) {
   }
 
   // Crear el ticket
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
 
   try {
     const ticketNumber = await settings.incrementCounter(guild.id);
@@ -643,7 +643,7 @@ async function reopenTicket(interaction) {
         })
         .setTimestamp()
     ], 
-    ephemeral: true 
+    flags: 64 
   });
 }
 
@@ -652,7 +652,7 @@ async function reopenTicket(interaction) {
 // ─────────────────────────────────────────────────────
 async function claimTicket(interaction) {
   // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
   console.log('[CLAIM] Iniciando proceso de reclamación de ticket');
 
   const ticket = await tickets.get(interaction.channel.id);
@@ -852,7 +852,7 @@ async function claimTicket(interaction) {
 
 async function unclaimTicket(interaction) {
   // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
 
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
@@ -936,7 +936,7 @@ async function unclaimTicket(interaction) {
 // ─────────────────────────────────────────────────────
 async function assignTicket(interaction, staffUser) {
   // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
 
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
@@ -1080,7 +1080,7 @@ async function removeUser(interaction, user) {
 // ─────────────────────────────────────────────────────
 async function moveTicket(interaction, newCategoryId) {
   // Respuesta Inmediata: Añadir deferReply al inicio para evitar timeout
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
 
   const ticket = await tickets.get(interaction.channel.id);
   if (!ticket) return replyError(interaction, "Este no es un canal de ticket.");
@@ -1330,7 +1330,7 @@ function replyError(interaction, msg) {
         })
     ],
 
-    ephemeral: true 
+    flags: 64 
   };
   
   return interaction.replied || interaction.deferred

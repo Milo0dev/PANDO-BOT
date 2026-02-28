@@ -17,7 +17,7 @@ module.exports.away = {
     .addSubcommand(s => s.setName("off").setDescription("Volver a estar disponible")),
   async execute(interaction) {
     const s = await settings.get(interaction.guild.id);
-    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede usar este comando.")], ephemeral: true });
+    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede usar este comando.")], flags: 64 });
 
     const sub = interaction.options.getSubcommand();
     if (sub === "on") {
@@ -31,7 +31,7 @@ module.exports.away = {
           .setDescription(`Has marcado tu estado como **ausente**.\n${razon ? `**Razón:** ${razon}` : ""}`)
           .setFooter({ text: "Usa /away off para volver a estar disponible" })
           .setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
     if (sub === "off") {
@@ -42,7 +42,7 @@ module.exports.away = {
           .setColor(E.Colors.SUCCESS)
           .setDescription("✅ Has vuelto a estar **disponible** para atender tickets.")
           .setTimestamp()],
-        ephemeral: true,
+        flags: 64,
       });
     }
   },
@@ -53,7 +53,7 @@ module.exports.staffList = {
   data: new SlashCommandBuilder().setName("stafflist").setDescription("👥 Ver el estado actual del equipo de staff"),
   async execute(interaction) {
     const s     = await settings.get(interaction.guild.id);
-    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede ver este comando.")], ephemeral: true });
+    if (!isStaff(interaction.member, s)) return interaction.reply({ embeds: [E.errorEmbed("Solo el staff puede ver este comando.")], flags: 64 });
 
     const away  = await staffStatus.getAway(interaction.guild.id);
     const total = await tickets.getAllOpen(interaction.guild.id);
@@ -71,7 +71,7 @@ module.exports.staffList = {
       )
       .setTimestamp();
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   },
 };
 
@@ -80,7 +80,7 @@ module.exports.refreshDashboard = {
   data: new SlashCommandBuilder().setName("refreshdashboard").setDescription("🔄 Actualizar el dashboard manualmente")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
     await updateDashboard(interaction.guild);
     return interaction.editReply({ embeds: [E.successEmbed("Dashboard actualizado correctamente.")] });
   },
@@ -91,11 +91,11 @@ module.exports.myTickets = {
   data: new SlashCommandBuilder().setName("mytickets").setDescription("🎫 Ver mis tickets abiertos"),
   async execute(interaction) {
     const open = await tickets.getByUser(interaction.user.id, interaction.guild.id, "open");
-    if (!open.length) return interaction.reply({ embeds: [E.infoEmbed("🎫 Mis Tickets", "No tienes tickets abiertos.")], ephemeral: true });
+    if (!open.length) return interaction.reply({ embeds: [E.infoEmbed("🎫 Mis Tickets", "No tienes tickets abiertos.")], flags: 64 });
     const list = open.map(t => `▸ **#${t.ticket_id}** <#${t.channel_id}> — ${t.category} — ${E.priorityLabel(t.priority)}`).join("\n");
     return interaction.reply({
       embeds: [new EmbedBuilder().setTitle(`🎫 Mis Tickets (${open.length})`).setColor(E.Colors.PRIMARY).setDescription(list).setTimestamp()],
-      ephemeral: true,
+      flags: 64,
     });
   },
 };

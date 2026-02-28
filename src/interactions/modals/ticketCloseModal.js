@@ -13,7 +13,7 @@ module.exports = {
       if (!ticket) {
         return interaction.reply({ 
           embeds: [E.errorEmbed("Este canal no es un ticket válido.")], 
-          ephemeral: true 
+          flags: 64 
         });
       }
       
@@ -21,7 +21,7 @@ module.exports = {
       if (ticket.status === "closed") {
         return interaction.reply({ 
           embeds: [E.errorEmbed("Este ticket ya ha sido cerrado.")], 
-          ephemeral: true 
+          flags: 64 
         });
       }
 
@@ -39,7 +39,7 @@ module.exports = {
               .setDescription("Solo el creador del ticket o miembros del staff pueden cerrar este ticket.")
               .setFooter({ text: "Sistema Premium de Tickets" })
           ], 
-          ephemeral: true 
+          flags: 64 
         });
       }
 
@@ -86,7 +86,7 @@ module.exports = {
             .setTitle("✅ Procesando cierre")
             .setDescription("El ticket se cerrará en 5 segundos.")
         ], 
-        ephemeral: true 
+        flags: 64 
       });
       
       // Esperar 5 segundos antes de cerrar el ticket
@@ -111,7 +111,7 @@ module.exports = {
       console.error("[TICKET CLOSE MODAL ERROR]", error);
       return interaction.reply({ 
         embeds: [E.errorEmbed("Ha ocurrido un error al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde.")], 
-        ephemeral: true 
+        flags: 64 
       });
     }
   }

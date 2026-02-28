@@ -136,7 +136,7 @@ module.exports = {
     if (!sugId || !["up", "down", "approve", "reject"].includes(action)) {
       return interaction.reply({
         content: "❌ Interacción no válida.",
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -149,7 +149,7 @@ module.exports = {
       if (!suggestion) {
         return interaction.reply({
           content: "❌ Esta sugerencia ya no existe.",
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -163,7 +163,7 @@ module.exports = {
         if (suggestion.status !== "pending") {
           return interaction.reply({
             content: "❌ Esta sugerencia ya fue revisada y no admite más votos.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -172,7 +172,7 @@ module.exports = {
         if (!updated) {
           return interaction.reply({
             content: "❌ Error al registrar tu voto.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -183,7 +183,7 @@ module.exports = {
         await interaction.message.edit({ embeds: [embed], components });
         return interaction.reply({
           content: `✅ Tu voto ha sido registrado. (${action === "up" ? "👍" : "👎"})`,
-          ephemeral: true,
+          flags: 64,
         });
       }
 
@@ -192,14 +192,14 @@ module.exports = {
         if (!isAdmin) {
           return interaction.reply({
             content: "❌ Necesitas permisos de **Gestionar Mensajes** para revisar sugerencias.",
-            ephemeral: true,
+            flags: 64,
           });
         }
 
         if (suggestion.status !== "pending") {
           return interaction.reply({
             content: `❌ Esta sugerencia ya fue ${STATUS_LABEL[suggestion.status]}.`,
-            ephemeral: true,
+            flags: 64,
           });
         }
 
@@ -272,14 +272,14 @@ module.exports = {
 
         return interaction.reply({
           content: `✅ Sugerencia **#${updated.num}** marcada como **${STATUS_LABEL[newStatus]}**.`,
-          ephemeral: true,
+          flags: 64,
         });
       }
     } catch (error) {
       console.error("[SUGGEST BUTTON ERROR]", error);
       return interaction.reply({
         content: "❌ Ocurrió un error al procesar la interacción.",
-        ephemeral: true,
+        flags: 64,
       });
     }
   },
