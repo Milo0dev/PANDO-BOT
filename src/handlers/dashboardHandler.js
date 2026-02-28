@@ -72,10 +72,20 @@ async function updateDashboard(guild, isManual = false) {
     const lb        = await staffStats.getLeaderboard(guild.id);
     const embed     = dashboardEmbed(stats, guild, awayStaff, lb);
 
+    // Componente: Botón de actualizar panel
+    const refreshButton = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId("refresh_dashboard")
+          .setLabel("Actualizar Panel")
+          .setStyle(ButtonStyle.Secondary)
+          .setEmoji("🔄")
+      );
+
     if (s.dashboard_message_id) {
       try {
         const msg = await channel.messages.fetch(s.dashboard_message_id);
-        await msg.edit({ embeds: [embed] });
+        await msg.edit({ embeds: [embed], components: [refreshButton] });
         if (isManual) {
           console.log(`\x1b[32m[DASHBOARD] ✅ Panel actualizado correctamente en el canal ${channel.name}\x1b[0m`);
         }
@@ -83,7 +93,7 @@ async function updateDashboard(guild, isManual = false) {
       } catch {}
     }
 
-    const msg = await channel.send({ embeds: [embed] });
+    const msg = await channel.send({ embeds: [embed], components: [refreshButton] });
     if (isManual) {
       console.log(`\x1b[32m[DASHBOARD] ✅ Panel actualizado correctamente en el canal ${channel.name}\x1b[0m`);
     }

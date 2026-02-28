@@ -141,44 +141,52 @@ function ticketLog(ticket, user, action, details = {}, client) {
 //   DASHBOARD
 // ─────────────────────────────────────────────────────
 function dashboardEmbed(stats, guild, awayStaff, leaderboard, client) {
-  const rating    = stats.avg_rating     ? `${stats.avg_rating.toFixed(1)}/5 ⭐`    : "Sin datos";
-  const respTime  = stats.avg_response_minutes ? formatMinutes(stats.avg_response_minutes)  : "Sin datos";
-  const closeTime = stats.avg_close_minutes    ? formatMinutes(stats.avg_close_minutes)     : "Sin datos";
+  // Backticks para bloques de código Discord
+  const bt = String.fromCharCode(96, 96, 96);
+  
+  // Campo 1: Estadísticas Globales con formato de tabla YML
+  const statsField = bt + "yml\n" +
+    "  📊 Total de Tickets    :: " + (stats.total || 0) + "\n" +
+    "  🟢 Tickets Abiertos   :: " + (stats.open || 0) + "\n" +
+    "  🔴 Cerrados Hoy       :: " + (stats.closedToday || 0) + "\n" +
+    "  📅 Abiertos Hoy       :: " + (stats.openedToday || 0) + "\n" + bt;
 
-  const topCats = stats.topCategories?.length
-    ? stats.topCategories.map(([cat, count]) => `▸ ${cat}: **${count}**`).join("\n")
-    : "Sin datos";
+  // Campo 2: Top Staff con medallas
+  const medals = ["🥇", "🥈", "🥉"];
+  let topStaffField;
+  if (leaderboard && leaderboard.length > 0) {
+    topStaffField = bt + "yml\n" + leaderboard.slice(0, 3).map((s, i) => 
+      medals[i] + " #" + (i + 1) + " <@" + s.staff_id + "> :: " + s.tickets_closed + " cerrados"
+    ).join("\n") + "\n" + bt;
+  } else {
+    topStaffField = bt + "diff\n- Aún no hay datos\n" + bt;
+  }
 
-  const topStaff = leaderboard.slice(0, 3).length
-    ? leaderboard.slice(0, 3).map((s, i) => `${["🥇","🥈","🥉"][i]} <@${s.staff_id}> — **${s.tickets_closed}** cerrados`).join("\n")
-    : "Sin actividad";
-
-  const awayText = awayStaff.length
-    ? awayStaff.map(s => `▸ <@${s.staff_id}> — ${s.away_reason || "Sin razón"}`).join("\n")
-    : "✅ Todo el staff disponible";
+  // Campo 3: Staff Ausente
+  let awayField;
+  if (awayStaff && awayStaff.length > 0) {
+    awayField = bt + "yml\n" + awayStaff.map(s => 
+      "⏸️ <@" + s.staff_id + "> :: " + (s.away_reason || "Sin razón")
+    ).join("\n") + "\n" + bt;
+  } else {
+    awayField = bt + "diff\n+ Todo el equipo está activo ✅\n" + bt;
+  }
 
   return new EmbedBuilder()
-    .setTitle(`📊 Dashboard — ${guild.name}`)
-    .setColor(Colors.PRIMARY)
-    .setThumbnail(guild.iconURL({ dynamic: true }))
+    .setAuthor({
+      name: "📊 Centro de Control y Estadísticas",
+      iconURL: guild.iconURL({ dynamic: true })
+    })
+    .setTitle("📊 Centro de Control y Estadísticas")
+    .setColor(Colors.DARK)
+    .setDescription("📡 *Este panel se actualiza en tiempo real*")
     .addFields(
-      { name: "━━━ 🎫 Tickets ━━━", value: "\u200b", inline: false },
-      { name: "🟢 Abiertos",       value: `\`${stats.open}\``,         inline: true },
-      { name: "🔒 Cerrados",       value: `\`${stats.closed}\``,       inline: true },
-      { name: "📊 Total",          value: `\`${stats.total}\``,        inline: true },
-      { name: "📅 Hoy abiertos",   value: `\`${stats.openedToday}\``,  inline: true },
-      { name: "📅 Hoy cerrados",   value: `\`${stats.closedToday}\``,  inline: true },
-      { name: "📆 Esta semana",    value: `\`${stats.openedWeek}\``,   inline: true },
-      { name: "━━━ ⚡ Rendimiento ━━━", value: "\u200b", inline: false },
-      { name: "⭐ Calificación",   value: rating,    inline: true },
-      { name: "⚡ Tiempo respuesta",value: respTime,  inline: true },
-      { name: "⏱️ Tiempo cierre",  value: closeTime, inline: true },
-      { name: "━━━ 📁 Categorías más usadas ━━━", value: topCats, inline: false },
-      { name: "━━━ 🏆 Top Staff ━━━",             value: topStaff, inline: false },
-      { name: "━━━ 😴 Staff Ausente ━━━",          value: awayText, inline: false },
+      { name: "📈 Estadísticas Globales", value: statsField, inline: false },
+      { name: "🏆 Top Staff", value: topStaffField, inline: false },
+      { name: "💤 Staff Ausente", value: awayField, inline: false }
     )
     .setFooter({ 
-      text: `Última actualización`,
+      text: "🔄 Actualización automática cada 30s",
       iconURL: client?.user?.displayAvatarURL({ dynamic: true })
     })
     .setTimestamp();
