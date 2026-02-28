@@ -1,9 +1,11 @@
-const { Collection } = require("discord.js");
+const { Collection, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const { resolveCommand } = require("../utils/commandUtils");
 const E = require("../utils/embeds");
 const { handleVerif } = require('../handlers/verifHandler');
+const { handleTagModal } = require("../commands/tag");
+const { tags } = require("../utils/database");
 
 // Cargar handlers dinámicamente
 const buttons = new Collection();
@@ -90,6 +92,33 @@ module.exports = {
       // Manejar botones
       if (interaction.isButton()) {
         if (interaction.customId.startsWith('verify_')) { await handleVerif(interaction); return; }
+        
+        // Manejar botones de confirmación de eliminación de tags
+        if (interaction.customId.startsWith('tag_delete_confirm_')) {
+          const tagName = interaction.customId.replace('tag_delete_confirm_', '');
+          try {
+            await tags.delete(interaction.guild.id, tagName);
+            return interaction.update({
+              embeds: [new EmbedBuilder().setColor(0x57F287).setDescription(`✅ El tag **${tagName}** ha sido eliminado.`)],
+              components: [],
+            });
+          } catch (error) {
+            console.error("[TAG DELETE BUTTON ERROR]", error);
+            return interaction.update({
+              embeds: [E.errorEmbed("Ocurrió un error al eliminar el tag.")],
+              components: [],
+            });
+          }
+        }
+        
+        // Botón cancelar eliminación
+        if (interaction.customId === 'tag_delete_cancel') {
+          return interaction.update({
+            embeds: [new EmbedBuilder().setColor(0x5865F2).setDescription("❌ Eliminación cancelada.")],
+            components: [],
+          });
+        }
+        
         const handler = findHandler(buttons, interaction.customId);
         if (handler) {
           await handler.execute(interaction, client);
@@ -109,6 +138,13 @@ module.exports = {
       // Manejar modals
       if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('verify_')) { await handleVerif(interaction); return; }
+        
+        // Manejar modals de tags
+        if (interaction.customId.startsWith('tag_create_')) {
+          await handleTagModal(interaction);
+          return;
+        }
+        
         const handler = findHandler(modals, interaction.customId);
         if (handler) {
           await handler.execute(interaction, client);
