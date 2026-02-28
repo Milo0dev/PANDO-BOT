@@ -4,7 +4,6 @@ const path = require("path");
 const { resolveCommand } = require("../utils/commandUtils");
 const E = require("../utils/embeds");
 const { handleVerif } = require('../handlers/verifHandler');
-const { handleTagModal } = require("../commands/tag");
 const { tags } = require("../utils/database");
 
 // Cargar handlers dinámicamente
@@ -139,12 +138,7 @@ module.exports = {
       if (interaction.isModalSubmit()) {
         if (interaction.customId.startsWith('verify_')) { await handleVerif(interaction); return; }
         
-        // Manejar modals de tags
-        if (interaction.customId.startsWith('tag_create_')) {
-          await handleTagModal(interaction);
-          return;
-        }
-        
+        // Los modales de tags se manejan dinámicamente desde src/interactions/modals/
         const handler = findHandler(modals, interaction.customId);
         if (handler) {
           await handler.execute(interaction, client);

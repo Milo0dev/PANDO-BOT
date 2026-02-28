@@ -135,52 +135,6 @@ module.exports.blacklist = {
   },
 };
 
-// ────── /tag ────────────────────────────────────────────────────────
-module.exports.tag = {
-  data: new SlashCommandBuilder().setName("tag").setDescription("🏷️ Respuestas rápidas (tags)")
-    .addSubcommand(s => s.setName("use").setDescription("Usar un tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setAutocomplete(true)).addUserOption(o => o.setName("usuario").setDescription("Mencionar usuario").setRequired(false)))
-    .addSubcommand(s => s.setName("create").setDescription("Crear tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setMaxLength(32)).addStringOption(o => o.setName("contenido").setDescription("Contenido").setRequired(true).setMaxLength(1900)))
-    .addSubcommand(s => s.setName("edit").setDescription("Editar tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setAutocomplete(true)).addStringOption(o => o.setName("contenido").setDescription("Nuevo contenido").setRequired(true).setMaxLength(1900)))
-    .addSubcommand(s => s.setName("delete").setDescription("Eliminar tag").addStringOption(o => o.setName("nombre").setDescription("Nombre").setRequired(true).setAutocomplete(true)))
-    .addSubcommand(s => s.setName("list").setDescription("Ver todos los tags")),
-  async execute(interaction) {
-    const sub = interaction.options.getSubcommand();
-    if (sub === "use") {
-      const name = interaction.options.getString("nombre");
-      const user = interaction.options.getUser("usuario");
-      const t    = await tags.get(interaction.guild.id, name);
-      if (!t) return interaction.reply({ embeds: [E.errorEmbed(`Tag **${name}** no existe.`)], flags: 64 });
-      await tags.use(interaction.guild.id, name);
-      return interaction.reply({ content: user ? `<@${user.id}>\n${t.content}` : t.content });
-    }
-    if (sub === "create") {
-      try {
-        await tags.create(interaction.guild.id, interaction.options.getString("nombre").toLowerCase(), interaction.options.getString("contenido"), interaction.user.id);
-        return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** creado.`)], flags: 64 });
-      } catch { return interaction.reply({ embeds: [E.errorEmbed(`Ya existe un tag con ese nombre.`)], flags: 64 }); }
-    }
-    if (sub === "edit") {
-      const r = await tags.update(interaction.guild.id, interaction.options.getString("nombre"), interaction.options.getString("contenido"));
-      return interaction.reply({ embeds: [r ? E.successEmbed(`Tag **${r.name}** actualizado.`) : E.errorEmbed("Tag no encontrado.")], flags: 64 });
-    }
-    if (sub === "delete") {
-      await tags.delete(interaction.guild.id, interaction.options.getString("nombre"));
-      return interaction.reply({ embeds: [E.successEmbed(`Tag **${interaction.options.getString("nombre")}** eliminado.`)], flags: 64 });
-    }
-    if (sub === "list") {
-      const all = await tags.getAll(interaction.guild.id);
-      if (!all.length) return interaction.reply({ embeds: [E.infoEmbed("🏷️ Tags", "No hay tags. Usa `/tag create` para crear uno.")], flags: 64 });
-      const list = all.slice(0, 25).map((t, i) => `**${i+1}.** \`${t.name}\` — ${t.uses} usos`).join("\n");
-      return interaction.reply({ embeds: [new EmbedBuilder().setTitle(`🏷️ Tags (${all.length})`).setColor(E.Colors.PRIMARY).setDescription(list).setFooter({ text: "Usa /tag use [nombre] para enviar" }).setTimestamp()] });
-    }
-  },
-  async autocomplete(interaction) {
-    const focused = interaction.options.getFocused().toLowerCase();
-    const all = (await tags.getAll(interaction.guild.id)).filter(t => t.name.includes(focused)).slice(0, 25);
-    return interaction.respond(all.map(t => ({ name: t.name, value: t.name })));
-  },
-};
-
 // ────── /autoresponse ───────────────────────────────────────────────
 module.exports.autoresponse = {
   data: new SlashCommandBuilder().setName("autoresponse").setDescription("🤖 Gestionar auto-respuestas en tickets")

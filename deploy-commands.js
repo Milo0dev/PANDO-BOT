@@ -26,12 +26,14 @@ const debug        = require("./src/commands/debug");
 const economy      = require("./src/commands/economy");
 const games        = require("./src/commands/games");
 const giveaway     = require("./src/commands/giveaway");
+const tag          = require("./src/commands/tag");
 
 // 2. Metemos los comandos en la lista maestra
 const allCommands = [
   setup, setupTickets, ping, debug, staffRanking,
   ticket, // <--- AHORA ES UN SOLO COMANDO MAESTRO
-  admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
+  tag,    // <--- NUEVO: comando tag completo con modal
+  admin.stats, admin.blacklist, admin.autoresponse,
   admin.maintenance, admin.closeAll, admin.lockdown,
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
   welcome, verify, help,
