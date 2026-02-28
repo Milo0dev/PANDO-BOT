@@ -108,50 +108,73 @@ module.exports = {
 };
 
 /**
- * Genera una imagen de despedida visual usando Canvas (Idéntico a bienvenida pero rojo)
+ * Genera una imagen de despedida visual usando Canvas
+ * Diseño espejo exacto de la bienvenida, pero en rojo
  * @param {GuildMember} member - El miembro que salió
  * @param {Guild} guild - El servidor
  * @returns {Buffer} - Buffer de la imagen PNG generada
  */
 async function generateGoodbyeImage(member, guild) {
-  // Dimensiones IGUALES al de bienvenida
+  // Dimensiones del canvas: 1024x450 (IGUAL que bienvenida)
   const width = 1024;
-  const height = 512;
+  const height = 450;
   
   // Crear canvas
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
   
-  // ── FONDO ──
-  // Crear gradiente oscuro (Igual al de bienvenida)
+  // ── FONDO CON DEGRADADO ELEGANTE ──
   const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#23272A"); // Color Discord oscuro
-  gradient.addColorStop(0.5, "#2C2F33");
-  gradient.addColorStop(1, "#23272A");
+  gradient.addColorStop(0, "#1a1a2e");    // Azul muy oscuro
+  gradient.addColorStop(0.5, "#16213e");  // Azul oscuro
+  gradient.addColorStop(1, "#0f3460");    // Azul medio
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
   
-  // Borde decorativo (Color Rojo Discord en lugar de Blurple)
-  ctx.strokeStyle = "#ED4245";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(4, 4, width - 8, height - 8);
+  // Patrón de partículas decorativas (puntos sutiles) - ROJO
+  ctx.fillStyle = "rgba(237, 66, 69, 0.1)";
+  for (let i = 0; i < 50; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const size = Math.random() * 3 + 1;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
   
-  // ── AVATAR ──
-  // Cargar avatar del usuario
-  const avatarURL = member.user.displayAvatarURL({ 
-    extension: "png", 
-    size: 256,
-    forceStatic: false 
-  });
+  // Borde decorativo exterior - ROJO (#ED4245)
+  ctx.strokeStyle = "#ED4245"; // Color Discord rojo
+  ctx.lineWidth = 6;
+  ctx.strokeRect(10, 10, width - 20, height - 20);
   
+  // Borde interior sutil - ROJO
+  ctx.strokeStyle = "rgba(237, 66, 69, 0.3)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(20, 20, width - 40, height - 40);
+  
+  // ── AVATAR DEL USUARIO ──
   try {
+    // Cargar avatar del usuario con extensión png
+    const avatarURL = member.user.displayAvatarURL({ 
+      extension: "png", 
+      size: 256,
+      forceStatic: false 
+    });
+    
     const avatar = await loadImage(avatarURL);
     
-    // Configurar círculo para el avatar (idéntico a bienvenida)
-    const avatarSize = 180;
-    const avatarX = (width - avatarSize) / 2;
-    const avatarY = 100;
+    // Configurar círculo para el avatar (centrado) - IDÉNTICO a bienvenida
+    const avatarSize = 150;
+    const avatarX = width / 2 - avatarSize / 2;
+    const avatarY = 60;
+    
+    // Borde decorativo exterior del avatar (glow) - ROJO
+    ctx.beginPath();
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 10, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(237, 66, 69, 0.5)";
+    ctx.lineWidth = 8;
+    ctx.stroke();
     
     // Crear círculo de recorte
     ctx.save();
@@ -164,106 +187,129 @@ async function generateGoodbyeImage(member, guild) {
     ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
     ctx.restore();
     
-    // Borde circular del avatar (Blanco)
+    // Borde blanco del avatar
     ctx.beginPath();
     ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
     ctx.strokeStyle = "#FFFFFF";
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 5;
     ctx.stroke();
     
-    // Borde exterior decorativo (Rojo)
+    // Borde decorativo del avatar - ROJO
     ctx.beginPath();
-    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 8, 0, Math.PI * 2);
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 6, 0, Math.PI * 2);
     ctx.strokeStyle = "#ED4245";
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3;
     ctx.stroke();
     
   } catch (avatarError) {
     // Si falla la carga del avatar, dibujar un círculo con iniciales
-    const avatarSize = 180;
-    const avatarX = (width - avatarSize) / 2;
-    const avatarY = 100;
+    console.error("[AVATAR ERROR]", avatarError.message);
     
+    const avatarSize = 150;
+    const avatarX = width / 2 - avatarSize / 2;
+    const avatarY = 60;
+    
+    // Fondo del avatar - ROJO
     ctx.beginPath();
     ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
     ctx.fillStyle = "#ED4245";
     ctx.fill();
     
+    // Borde blanco
+    ctx.beginPath();
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    
+    // Iniciales del usuario
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 80px Arial";
+    ctx.font = "bold 60px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const initials = member.user.username.slice(0, 2).toUpperCase();
     ctx.fillText(initials, width / 2, avatarY + avatarSize / 2);
   }
   
-  // ── TEXTO: ADIÓS ──
+  // ── TEXTO: ¡ADIÓS! ──
   ctx.fillStyle = "#FFFFFF";
-  ctx.font = "bold 60px Arial, sans-serif";
+  ctx.font = "bold 48px Arial, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  
+  // Sombra del texto
   ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = 8;
   ctx.shadowOffsetX = 2;
   ctx.shadowOffsetY = 2;
-  ctx.fillText("¡Adiós!", width / 2, 330);
   
-  // ── TEXTO: NOMBRE DE USUARIO ──
-  ctx.font = "bold 45px Arial, sans-serif";
-  ctx.fillStyle = "#ED4245"; // Rojo Discord
+  ctx.fillText("¡ADIÓS!", width / 2, 250);
   
-  // Truncar nombre si es muy largo
-  let username = member.user.username;
-  if (username.length > 20) {
-    username = username.slice(0, 17) + "...";
+  // ── TEXTO: TAG DEL USUARIO ──
+  ctx.font = "bold 36px Arial, sans-serif";
+  ctx.fillStyle = "#ED4245"; // Color Discord rojo
+  
+  // Usar member.user.tag (username#0000)
+  let userTag = member.user.tag;
+  
+  // Truncar si es muy largo
+  if (userTag.length > 28) {
+    userTag = userTag.slice(0, 25) + "...";
   }
   
-  ctx.fillText(username, width / 2, 390);
+  ctx.fillText(userTag, width / 2, 310);
   
-  // ── TEXTO: NÚMERO DE MIEMBROS RESTANTES ──
-  ctx.font = "30px Arial, sans-serif";
+  // ── TEXTO: NÚMERO DE MIEMBRO ──
+  ctx.font = "24px Arial, sans-serif";
   ctx.fillStyle = "#99AAB5"; // Color gris Discord
-  ctx.shadowBlur = 5;
+  
+  // Quitar sombra para texto secundario
+  ctx.shadowBlur = 4;
+  
   const memberCountText = `Quedamos ${guild.memberCount} miembros`;
-  ctx.fillText(memberCountText, width / 2, 445);
+  ctx.fillText(memberCountText, width / 2, 365);
   
   // ── DECORACIÓN ADICIONAL ──
-  // Líneas decorativas en las esquinas (Rojas con opacidad)
-  ctx.strokeStyle = "rgba(237, 66, 69, 0.3)";
-  ctx.lineWidth = 3;
+  // Líneas decorativas en las esquinas - ROJO
+  ctx.strokeStyle = "rgba(237, 66, 69, 0.4)";
+  ctx.lineWidth = 2;
   
   // Esquina superior izquierda
   ctx.beginPath();
-  ctx.moveTo(30, 60);
-  ctx.lineTo(30, 30);
-  ctx.lineTo(60, 30);
+  ctx.moveTo(40, 80);
+  ctx.lineTo(40, 40);
+  ctx.lineTo(80, 40);
   ctx.stroke();
   
   // Esquina superior derecha
   ctx.beginPath();
-  ctx.moveTo(width - 60, 30);
-  ctx.lineTo(width - 30, 30);
-  ctx.lineTo(width - 30, 60);
+  ctx.moveTo(width - 80, 40);
+  ctx.lineTo(width - 40, 40);
+  ctx.lineTo(width - 40, 80);
   ctx.stroke();
   
   // Esquina inferior izquierda
   ctx.beginPath();
-  ctx.moveTo(30, height - 60);
-  ctx.lineTo(30, height - 30);
-  ctx.lineTo(60, height - 30);
+  ctx.moveTo(40, height - 80);
+  ctx.lineTo(40, height - 40);
+  ctx.lineTo(80, height - 40);
   ctx.stroke();
   
   // Esquina inferior derecha
   ctx.beginPath();
-  ctx.moveTo(width - 60, height - 30);
-  ctx.lineTo(width - 30, height - 30);
-  ctx.lineTo(width - 30, height - 60);
+  ctx.moveTo(width - 80, height - 40);
+  ctx.lineTo(width - 40, height - 40);
+  ctx.lineTo(width - 40, height - 80);
   ctx.stroke();
   
-  // Retornar buffer PNG
+  // ── RETORNAR BUFFER PNG ──
   return canvas.toBuffer("image/png");
 }
 
+/**
+ * Reemplaza las variables en el mensaje
+ * Variables: {mention}, {user}, {server}, {tag}, {count}, {id}
+ */
 function fill(text, member, guild) {
   if (!text) return "";
   return text
