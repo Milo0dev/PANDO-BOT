@@ -26,24 +26,18 @@ const economy      = require("./src/commands/economy");
 const games        = require("./src/commands/games");
 const giveaway     = require("./src/commands/giveaway");
 
-// 2. Metemos setupTickets en la lista maestra
+// 2. Metemos los comandos en la lista maestra
 const allCommands = [
-  setup, setupTickets, ping, debug, staffRanking, // <--- AÑADIDO AQUÍ TAMBIÉN
-  ticket.reopen, ticket.claim, ticket.close, ticket.unclaim,
-  ticket.assign, ticket.add, ticket.remove, ticket.rename,
-  ticket.priority, ticket.move, ticket.note, ticket.transcript,
-  ticket.info, ticket.history,
+  setup, setupTickets, ping, debug, staffRanking,
+  ticket, // <--- AHORA ES UN SOLO COMANDO MAESTRO
   admin.stats, admin.blacklist, admin.tag, admin.autoresponse,
   admin.maintenance, admin.closeAll, admin.lockdown,
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
   welcome, verify, help,
   poll, embed, suggest, remind, rank, levels, modlogs,
-  music.play, music.skip, music.stop, music.pause, music.resume, 
-  music.queue, music.nowplaying, music.shuffle, music.remove, 
-  music.clear, music.volume, music.loop,
-  economy.balance, economy.daily, economy.pay, economy.deposit, economy.withdraw,
-  economy.shop, economy.buy, economy.work, economy.gamble, economy.leaderboard,
-  games.ahorcado, games.ttt, games.trivia,
+  music,   // <--- AHORA ES UN SOLO COMANDO MAESTRO
+  economy, // <--- AHORA ES UN SOLO COMANDO MAESTRO
+  games,   // <--- AHORA ES UN SOLO COMANDO MAESTRO
   giveaway.create
 ];
 
