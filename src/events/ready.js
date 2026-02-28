@@ -7,7 +7,7 @@ const { updateAllDashboards }            = require("../handlers/dashboardHandler
 const { weeklyReportEmbed }              = require("../utils/embeds");
 
 module.exports = {
-  name: "ready",
+  name: "clientReady",
   once: true,
   async execute(client) {
     console.log(chalk.green(`\n✅ Conectado como ${chalk.bold(client.user.tag)}`));

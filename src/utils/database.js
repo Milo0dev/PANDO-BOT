@@ -1858,6 +1858,22 @@ const suggestions = {
   },
 };
 
+const verifLogs = {
+  collection() { return getDB().collection("verifLogs"); },
+  async add(guildId, userId, status, reason = null) {
+    try { await this.collection().insertOne({ guild_id: guildId, user_id: userId, status, reason, created_at: now() }); } catch (error) {}
+  },
+  async getStats(guildId) {
+    try {
+      const all = await this.collection().find({ guild_id: guildId }).toArray();
+      return { total: all.length, verified: all.filter(l => l.status === "verified").length, failed: all.filter(l => l.status === "failed").length, kicked: all.filter(l => l.status === "kicked").length };
+    } catch(e) { return {total:0, verified:0, failed:0, kicked:0}; }
+  },
+  async getRecent(guildId, limit = 5) {
+    try { return await this.collection().find({ guild_id: guildId }).sort({ created_at: -1 }).limit(limit).toArray(); } catch(e) { return []; }
+  }
+};
+
 // Exportar todo
 module.exports = {
   connectDB,
@@ -1886,4 +1902,5 @@ module.exports = {
   suggestions,
   polls,
   autoResponses,
+  verifLogs,
 };
