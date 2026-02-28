@@ -123,11 +123,11 @@ async function generateGoodbyeImage(member, guild) {
   const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
   
-  // ── FONDO CON DEGRADADO ELEGANTE ──
+  // ── FONDO CON DEGRADADO ROJO ELEGANTE ──
   const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#1a1a2e");    // Azul muy oscuro
-  gradient.addColorStop(0.5, "#16213e");  // Azul oscuro
-  gradient.addColorStop(1, "#0f3460");    // Azul medio
+  gradient.addColorStop(0, "#3A090C");    // Rojo muy oscuro en extremos
+  gradient.addColorStop(0.5, "#220406");  // Rojo aún más oscuro en el medio
+  gradient.addColorStop(1, "#3A090C");    // Rojo muy oscuro en extremos
   
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
