@@ -10,74 +10,69 @@ module.exports = {
   async execute(member, client) {
     const guild = member.guild;
     try {
-      // Obtener configuración de despedidas
       const ws = await welcomeSettings.get(guild.id);
 
-      // Verificar si el sistema de despedidas está activo
-      if (!ws || !ws.goodbye_enabled || !ws.goodbye_channel) return;
+      // ── DESPEDIDA CON IMAGEN CANVAS ──
+      if (ws?.goodbye_enabled && ws?.goodbye_channel) {
+        const ch = guild.channels.cache.get(ws.goodbye_channel);
+        if (ch) {
+          // Verificar permisos del bot
+          if (!ch.permissionsFor(guild.members.me).has(["SendMessages", "AttachFiles"])) {
+            return console.log(`[GOODBYE] No tengo permisos en el canal ${ch.id}`);
+          }
 
-      // Obtener el canal de despedida
-      const ch = guild.channels.cache.get(ws.goodbye_channel);
+          try {
+            // Generar imagen de despedida
+            const goodbyeImage = await generateGoodbyeImage(member, guild);
+            const attachment = new AttachmentBuilder(goodbyeImage, { name: "goodbye.png" });
 
-      // Verificar que el canal existe
-      if (!ch) return;
+            // Crear embed con la imagen
+            const color = parseInt(ws.goodbye_color || "ED4245", 16);
+            const embed = new EmbedBuilder()
+              .setColor(color)
+              .setTitle(fill(ws.goodbye_title || "👋 ¡Adiós!", member, guild))
+              .setDescription(fill(ws.goodbye_message || "¡Lamentamos verte partir **{user}**! Esperamos verte pronto.", member, guild))
+              .setImage("attachment://goodbye.png")
+              .setTimestamp();
 
-      // Verificar permisos del bot
-      const botPermissions = ch.permissionsFor(guild.members.me);
-      if (!botPermissions.has("SendMessages") || !botPermissions.has("AttachFiles")) {
-        return console.log(`[GOODBYE] No tengo permisos en el canal ${ch.id}`);
-      }
+            if (ws.goodbye_footer) {
+              embed.setFooter({
+                text: fill(ws.goodbye_footer, member, guild),
+                iconURL: guild.iconURL({ dynamic: true })
+              });
+            }
 
-      // Generar imagen de despedida
-      try {
-        const goodbyeImage = await generateGoodbyeImage(member);
-        const attachment = new AttachmentBuilder(goodbyeImage, { name: "goodbye.png" });
+            await ch.send({ embeds: [embed], files: [attachment] }).catch(() => {});
+          } catch (canvasError) {
+            console.error("[CANVAS ERROR - GOODBYE]", canvasError);
+            // Fallback: enviar embed normal sin imagen
+            const color = parseInt(ws.goodbye_color || "ED4245", 16);
+            const embed = new EmbedBuilder()
+              .setColor(color)
+              .setTitle(fill(ws.goodbye_title || "👋 ¡Adiós!", member, guild))
+              .setDescription(fill(ws.goodbye_message, member, guild))
+              .setTimestamp();
 
-        // Crear embed con la imagen
-        const color = parseInt(ws.goodbye_color || "ED4245", 16);
-        const embed = new EmbedBuilder()
-          .setColor(color)
-          .setTitle(fill(ws.goodbye_title || "👋 ¡Hasta luego!", member, guild))
-          .setDescription(fill(ws.goodbye_message || "¡Lamentamos verte partir **{user}**! Esperamos verte pronto.", member, guild))
-          .setImage("attachment://goodbye.png")
-          .setTimestamp();
+            if (ws.goodbye_thumbnail !== false) embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
+            if (ws.goodbye_footer) embed.setFooter({ text: fill(ws.goodbye_footer, member, guild), iconURL: guild.iconURL({ dynamic: true }) });
 
-        if (ws.goodbye_footer) {
-          embed.setFooter({
-            text: fill(ws.goodbye_footer, member, guild),
-            iconURL: guild.iconURL({ dynamic: true })
-          });
+            const roles = member.roles.cache
+              .filter(r => r.id !== guild.id)
+              .sort((a, b) => b.position - a.position)
+              .map(r => `<@&${r.id}>`)
+              .slice(0, 5).join(", ") || "Ninguno";
+
+            embed.addFields(
+              { name: "👤 Usuario", value: `${member.user.tag}`, inline: true },
+              { name: "🆔 ID", value: `\`${member.id}\``, inline: true },
+              { name: "📅 Se unió", value: member.joinedAt ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : "?", inline: true },
+              { name: "👥 Quedamos", value: `\`${guild.memberCount}\` miembros`, inline: true },
+              { name: "🏷️ Tenía roles", value: roles, inline: false },
+            );
+
+            await ch.send({ embeds: [embed] }).catch(() => {});
+          }
         }
-
-        await ch.send({ embeds: [embed], files: [attachment] }).catch(() => {});
-      } catch (canvasError) {
-        console.error("[CANVAS ERROR - GOODBYE]", canvasError);
-        // Fallback: enviar embed normal sin imagen
-        const color = parseInt(ws.goodbye_color || "ED4245", 16);
-        const embed = new EmbedBuilder()
-          .setColor(color)
-          .setTitle(fill(ws.goodbye_title || "👋 ¡Hasta luego!", member, guild))
-          .setDescription(fill(ws.goodbye_message, member, guild))
-          .setTimestamp();
-
-        if (ws.goodbye_thumbnail !== false) embed.setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 256 }));
-        if (ws.goodbye_footer) embed.setFooter({ text: fill(ws.goodbye_footer, member, guild), iconURL: guild.iconURL({ dynamic: true }) });
-
-        const roles = member.roles.cache
-          .filter(r => r.id !== guild.id)
-          .sort((a, b) => b.position - a.position)
-          .map(r => `<@&${r.id}>`)
-          .slice(0, 5).join(", ") || "Ninguno";
-
-        embed.addFields(
-          { name: "👤 Usuario", value: `${member.user.tag}`, inline: true },
-          { name: "🆔 ID", value: `\`${member.id}\``, inline: true },
-          { name: "📅 Se unió", value: member.joinedAt ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>` : "?", inline: true },
-          { name: "👥 Quedamos", value: `\`${guild.memberCount}\` miembros`, inline: true },
-          { name: "🏷️ Tenía roles", value: roles, inline: false },
-        );
-
-        await ch.send({ embeds: [embed] }).catch(() => {});
       }
 
       // ── MODLOG DE SALIDA ──
@@ -113,88 +108,158 @@ module.exports = {
 };
 
 /**
- * Genera una imagen de despedida visual usando Canvas
+ * Genera una imagen de despedida visual usando Canvas (Idéntico a bienvenida pero rojo)
  * @param {GuildMember} member - El miembro que salió
+ * @param {Guild} guild - El servidor
  * @returns {Buffer} - Buffer de la imagen PNG generada
  */
-async function generateGoodbyeImage(member) {
-  // Dimensiones del canvas
-  const canvas = createCanvas(700, 250);
+async function generateGoodbyeImage(member, guild) {
+  // Dimensiones IGUALES al de bienvenida
+  const width = 1024;
+  const height = 512;
+  
+  // Crear canvas
+  const canvas = createCanvas(width, height);
   const ctx = canvas.getContext("2d");
-
-  // ═══ FONDO ═══
-  ctx.fillStyle = "#23272A";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // ═══ AVATAR ═══
-  const avatarSize = 150;
-  const avatarX = canvas.width / 2;
-  const avatarY = canvas.height / 2 - 20;
-
+  
+  // ── FONDO ──
+  // Crear gradiente oscuro (Igual al de bienvenida)
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#23272A"); // Color Discord oscuro
+  gradient.addColorStop(0.5, "#2C2F33");
+  gradient.addColorStop(1, "#23272A");
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+  
+  // Borde decorativo (Color Rojo Discord en lugar de Blurple)
+  ctx.strokeStyle = "#ED4245";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, width - 8, height - 8);
+  
+  // ── AVATAR ──
   // Cargar avatar del usuario
-  const avatarURL = member.user.displayAvatarURL({
-    extension: "png",
+  const avatarURL = member.user.displayAvatarURL({ 
+    extension: "png", 
     size: 256,
-    forceStatic: false
+    forceStatic: false 
   });
-
+  
   try {
     const avatar = await loadImage(avatarURL);
-
-    // Dibujar avatar con裁剪 circular
+    
+    // Configurar círculo para el avatar (idéntico a bienvenida)
+    const avatarSize = 180;
+    const avatarX = (width - avatarSize) / 2;
+    const avatarY = 100;
+    
+    // Crear círculo de recorte
     ctx.save();
     ctx.beginPath();
-    ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
     ctx.closePath();
     ctx.clip();
-
-    // Dibujar avatar centrado
-    ctx.drawImage(avatar, avatarX - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
+    
+    // Dibujar avatar
+    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
     ctx.restore();
-
-    // Borde circular del avatar
+    
+    // Borde circular del avatar (Blanco)
     ctx.beginPath();
-    ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
     ctx.strokeStyle = "#FFFFFF";
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    
+    // Borde exterior decorativo (Rojo)
+    ctx.beginPath();
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 8, 0, Math.PI * 2);
+    ctx.strokeStyle = "#ED4245";
     ctx.lineWidth = 4;
     ctx.stroke();
-
+    
   } catch (avatarError) {
     // Si falla la carga del avatar, dibujar un círculo con iniciales
+    const avatarSize = 180;
+    const avatarX = (width - avatarSize) / 2;
+    const avatarY = 100;
+    
     ctx.beginPath();
-    ctx.arc(avatarX, avatarY, avatarSize / 2, 0, Math.PI * 2);
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
     ctx.fillStyle = "#ED4245";
     ctx.fill();
-
+    
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 60px Arial";
+    ctx.font = "bold 80px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     const initials = member.user.username.slice(0, 2).toUpperCase();
-    ctx.fillText(initials, avatarX, avatarY);
+    ctx.fillText(initials, width / 2, avatarY + avatarSize / 2);
   }
-
-  // ═══ TEXTOS ═══
-  ctx.textAlign = "center";
+  
+  // ── TEXTO: ADIÓS ──
   ctx.fillStyle = "#FFFFFF";
-
-  // "¡Hasta luego!" - arriba del avatar
-  ctx.font = "bold 40px Arial, sans-serif";
-  ctx.fillText("¡Hasta luego!", canvas.width / 2, 45);
-
-  // Nombre de usuario - debajo del avatar
-  ctx.font = "30px Arial, sans-serif";
+  ctx.font = "bold 60px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.fillText("¡Adiós!", width / 2, 330);
+  
+  // ── TEXTO: NOMBRE DE USUARIO ──
+  ctx.font = "bold 45px Arial, sans-serif";
+  ctx.fillStyle = "#ED4245"; // Rojo Discord
+  
+  // Truncar nombre si es muy largo
   let username = member.user.username;
-  if (username.length > 17) {
-    username = username.slice(0, 14) + "...";
+  if (username.length > 20) {
+    username = username.slice(0, 17) + "...";
   }
-  ctx.fillText(username, canvas.width / 2, canvas.height - 45);
-
-  // Footer - cerca de la parte inferior
-  ctx.font = "20px Arial, sans-serif";
-  ctx.fillStyle = "#AAAAAA";
-  ctx.fillText("Espero verte pronto.", canvas.width / 2, canvas.height - 15);
-
+  
+  ctx.fillText(username, width / 2, 390);
+  
+  // ── TEXTO: NÚMERO DE MIEMBROS RESTANTES ──
+  ctx.font = "30px Arial, sans-serif";
+  ctx.fillStyle = "#99AAB5"; // Color gris Discord
+  ctx.shadowBlur = 5;
+  const memberCountText = `Quedamos ${guild.memberCount} miembros`;
+  ctx.fillText(memberCountText, width / 2, 445);
+  
+  // ── DECORACIÓN ADICIONAL ──
+  // Líneas decorativas en las esquinas (Rojas con opacidad)
+  ctx.strokeStyle = "rgba(237, 66, 69, 0.3)";
+  ctx.lineWidth = 3;
+  
+  // Esquina superior izquierda
+  ctx.beginPath();
+  ctx.moveTo(30, 60);
+  ctx.lineTo(30, 30);
+  ctx.lineTo(60, 30);
+  ctx.stroke();
+  
+  // Esquina superior derecha
+  ctx.beginPath();
+  ctx.moveTo(width - 60, 30);
+  ctx.lineTo(width - 30, 30);
+  ctx.lineTo(width - 30, 60);
+  ctx.stroke();
+  
+  // Esquina inferior izquierda
+  ctx.beginPath();
+  ctx.moveTo(30, height - 60);
+  ctx.lineTo(30, height - 30);
+  ctx.lineTo(60, height - 30);
+  ctx.stroke();
+  
+  // Esquina inferior derecha
+  ctx.beginPath();
+  ctx.moveTo(width - 60, height - 30);
+  ctx.lineTo(width - 30, height - 30);
+  ctx.lineTo(width - 30, height - 60);
+  ctx.stroke();
+  
   // Retornar buffer PNG
   return canvas.toBuffer("image/png");
 }
