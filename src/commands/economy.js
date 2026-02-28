@@ -9,18 +9,190 @@ const {
 const { economy, shop } = require("../utils/economy");
 
 // ══════════════════════════════════════════════════════════════
-//   /BALANCE - Ver saldo y banco
+//   COMANDO MAESTRO: /ECO - Sistema de Economía Unificado
 // ══════════════════════════════════════════════════════════════
-module.exports.balance = {
+
+module.exports = {
   data: new SlashCommandBuilder()
-    .setName("balance")
-    .setDescription("💰 Ver tu saldo de monedas")
-    .addUserOption(o => o
-      .setName("usuario")
-      .setDescription("Usuario a consultar")
-      .setRequired(false)),
+    .setName("eco")
+    .setDescription("💰 Sistema de economía")
+    
+    // SUBCOMANDO: BALANCE
+    .addSubcommand(sub => sub
+      .setName("balance")
+      .setDescription("💰 Ver tu saldo de monedas")
+      .addUserOption(o => o
+        .setName("usuario")
+        .setDescription("Usuario a consultar")
+        .setRequired(false)))
+    
+    // SUBCOMANDO: DAILY
+    .addSubcommand(sub => sub
+      .setName("daily")
+      .setDescription("🎁 Reclamar monedas gratuitas diarias"))
+    
+    // SUBCOMANDO: PAY
+    .addSubcommand(sub => sub
+      .setName("pay")
+      .setDescription("💸 Transferir monedas a otro usuario")
+      .addUserOption(o => o
+        .setName("usuario")
+        .setDescription("Usuario al que enviarás monedas")
+        .setRequired(true))
+      .addIntegerOption(o => o
+        .setName("cantidad")
+        .setDescription("Cantidad de monedas")
+        .setRequired(true)
+        .setMinValue(1)))
+    
+    // SUBCOMANDO: DEPOSIT
+    .addSubcommand(sub => sub
+      .setName("deposit")
+      .setDescription("🏦 Depositar monedas en el banco")
+      .addIntegerOption(o => o
+        .setName("cantidad")
+        .setDescription("Cantidad a depositar")
+        .setRequired(true)))
+    
+    // SUBCOMANDO: WITHDRAW
+    .addSubcommand(sub => sub
+      .setName("withdraw")
+      .setDescription("🏧 Retirar monedas del banco")
+      .addIntegerOption(o => o
+        .setName("cantidad")
+        .setDescription("Cantidad a retirar")
+        .setRequired(true)))
+    
+    // SUBCOMANDO: SHOP
+    .addSubcommand(sub => sub
+      .setName("shop")
+      .setDescription("🛒 Ver la tienda de items")
+      .addStringOption(o => o
+        .setName("categoria")
+        .setDescription("Filtrar por categoría")
+        .setRequired(false)
+        .addChoices(
+          { name: "🎭 Roles", value: "role" },
+          { name: "⚡ Boosts", value: "boost" },
+          { name: "📦 Cajas", value: "crate" },
+          { name: "🎁 Items", value: "item" },
+        )))
+    
+    // SUBCOMANDO: BUY
+    .addSubcommand(sub => sub
+      .setName("buy")
+      .setDescription("🛍️ Comprar un item de la tienda")
+      .addStringOption(o => o
+        .setName("item")
+        .setDescription("ID del item a comprar")
+        .setRequired(true)))
+    
+    // SUBCOMANDO: WORK
+    .addSubcommand(sub => sub
+      .setName("work")
+      .setDescription("💼 Trabajar para ganar monedas")
+      .addStringOption(o => o
+        .setName("accion")
+        .setDescription("Acción a realizar")
+        .setRequired(false)
+        .addChoices(
+          { name: "📋 Ver trabajos disponibles", value: "jobs" },
+          { name: "💼 Elegir trabajo", value: "set" },
+          { name: "🔨 Trabajar", value: "do" },
+        ))
+      .addStringOption(o => o
+        .setName("trabajo")
+        .setDescription("Trabajo a elegir")
+        .setRequired(false)
+        .addChoices(
+          { name: "🍔 Trabajador de Burgers", value: "burger" },
+          { name: "🚚 Repartidor", value: "delivery" },
+          { name: "💻 Desarrollador", value: "developer" },
+          { name: "⚕️ Doctor", value: "doctor" },
+          { name: "⚖️ Abogado", value: "lawyer" },
+          { name: "📺 Streamer", value: "streamer" },
+        )))
+    
+    // SUBCOMANDO: GAMBLE
+    .addSubcommand(sub => sub
+      .setName("gamble")
+      .setDescription("🎰 Apostar monedas")
+      .addIntegerOption(o => o
+        .setName("cantidad")
+        .setDescription("Cantidad a apostar")
+        .setRequired(true)
+        .setMinValue(10)))
+    
+    // SUBCOMANDO: LEADERBOARD
+    .addSubcommand(sub => sub
+      .setName("leaderboard")
+      .setDescription("🏆 Ver ranking de economía")
+      .addStringOption(o => o
+        .setName("tipo")
+        .setDescription("Tipo de ranking")
+        .setRequired(false)
+        .addChoices(
+          { name: "💰 Riqueza total", value: "total" },
+          { name: "📈 Más ganado", value: "earned" },
+          { name: "💵 En wallet", value: "wallet" },
+        ))),
 
   async execute(interaction) {
+    const subcommand = interaction.options.getSubcommand();
+
+    switch (subcommand) {
+      case "balance":
+        await this.handleBalance(interaction);
+        break;
+      
+      case "daily":
+        await this.handleDaily(interaction);
+        break;
+      
+      case "pay":
+        await this.handlePay(interaction);
+        break;
+      
+      case "deposit":
+        await this.handleDeposit(interaction);
+        break;
+      
+      case "withdraw":
+        await this.handleWithdraw(interaction);
+        break;
+      
+      case "shop":
+        await this.handleShop(interaction);
+        break;
+      
+      case "buy":
+        await this.handleBuy(interaction);
+        break;
+      
+      case "work":
+        await this.handleWork(interaction);
+        break;
+      
+      case "gamble":
+        await this.handleGamble(interaction);
+        break;
+      
+      case "leaderboard":
+        await this.handleLeaderboard(interaction);
+        break;
+      
+      default:
+        await interaction.reply({
+          content: "❌ Subcomando no reconocido.",
+          ephemeral: true
+        });
+    }
+  },
+
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: BALANCE
+  // ══════════════════════════════════════════════════════════════
+  async handleBalance(interaction) {
     const user = interaction.options.getUser("usuario") || interaction.user;
     const eco = await economy.get(interaction.guildId, user.id);
 
@@ -35,7 +207,7 @@ module.exports.balance = {
         { name: "📈 Racha diaria", value: `${eco.daily_streak || 0} días`, inline: true },
         { name: "💼 Trabajo", value: eco.job ? eco.job.charAt(0).toUpperCase() + eco.job.slice(1) : "Sin trabajo", inline: true },
       )
-      .setFooter({ text: "Usa /daily para reclamar monedas gratis!" })
+      .setFooter({ text: "Usa /eco daily para reclamar monedas gratis!" })
       .setTimestamp();
 
     if (user.id === interaction.user.id) {
@@ -45,18 +217,12 @@ module.exports.balance = {
     }
 
     await interaction.reply({ embeds: [embed] });
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /DAILY - Monedas diarias
-// ══════════════════════════════════════════════════════════════
-module.exports.daily = {
-  data: new SlashCommandBuilder()
-    .setName("daily")
-    .setDescription("🎁 Reclamar monedas gratuitas diarias"),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: DAILY
+  // ══════════════════════════════════════════════════════════════
+  async handleDaily(interaction) {
     const result = await economy.claimDaily(interaction.guildId, interaction.user.id);
 
     if (!result.success) {
@@ -81,27 +247,12 @@ module.exports.daily = {
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /PAY - Transferir monedas
-// ══════════════════════════════════════════════════════════════
-module.exports.pay = {
-  data: new SlashCommandBuilder()
-    .setName("pay")
-    .setDescription("💸 Transferir monedas a otro usuario")
-    .addUserOption(o => o
-      .setName("usuario")
-      .setDescription("Usuario al que enviarás monedas")
-      .setRequired(true))
-    .addIntegerOption(o => o
-      .setName("cantidad")
-      .setDescription("Cantidad de monedas")
-      .setRequired(true)
-      .setMinValue(1)),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: PAY
+  // ══════════════════════════════════════════════════════════════
+  async handlePay(interaction) {
     const user = interaction.options.getUser("usuario");
     const amount = interaction.options.getInteger("cantidad");
 
@@ -156,22 +307,12 @@ module.exports.pay = {
       
       await user.send({ embeds: [dmEmbed] });
     } catch (e) {}
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /DEPOSIT - Depositar en banco
-// ══════════════════════════════════════════════════════════════
-module.exports.deposit = {
-  data: new SlashCommandBuilder()
-    .setName("deposit")
-    .setDescription("🏦 Depositar monedas en el banco")
-    .addIntegerOption(o => o
-      .setName("cantidad")
-      .setDescription("Cantidad a depositar (usa 'max' para todo)")
-      .setRequired(true)),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: DEPOSIT
+  // ══════════════════════════════════════════════════════════════
+  async handleDeposit(interaction) {
     const amount = interaction.options.getInteger("cantidad");
     const eco = await economy.get(interaction.guildId, interaction.user.id);
 
@@ -197,22 +338,12 @@ module.exports.deposit = {
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /WITHDRAW - Retirar del banco
-// ══════════════════════════════════════════════════════════════
-module.exports.withdraw = {
-  data: new SlashCommandBuilder()
-    .setName("withdraw")
-    .setDescription("🏧 Retirar monedas del banco")
-    .addIntegerOption(o => o
-      .setName("cantidad")
-      .setDescription("Cantidad a retirar")
-      .setRequired(true)),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: WITHDRAW
+  // ══════════════════════════════════════════════════════════════
+  async handleWithdraw(interaction) {
     const amount = interaction.options.getInteger("cantidad");
 
     const result = await economy.withdraw(interaction.guildId, interaction.user.id, amount);
@@ -236,28 +367,12 @@ module.exports.withdraw = {
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /SHOP - Ver tienda
-// ══════════════════════════════════════════════════════════════
-module.exports.shop = {
-  data: new SlashCommandBuilder()
-    .setName("shop")
-    .setDescription("🛒 Ver la tienda de items")
-    .addStringOption(o => o
-      .setName("categoria")
-      .setDescription("Filtrar por categoría")
-      .setRequired(false)
-      .addChoices(
-        { name: "🎭 Roles", value: "role" },
-        { name: "⚡ Boosts", value: "boost" },
-        { name: "📦 Cajas", value: "crate" },
-        { name: "🎁 Items", value: "item" },
-      )),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: SHOP
+  // ══════════════════════════════════════════════════════════════
+  async handleShop(interaction) {
     const category = interaction.options.getString("categoria");
     const shopData = await shop.get(interaction.guildId);
     
@@ -286,7 +401,7 @@ module.exports.shop = {
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
       .setTitle("🛒 Tienda")
-      .setDescription("Usa `/buy <item>` para comprar un item")
+      .setDescription("Usa `/eco buy <item>` para comprar un item")
       .setTimestamp();
 
     // Agrupar por categoría
@@ -309,22 +424,12 @@ module.exports.shop = {
     }
 
     await interaction.reply({ embeds: [embed] });
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /BUY - Comprar item
-// ══════════════════════════════════════════════════════════════
-module.exports.buy = {
-  data: new SlashCommandBuilder()
-    .setName("buy")
-    .setDescription("🛍️ Comprar un item de la tienda")
-    .addStringOption(o => o
-      .setName("item")
-      .setDescription("ID del item a comprar")
-      .setRequired(true)),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: BUY
+  // ══════════════════════════════════════════════════════════════
+  async handleBuy(interaction) {
     const itemId = interaction.options.getString("item");
     const shopData = await shop.get(interaction.guildId);
     
@@ -334,7 +439,7 @@ module.exports.buy = {
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(0xED4245)
-          .setDescription("❌ Item no encontrado. Usa `/shop` para ver los items disponibles.")],
+          .setDescription("❌ Item no encontrado. Usa `/eco shop` para ver los items disponibles.")],
         ephemeral: true
       });
     }
@@ -360,39 +465,12 @@ module.exports.buy = {
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /WORK - Trabajar
-// ══════════════════════════════════════════════════════════════
-module.exports.work = {
-  data: new SlashCommandBuilder()
-    .setName("work")
-    .setDescription("💼 Trabajar para ganar monedas")
-    .addStringOption(o => o
-      .setName("accion")
-      .setDescription("Acción a realizar")
-      .setRequired(false)
-      .addChoices(
-        { name: "📋 Ver trabajos disponibles", value: "jobs" },
-        { name: "💼 Elegir trabajo", value: "set" },
-        { name: "🔨 Trabajar", value: "do" },
-      ))
-    .addStringOption(o => o
-      .setName("trabajo")
-      .setDescription("Trabajo a elegir")
-      .setRequired(false)
-      .addChoices(
-        { name: "🍔 Trabajador de Burgers", value: "burger" },
-        { name: "🚚 Repartidor", value: "delivery" },
-        { name: "💻 Desarrollador", value: "developer" },
-        { name: "⚕️ Doctor", value: "doctor" },
-        { name: "⚖️ Abogado", value: "lawyer" },
-        { name: "📺 Streamer", value: "streamer" },
-      )),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: WORK
+  // ══════════════════════════════════════════════════════════════
+  async handleWork(interaction) {
     const action = interaction.options.getString("accion") || "jobs";
     const job = interaction.options.getString("trabajo");
     const eco = await economy.get(interaction.guildId, interaction.user.id);
@@ -410,7 +488,7 @@ module.exports.work = {
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
         .setTitle("💼 Trabajos disponibles")
-        .setDescription("Usa `/work set <trabajo>` para elegir un trabajo")
+        .setDescription("Usa `/eco work set <trabajo>` para elegir un trabajo")
         .addFields(
           jobs.map(j => ({
             name: j.name,
@@ -448,7 +526,7 @@ module.exports.work = {
       return interaction.reply({
         embeds: [new EmbedBuilder()
           .setColor(0x57F287)
-          .setDescription(`✅ Ahora trabajas como **${jobNames[job]}**!\nUsa \`/work do\` para trabajar.`)]
+          .setDescription(`✅ Ahora trabajas como **${jobNames[job]}**!\nUsa \`/eco work do\` para trabajar.`)]
       });
     }
 
@@ -479,23 +557,12 @@ module.exports.work = {
           .setDescription(`💰 Ganaste **${result.amount}** monedas trabajando como **${jobNames[result.job]}**!\n\nVuelve en 1 hora para trabajar de nuevo.`)]
       });
     }
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /GAMBLE - Apostar monedas
-// ══════════════════════════════════════════════════════════════
-module.exports.gamble = {
-  data: new SlashCommandBuilder()
-    .setName("gamble")
-    .setDescription("🎰 Apostar monedas")
-    .addIntegerOption(o => o
-      .setName("cantidad")
-      .setDescription("Cantidad a apostar")
-      .setRequired(true)
-      .setMinValue(10)),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: GAMBLE
+  // ══════════════════════════════════════════════════════════════
+  async handleGamble(interaction) {
     const amount = interaction.options.getInteger("cantidad");
     const eco = await economy.get(interaction.guildId, interaction.user.id);
 
@@ -531,9 +598,9 @@ module.exports.gamble = {
         .setColor(0x57F287)
         .setTitle("🎰 ¡Ganaste!")
         .setDescription(
-          ` Apostaste: **${amount}** 💰\n` +
-          ` Multiplicador: **${multiplier.toFixed(2)}x**\n` +
-          ` Ganaste: **${won}** 💰`
+          `✅ Apostaste: **${amount}** 💰\n` +
+          `📊 Multiplicador: **${multiplier.toFixed(2)}x**\n` +
+          `💰 Ganaste: **${won}** 💰`
         )
         .setTimestamp();
 
@@ -545,35 +612,20 @@ module.exports.gamble = {
         .setColor(0xED4245)
         .setTitle("💸 Perdiste")
         .setDescription(
-          ` Apostaste: **${amount}** 💰\n` +
-          ` Perdiste: **${amount}** 💰`
+          `❌ Apostaste: **${amount}** 💰\n` +
+          `💸 Perdiste: **${amount}** 💰`
         )
         .setFooter({ text: "Mejor suerte next time!" })
         .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
     }
-  }
-};
+  },
 
-// ══════════════════════════════════════════════════════════════
-//   /LEADERBOARD - Ranking de economia
-// ══════════════════════════════════════════════════════════════
-module.exports.leaderboard = {
-  data: new SlashCommandBuilder()
-    .setName("leaderboard")
-    .setDescription("🏆 Ver ranking de economia")
-    .addStringOption(o => o
-      .setName("tipo")
-      .setDescription("Tipo de ranking")
-      .setRequired(false)
-      .addChoices(
-        { name: "💰 Riqueza total", value: "total" },
-        { name: "📈 Más ganado", value: "earned" },
-        { name: "💵 En wallet", value: "wallet" },
-      )),
-
-  async execute(interaction) {
+  // ══════════════════════════════════════════════════════════════
+  //   HANDLER: LEADERBOARD
+  // ══════════════════════════════════════════════════════════════
+  async handleLeaderboard(interaction) {
     const type = interaction.options.getString("tipo") || "total";
     const top = await economy.getLeaderboard(interaction.guildId, 10);
 
