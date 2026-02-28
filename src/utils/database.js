@@ -1345,7 +1345,7 @@ const tags = {
       if (existing) throw new Error("Ya existe");
       
       const tag = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         guild_id: guildId,
         name: sanitizeString(name, 50),
         content: sanitizeString(content, 2000),
