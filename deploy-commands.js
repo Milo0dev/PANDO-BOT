@@ -45,7 +45,7 @@ const commands = allCommands.map(c => c.data);
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   try {
     console.log(chalk.yellow(`\n⏳ Registrando ${commands.length} comandos slash...\n`));
 
