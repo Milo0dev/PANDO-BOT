@@ -112,7 +112,7 @@ async function limpiarComandos() {
 }
 
 // Iniciar el cliente
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(chalk.blue(`✅ Conectado como ${client.user.tag}`));
   await limpiarComandos();
 });
