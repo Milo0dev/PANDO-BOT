@@ -15,6 +15,7 @@ const help         = require("./src/commands/help");
 const poll         = require("./src/commands/poll");
 const embed        = require("./src/commands/embed");
 const suggest      = require("./src/commands/suggest");
+const setupSuggest = require("./src/commands/setupSuggest");
 const remind       = require("./src/commands/remind");
 const rank         = require("./src/commands/rank");
 const levels       = require("./src/commands/levels");
@@ -34,7 +35,7 @@ const allCommands = [
   admin.maintenance, admin.closeAll, admin.lockdown,
   staff.away, staff.staffList, staff.refreshDashboard, staff.myTickets,
   welcome, verify, help,
-  poll, embed, suggest, remind, rank, levels, modlogs,
+  poll, embed, suggest, setupSuggest, remind, rank, levels, modlogs,
   music,   // <--- AHORA ES UN SOLO COMANDO MAESTRO
   economy, // <--- AHORA ES UN SOLO COMANDO MAESTRO
   games,   // <--- AHORA ES UN SOLO COMANDO MAESTRO

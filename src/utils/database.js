@@ -1766,7 +1766,7 @@ const suggestions = {
       const count = await this.collection().countDocuments({ guild_id: guildId });
       
       const suggestion = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         num: count + 1,
         guild_id: guildId,
         user_id: userId,
@@ -1798,7 +1798,7 @@ const suggestions = {
       const count = await this.collection().countDocuments({ guild_id: guildId });
       
       const suggestion = {
-        _id: ObjectId(),
+        _id: new ObjectId(),
         num: count + 1,
         guild_id: guildId,
         user_id: userId,
